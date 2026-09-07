@@ -11,7 +11,7 @@
     noneDraftValue,
     unknownDraftValue,
   } from '../lib/domain/normalization';
-  import { normalizeFormulaDraft, normalizeProcessDraft } from '../lib/application/formula-workspace';
+  import { normalizeFormulaDraft, normalizeProcessDraft, prepareAnalysisInputDraft } from '../lib/application/formula-workspace';
   import {
     PROCESS_ADDITION_ACTIONS,
     PROCESS_FIELD_DESCRIPTORS,
@@ -36,6 +36,7 @@
     IngredientRole,
     NormalizationOutcome,
   } from '../lib/domain/types';
+  import type { AnalysisInputOutcome, AnalysisPath, FormulaProcessReference } from '../lib/domain/handoff';
   import { localeHref, t, type Locale } from '../lib/i18n/messages';
   import {
     clearDraft,
@@ -45,6 +46,7 @@
     persistDraft,
     persistProcess,
   } from '../lib/state/workspace';
+  import { createLocalCommandLedger } from '../lib/application/command-ledger';
 
   export let locale: Locale;
   export let basePath = '/';
@@ -59,11 +61,15 @@
     { key: 'geometry', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('geometry.')) as ProcessFieldDescriptor[] },
   ];
   const PROCESS_NONE_VALUE = '__process_none__';
+  const commandLedger = createLocalCommandLedger();
 
   let draft: FormulaDraft = createInitialFormulaDraft();
   let processDraft: ProcessDraft = createInitialProcessDraft(draft.formulaId);
   let result: NormalizationOutcome | null = null;
   let processResult: ProcessNormalizationOutcome | null = null;
+  let handoffResult: AnalysisInputOutcome | null = null;
+  let lastValidHandoff: FormulaProcessReference | null = null;
+  let requestedAnalysisPath: AnalysisPath = 'full';
   let hydrated = false;
   let explanationOpen = false;
 
@@ -92,12 +98,14 @@
     draft = { ...next, revision: next.revision + 1 };
     result = null;
     processResult = null;
+    handoffResult = null;
     explanationOpen = false;
   }
 
   function touchProcess(next: ProcessDraft): void {
     processDraft = { ...next, revision: next.revision + 1 };
     processResult = null;
+    handoffResult = null;
   }
 
   function createId(prefix: string): string {
@@ -266,21 +274,30 @@
     updateLine(lineId, { availabilityOverride: { ...line.availabilityOverride, value } });
   }
 
-  function addFlour(): void {
-    touch({
-      ...draft,
-      flourComponents: [
-        ...draft.flourComponents,
-        {
-          id: createId('flour'),
-          ingredientId: 'custom',
-          name: locale === 'el' ? 'Νέο άλευρο' : 'New flour',
-          massGrams: '100',
-          massUnit: 'g',
-          flourBearing: true,
-          declaredBlendPercentage: '',
-        },
-      ],
+  function addFlour(commandId = createId('add-flour-command')): void {
+    const currentRevision = draft.revision;
+    commandLedger.execute({
+      commandId,
+      fingerprint: `add-flour:${currentRevision}`,
+      currentRevision,
+      expectedRevision: currentRevision,
+    }, () => {
+      touch({
+        ...draft,
+        flourComponents: [
+          ...draft.flourComponents,
+          {
+            id: `${commandId}-flour`,
+            ingredientId: 'custom',
+            name: locale === 'el' ? 'Νέο άλευρο' : 'New flour',
+            massGrams: '100',
+            massUnit: 'g',
+            flourBearing: true,
+            declaredBlendPercentage: '',
+          },
+        ],
+      });
+      return { value: true, revision: draft.revision };
     });
   }
 
@@ -288,24 +305,33 @@
     touch({ ...draft, flourComponents: draft.flourComponents.filter((component) => component.id !== id) });
   }
 
-  function addIngredient(): void {
-    touch({
-      ...draft,
-      ingredientLines: [
-        ...draft.ingredientLines,
-        {
-          id: createId('line'),
-          ingredientId: 'custom',
-          name: locale === 'el' ? 'Νέο υλικό' : 'New ingredient',
-          massGrams: '10',
-          massUnit: 'g',
-          role: 'other',
-          composition: emptyComposition(),
-          definitionSource: 'custom',
-          definitionProvenance: { kind: 'custom', sourceId: 'local-custom-ingredient' },
-          definitionConfidence: 1,
-        },
-      ],
+  function addIngredient(commandId = createId('add-ingredient-command')): void {
+    const currentRevision = draft.revision;
+    commandLedger.execute({
+      commandId,
+      fingerprint: `add-ingredient:${currentRevision}`,
+      currentRevision,
+      expectedRevision: currentRevision,
+    }, () => {
+      touch({
+        ...draft,
+        ingredientLines: [
+          ...draft.ingredientLines,
+          {
+            id: `${commandId}-line`,
+            ingredientId: 'custom',
+            name: locale === 'el' ? 'Νέο υλικό' : 'New ingredient',
+            massGrams: '10',
+            massUnit: 'g',
+            role: 'other',
+            composition: emptyComposition(),
+            definitionSource: 'custom',
+            definitionProvenance: { kind: 'custom', sourceId: 'local-custom-ingredient' },
+            definitionConfidence: 1,
+          },
+        ],
+      });
+      return { value: true, revision: draft.revision };
     });
   }
 
@@ -391,17 +417,26 @@
     touchProcess({ ...processDraft, [section]: nextSection } as ProcessDraft);
   }
 
-  function addAdditionStep(): void {
-    const nextSequence = processDraft.ingredientAddition.steps.reduce((max, step) => Math.max(max, Number(step.sequence) || 0), 0) + 1;
-    touchProcess({
-      ...processDraft,
-      ingredientAddition: {
-        ...processDraft.ingredientAddition,
-        steps: [
-          ...processDraft.ingredientAddition.steps,
-          { id: `${processDraft.processId}-step-${nextSequence}`, sequence: String(nextSequence), lineIds: [], action: '', durationSeconds: '' },
-        ],
-      },
+  function addAdditionStep(commandId = createId('add-process-step-command')): void {
+    const currentRevision = processDraft.revision;
+    commandLedger.execute({
+      commandId,
+      fingerprint: `add-process-step:${currentRevision}`,
+      currentRevision,
+      expectedRevision: currentRevision,
+    }, () => {
+      const nextSequence = processDraft.ingredientAddition.steps.reduce((max, step) => Math.max(max, Number(step.sequence) || 0), 0) + 1;
+      touchProcess({
+        ...processDraft,
+        ingredientAddition: {
+          ...processDraft.ingredientAddition,
+          steps: [
+            ...processDraft.ingredientAddition.steps,
+            { id: `${commandId}-step`, sequence: String(nextSequence), lineIds: [], action: '', durationSeconds: '' },
+          ],
+        },
+      });
+      return { value: true, revision: processDraft.revision };
     });
   }
 
@@ -436,13 +471,39 @@
     processResult = normalizeProcessDraft(processDraft, draft.ingredientLines.map((line) => line.id));
   }
 
+  function runAnalysisHandoff(): void {
+    const currentRevision = draft.revision;
+    const commandId = `prepare-analysis:${draft.formulaId}:${draft.revision}:${processDraft.revision}`;
+    const command = commandLedger.execute({
+      commandId,
+      fingerprint: `prepare-analysis:${draft.formulaId}:${draft.revision}:${processDraft.processId}:${processDraft.revision}`,
+      currentRevision,
+      expectedRevision: currentRevision,
+    }, () => ({
+      value: prepareAnalysisInputDraft(draft, processDraft, {
+        commandId: `prepare-analysis:${draft.formulaId}:${draft.revision}:${processDraft.revision}`,
+        expectedFormulaRevision: draft.revision,
+        expectedProcessRevision: processDraft.revision,
+        requestedPath: requestedAnalysisPath,
+      }),
+      revision: currentRevision,
+    }));
+    if (!command.value) return;
+    handoffResult = command.value;
+    if (handoffResult.data) lastValidHandoff = handoffResult.data;
+  }
+
   function resetDraft(): void {
     clearDraft();
     clearProcess();
+    commandLedger.clear();
     draft = createInitialFormulaDraft();
     processDraft = createInitialProcessDraft(draft.formulaId);
     result = null;
     processResult = null;
+    handoffResult = null;
+    lastValidHandoff = null;
+    requestedAnalysisPath = 'full';
     explanationOpen = false;
     hydrated = true;
   }
@@ -479,6 +540,14 @@
 
   function processStatusLabel(): string {
     return processResult ? t(locale, `process.status.${processResult.readiness}`) : t(locale, 'process.status.editing');
+  }
+
+  function handoffStatusLabel(outcome: AnalysisInputOutcome['outcome']): string {
+    return t(locale, `analysis.handoff.outcome.${outcome}`);
+  }
+
+  function handoffReadinessLabel(readiness: FormulaProcessReference['readiness']): string {
+    return t(locale, `analysis.handoff.readiness.${readiness}`);
   }
 
   function processFieldLabel(field: ProcessFieldDescriptor): string {
@@ -1088,6 +1157,89 @@
           {/if}
         </div>
 
+        <div class={`analysis-handoff ${handoffResult ? handoffResult.outcome : 'idle'}`}>
+          <div class="handoff-heading">
+            <div>
+              <span class="handoff-kicker">{t(locale, 'analysis.handoff.kicker')}</span>
+              <h4>{t(locale, 'analysis.handoff.title')}</h4>
+            </div>
+            {#if handoffResult}
+              <span class="handoff-status"><span class="status-dot"></span>{handoffStatusLabel(handoffResult.outcome)}</span>
+            {/if}
+          </div>
+          <p class="handoff-help">{t(locale, 'analysis.handoff.help')}</p>
+          <label class="handoff-path-field">
+            <span>{t(locale, 'analysis.handoff.path')}</span>
+            <select
+              aria-label={t(locale, 'analysis.handoff.path')}
+              value={requestedAnalysisPath}
+              on:change={(event) => {
+                requestedAnalysisPath = (event.currentTarget as HTMLSelectElement).value as AnalysisPath;
+                handoffResult = null;
+              }}
+            >
+              <option value="full">{t(locale, 'analysis.handoff.path.full')}</option>
+              <option value="composition">{t(locale, 'analysis.handoff.path.composition')}</option>
+            </select>
+          </label>
+          <button type="button" class="handoff-button" on:click={runAnalysisHandoff}>
+            <span>{t(locale, 'action.prepareAnalysis')}</span><span class="button-arrow">→</span>
+          </button>
+
+          {#if !handoffResult}
+            <p class="handoff-idle-note">{t(locale, 'analysis.handoff.idle')}</p>
+          {:else}
+            <div class="handoff-outcome">
+              <div class="handoff-outcome-heading">
+                <div>
+                  <strong>{handoffStatusLabel(handoffResult.outcome)}</strong>
+                  {#if handoffResult.data}
+                    <span>{handoffReadinessLabel(handoffResult.data.readiness)}</span>
+                  {/if}
+                </div>
+                <span class="handoff-revisions">{t(locale, 'analysis.handoff.revisions', { formula: handoffResult.formulaRevision, process: handoffResult.processRevision })}</span>
+              </div>
+
+              {#if handoffResult.data}
+                <div class="handoff-metrics">
+                  <div><span>{t(locale, 'analysis.handoff.composition')}</span><strong>{formatPercent(handoffResult.coverage.composition)}</strong><small>{formatPercent(handoffResult.confidence.composition)} {t(locale, 'metric.confidence').toLowerCase()}</small></div>
+                  <div><span>{t(locale, 'analysis.handoff.process')}</span><strong>{formatPercent(handoffResult.coverage.process)}</strong><small>{formatPercent(handoffResult.confidence.process)} {t(locale, 'metric.confidence').toLowerCase()}</small></div>
+                </div>
+                <div class="handoff-meta"><span>{t(locale, 'analysis.handoff.referenceVersion')}: <code>{handoffResult.data.referenceVersion}</code></span><span>{t(locale, 'analysis.handoff.modelVersion')}: <code>{handoffResult.data.modelVersion}</code></span></div>
+              {/if}
+
+              {#if handoffResult.diagnostics.length > 0}
+                <div class="diagnostic-list handoff-diagnostics" aria-live="polite">
+                  {#each handoffResult.diagnostics as handoffDiagnostic (`${handoffDiagnostic.code}-${handoffDiagnostic.path}`)}
+                    <div class="diagnostic">
+                      <div class="diagnostic-topline"><strong>{t(locale, handoffDiagnostic.messageKey, handoffDiagnostic.parameters)}</strong><code>{handoffDiagnostic.code}</code></div>
+                      <p>{t(locale, handoffDiagnostic.resolutionKey, handoffDiagnostic.parameters)}</p>
+                      <span class="diagnostic-path">{handoffDiagnostic.path}</span>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+
+              {#if handoffResult.limitations.length > 0}
+                <div class="handoff-limitations">
+                  <h5>{t(locale, 'analysis.handoff.limitations')}</h5>
+                  <ul>
+                    {#each handoffResult.limitations as item (`${item.code}-${item.path}`)}
+                      <li>{t(locale, item.messageKey, item.parameters)} <code>{item.path}</code></li>
+                    {/each}
+                  </ul>
+                </div>
+              {:else if handoffResult.data}
+                <p class="handoff-no-limitations">{t(locale, 'analysis.handoff.noLimitations')}</p>
+              {/if}
+
+              {#if handoffResult.outcome === 'conflict' || handoffResult.outcome === 'rejected'}
+                <p class="handoff-recovery">{lastValidHandoff ? t(locale, 'analysis.handoff.recovery') : t(locale, 'analysis.handoff.noRecovery')}</p>
+              {/if}
+            </div>
+          {/if}
+        </div>
+
         {#if !result}
           <div class="empty-result">
             <div class="empty-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -1371,6 +1523,43 @@
   .result-panel { grid-column: 2; grid-row: 1; min-height: 600px; }
   .result-heading { background: rgba(249, 245, 237, 0.68); }
   .result-status.idle { color: #6f756d; }
+  .analysis-handoff { margin: 1rem 1.25rem 0; padding: 0.9rem; border: 1px solid #cbdccd; background: #f5faf4; color: #45634d; }
+  .analysis-handoff.partial { border-color: #e1cdb9; background: #fff8ef; color: #8d5e44; }
+  .analysis-handoff.rejected, .analysis-handoff.conflict { border-color: #e7c5ba; background: #fff4ef; color: #a04d3f; }
+  .analysis-handoff.idle { border-color: rgba(65, 75, 67, 0.15); background: #fbf8f3; color: #50675a; }
+  .handoff-heading { display: flex; justify-content: space-between; gap: 0.7rem; align-items: start; }
+  .handoff-kicker { display: block; color: #8b5c46; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
+  .handoff-heading h4 { margin: 0.25rem 0 0; color: #345040; font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 400; letter-spacing: -0.025em; }
+  .handoff-status { display: inline-flex; flex: 0 0 auto; gap: 0.35rem; align-items: center; color: inherit; font-size: 0.61rem; font-weight: 750; text-align: right; }
+  .handoff-status .status-dot { background: currentColor; }
+  .handoff-help, .handoff-idle-note { margin: 0.6rem 0 0; color: #5d6b61; font-size: 0.67rem; line-height: 1.5; }
+  .handoff-path-field { display: flex; flex-direction: column; gap: 0.28rem; margin-top: 0.7rem; }
+  .handoff-path-field span { color: #5d6a61; font-size: 0.55rem; font-weight: 750; letter-spacing: 0.07em; text-transform: uppercase; }
+  .handoff-path-field select { width: 100%; height: 1.9rem; padding: 0 0.45rem; border: 1px solid #d7ddd5; border-radius: 0; background: #fffdfa; color: #33463d; font-size: 0.66rem; }
+  .handoff-path-field select:focus { border-color: #b87859; box-shadow: 0 0 0 2px rgba(184, 120, 89, 0.12); outline: 0; }
+  .handoff-button { width: 100%; margin-top: 0.75rem; padding: 0.62rem 0.7rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #52735e; background: #edf6ee; color: #345b43; font-size: 0.68rem; font-weight: 750; text-align: left; }
+  .handoff-button:hover { background: #e2f0e4; }
+  .handoff-outcome { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(65, 75, 67, 0.13); }
+  .handoff-outcome-heading { display: flex; justify-content: space-between; gap: 0.7rem; align-items: baseline; }
+  .handoff-outcome-heading strong, .handoff-outcome-heading span { display: block; }
+  .handoff-outcome-heading strong { color: inherit; font-size: 0.72rem; }
+  .handoff-outcome-heading span:not(.handoff-revisions) { margin-top: 0.2rem; color: #5d6b61; font-size: 0.62rem; line-height: 1.4; }
+  .handoff-revisions { flex: 0 0 auto; color: #6b7069; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.56rem; }
+  .handoff-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; margin-top: 0.65rem; }
+  .handoff-metrics > div { padding: 0.55rem; border: 1px solid rgba(65, 75, 67, 0.13); background: rgba(255, 253, 249, 0.68); }
+  .handoff-metrics span, .handoff-metrics strong, .handoff-metrics small { display: block; }
+  .handoff-metrics span { color: #5e6d62; font-size: 0.54rem; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase; }
+  .handoff-metrics strong { margin-top: 0.25rem; color: #345b43; font-family: Georgia, "Times New Roman", serif; font-size: 1.1rem; font-weight: 400; }
+  .handoff-metrics small { margin-top: 0.15rem; color: #68746b; font-size: 0.55rem; }
+  .handoff-meta { display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem; margin-top: 0.6rem; color: #68746b; font-size: 0.55rem; }
+  .handoff-meta code { color: #526b59; font-size: 0.55rem; }
+  .handoff-diagnostics { margin: 0.75rem 0 0; }
+  .handoff-limitations { margin-top: 0.7rem; padding-top: 0.65rem; border-top: 1px solid rgba(65, 75, 67, 0.13); }
+  .handoff-limitations h5 { margin: 0 0 0.35rem; color: #6f5b4d; font-size: 0.6rem; }
+  .handoff-limitations ul { margin: 0; padding-left: 1rem; color: #5d665e; font-size: 0.62rem; line-height: 1.45; }
+  .handoff-limitations code { display: block; margin-top: 0.15rem; color: #806f65; font-size: 0.53rem; }
+  .handoff-no-limitations { margin: 0.7rem 0 0; color: #5d6b61; font-size: 0.62rem; }
+  .handoff-recovery { margin: 0.7rem 0 0; padding-top: 0.65rem; border-top: 1px dashed rgba(160, 77, 63, 0.25); color: #7b5847; font-size: 0.62rem; line-height: 1.45; }
   .empty-result { min-height: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem; text-align: center; }
   .empty-orbit { width: 94px; height: 94px; margin-bottom: 1.4rem; position: relative; border: 1px solid rgba(173, 116, 85, 0.35); border-radius: 50%; }
   .empty-orbit::before, .empty-orbit::after { content: ''; position: absolute; inset: 13px; border: 1px dashed rgba(94, 121, 102, 0.32); border-radius: 50%; }
@@ -1449,5 +1638,5 @@
   .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; color: #5f6860; font-size: 0.57rem; letter-spacing: 0.08em; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   @media (max-width: 1080px) { .workspace-grid { grid-template-columns: 1fr; } .editor-panel, .result-panel, .process-panel { grid-column: 1; } .editor-panel { grid-row: 1; } .result-panel { grid-row: 2; min-height: auto; } .process-panel { grid-row: 3; } .process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .empty-result { min-height: 360px; } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block { margin-left: 0; } .composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block { margin-left: 0; } .composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
 </style>

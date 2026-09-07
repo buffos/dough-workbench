@@ -212,3 +212,15 @@ canonical domain modeling. No new topology or delivery work was created.
 - The Formula Input and Normalization capability remains `specified`; its
   remaining active frontier is Issue 006 followed by Issue 007. The Formula
   Analysis Workspace roll-up remains `bounded`.
+
+## 2026-09-07
+
+- Implemented Issue 006, Formula/Process handoff, with a versioned paired
+  reference, partial-analysis policy, conflict/revision diagnostics, recovery
+  guidance, and session-local idempotent command handling.
+- Added 36 passing tests covering complete/partial handoff, Formula/Process isolation,
+  reference and stale-revision conflicts, and replay-safe line/component/step
+  commands. Static build, route checks, OKF validation, and lint/typecheck pass.
+- Issue 006 is now `awaiting-human-review`; the capability remains `specified`
+  and the Formula Analysis Workspace roll-up remains `bounded` because Issue
+  007 and the other structural children are not complete.

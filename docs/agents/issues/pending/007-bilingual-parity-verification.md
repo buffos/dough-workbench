@@ -72,8 +72,6 @@ partial-result states, route switching, and direct-route loading behavior.
 
 ## Blocked by
 
-- Blocked by `docs/agents/issues/pending/004-roles-and-overrides.md`
-- Blocked by `docs/agents/issues/pending/005-process-capture.md`
 - Blocked by `docs/agents/issues/pending/006-formula-process-handoff.md`
 
 ## Artifact anchors

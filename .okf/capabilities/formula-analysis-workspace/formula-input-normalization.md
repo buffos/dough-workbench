@@ -3,7 +3,7 @@ type: capability
 title: Formula Input and Normalization
 description: Capture formula ingredients, flour structure, roles, units, and process inputs in a canonical form.
 tags: [formula, input, normalization, baker-percentage]
-timestamp: 2026-09-07T19:43:43Z
+timestamp: 2026-09-07T19:58:12Z
 state: specified
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
@@ -56,6 +56,6 @@ classification and final interpretation.
 
 The first vertical slice should support the ingredient and process subset named
 in the formal domain specification. Issues 001–005 are implemented and
-archived; Issues 006–007 remain active for Formula/Process handoff and final
-bilingual parity verification. The capability remains `specified` until that
-frontier is complete.
+archived; Issue 006 is implemented and awaiting bilingual visual review; Issue
+007 remains active for final parity verification. The capability remains
+`specified` until that frontier is complete.

@@ -7,7 +7,7 @@
 - Category: `feature`
 - Execution type: `AFK`
 - Review gate: `visual-review`
-- Suggested state: `ready-for-agent`
+- Suggested state: `awaiting-human-review`
 
 ## Parent Artifacts
 
@@ -33,21 +33,21 @@ silently overwrite newer state.
 
 ## Acceptance criteria
 
-- [ ] A structurally valid Formula with incomplete Process produces a visible
+- [x] A structurally valid Formula with incomplete Process produces a visible
   partial analysis-input outcome with supported composition outputs intact.
-- [ ] Process-dependent limitations identify reduced coverage/confidence and
+- [x] Process-dependent limitations identify reduced coverage/confidence and
   preserve unknown Process fields.
-- [ ] Formula edits do not rewrite Process state; Process edits do not rewrite
+- [x] Formula edits do not rewrite Process state; Process edits do not rewrite
   Formula composition, denominator, percentages, or overrides.
-- [ ] A missing Formula-line reference or incompatible Formula/Process revision
+- [x] A missing Formula-line reference or incompatible Formula/Process revision
   rejects the paired handoff with `REFERENCE_MISMATCH` or `STALE_REVISION`.
-- [ ] The last valid Formula and Process drafts remain recoverable after a
+- [x] The last valid Formula and Process drafts remain recoverable after a
   rejected handoff.
-- [ ] Replaying a command identity does not duplicate a line, component, or
+- [x] Replaying a command identity does not duplicate a line, component, or
   AdditionStep; stale revisions do not silently overwrite newer state.
-- [ ] The workspace visibly shows complete, partial, rejected, and conflict
+- [x] The workspace visibly shows complete, partial, rejected, and conflict
   handoff outcomes.
-- [ ] Tests cover coordinated snapshot assembly, partial policy, isolation,
+- [x] Tests cover coordinated snapshot assembly, partial policy, isolation,
   reference conflicts, and idempotent replay.
 
 ## Artifact sync required
@@ -71,8 +71,7 @@ guidance in both locales.
 
 ## Blocked by
 
-- Blocked by `docs/agents/issues/pending/004-roles-and-overrides.md`
-- Blocked by `docs/agents/issues/pending/005-process-capture.md`
+- —
 
 ## Artifact anchors
 
@@ -97,7 +96,38 @@ guidance in both locales.
 
 | Scenario | Backend boundary | Frontend integration | End-to-end journey |
 |---|---|---|---|
-| `SC-010` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-011` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-012` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-013` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-010` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-011` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-012` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-013` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
+
+## Implementation record
+
+- The versioned `FormulaProcessReference`, `PartialAnalysisPolicy`, and
+  `AnalysisInputAssembler` behavior are implemented in
+  `src/lib/domain/handoff.ts`. The service normalizes Formula and Process
+  separately, preserves their revisions and ownership, carries coverage and
+  confidence independently, and returns complete, partial, rejected, or
+  conflict outcomes.
+- The application adapter exposes `PrepareAnalysisInput` through
+  `src/lib/application/formula-workspace.ts`. A local command ledger in
+  `src/lib/application/command-ledger.ts` makes replayed Formula-line,
+  Flour-component, AdditionStep, and handoff commands idempotent within the
+  active browser session; stale or payload-changing command identities return
+  conflict without applying a mutation.
+- `src/components/FormulaWorkspace.svelte` now shows the bilingual Analysis
+  Input handoff panel, separate Formula/Process revisions, coverage and
+  confidence, limitation paths, conflict diagnostics, and recovery guidance
+  for the last valid pair. Formula and Process drafts remain independently
+  editable and rejected handoffs do not overwrite either draft.
+- Automated evidence: `npm run verify` passes with 36 tests, lint,
+  typecheck, static build, and route checks. `git diff --check` and OKF
+  validation also pass.
+- Scenario trace: `SC-010` → partial policy and preserved Process unknowns in
+  `src/lib/domain/handoff.test.ts`; `SC-011` → independent revision/data
+  assertions in the same suite; `SC-012` → reference and stale-revision
+  conflict tests; `SC-013` → replay, stale, and command-payload conflict tests
+  in `src/lib/application/command-ledger.test.ts`.
+- End-to-end remains deferred under the root `catalog-only` policy. Frontend
+  integration remains deferred because no integration harness exists; the
+  bilingual visual-review gate is now open for the user.

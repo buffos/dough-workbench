@@ -32,8 +32,8 @@ ingredient roles, process input capture, and preservation of missing data.
   `process-input-v0.2` typed-vocabulary refinement. Implementation handoff is
   ready.
 - Delivery issue batch: Issues 001–005 are archived as completed in
-  `docs/agents/issues/done/`; Issue 006 is active and ready for implementation;
-  Issue 007 remains active behind Issue 006.
+  `docs/agents/issues/done/`; Issue 006 is implemented and awaiting its
+  bilingual visual review; Issue 007 remains active behind Issue 006.
 
 ## Current assessment
 
@@ -86,6 +86,6 @@ free text as an algorithm-facing value.
 
 ## Next action
 
-Process Issue 006 next. After it is implemented and explicitly approved in
-visual review, close it out and unlock Issue 007. All seven issues carry the
-mandatory `visual-review` gate because they change rendered frontend behavior.
+Complete the bilingual visual review for Issue 006. After explicit approval,
+close it out and unlock Issue 007. All seven issues carry the mandatory
+`visual-review` gate because they change rendered frontend behavior.
