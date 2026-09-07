@@ -1,0 +1,1160 @@
+Πάμε λοιπόν στο **Ingredient Composition Schema**. Αυτό είναι το θεμέλιο όλου του εργαλείου: κάθε υλικό πρέπει να μεταφράζεται σε ένα κοινό, λειτουργικό λεξιλόγιο.
+
+Ο στόχος δεν είναι να αποθηκεύσουμε απλώς διατροφικά στοιχεία. Θέλουμε να αποθηκεύσουμε **ό,τι επηρεάζει τη συμπεριφορά της ζύμης**.
+
+## 1. Η βασική αρχή
+
+Κάθε ingredient \(I\) θα περιγράφεται ως:
+
+$$
+I =
+\{
+\text{composition},
+\text{functional properties},
+\text{physical properties},
+\text{metadata}
+\}
+$$
+
+Το σημαντικότερο layer είναι το `composition`.
+
+Για 100 g υλικού θέλουμε ουσιαστικά:
+
+$$
+100 =
+W + F + P + C + Fiber + Minerals + Other
+$$
+
+όπου:
+
+* \(W\): νερό
+* \(F\): λίπος
+* \(P\): πρωτεΐνη
+* \(C\): υδατάνθρακες
+
+Αλλά αυτή η ανάλυση είναι ακόμη πολύ γενική για baking. Πρέπει να σπάσουμε αρκετές από αυτές τις κατηγορίες.
+
+---
+
+# 2. Water
+
+Το πρώτο primitive:
+
+$$
+\boxed{water}
+$$
+
+σε g/100 g ingredient.
+
+Παραδείγματα:
+
+* νερό → 100
+* γάλα → ~87
+* αυγό → ~75
+* βούτυρο → ~16
+* μέλι → ~17–20
+
+Αυτό θα χρησιμοποιείται για:
+
+$$
+TotalWater
+$$
+
+και έπειτα για hydration calculations.
+
+Θα κρατούσα χωριστά αργότερα και:
+
+$$
+waterActivity
+$$
+
+αλλά **όχι ως composition primitive**, γιατί το \(a_w\) είναι ιδιότητα ολόκληρου του συστήματος και όχι απλώς ποσότητα νερού.
+
+---
+
+# 3. Fat
+
+Δεν αρκεί μόνο:
+
+$$
+totalFat
+$$
+
+Αρχικά όμως αυτό είναι απαραίτητο:
+
+$$
+\boxed{fatTotal}
+$$
+
+και προαιρετικά:
+
+* saturatedFat
+* monounsaturatedFat
+* polyunsaturatedFat
+
+Για την πρώτη έκδοση, τα τελευταία δεν είναι κρίσιμα για classification.
+
+Πολύ πιο σημαντικό είναι να ξέρουμε **τη φυσική κατάσταση του λίπους**.
+
+Άρα το ingredient πρέπει επίσης να έχει:
+
+$$
+fatBehavior
+$$
+
+π.χ.:
+
+* liquid
+* plastic
+* hard
+* variable
+
+Το βούτυρο και το ελαιόλαδο μπορεί να έχουν παρόμοια επίδραση ως προς το total fat αλλά πολύ διαφορετική λειτουργία σε creaming/lamination.
+
+---
+
+# 4. Carbohydrates
+
+Εδώ πρέπει να γίνει σημαντικός διαχωρισμός.
+
+Δεν θέλουμε απλώς:
+
+$$
+carbohydrate=70\%
+$$
+
+Θέλουμε τουλάχιστον:
+
+### Starch
+
+$$
+\boxed{starch}
+$$
+
+Κρίσιμο για:
+
+* gelatinization,
+* setting,
+* water absorption.
+
+### Sucrose
+
+$$
+\boxed{sucrose}
+$$
+
+Κοινή ζάχαρη.
+
+### Glucose
+
+$$
+\boxed{glucose}
+$$
+
+### Fructose
+
+$$
+\boxed{fructose}
+$$
+
+### Lactose
+
+$$
+\boxed{lactose}
+$$
+
+### Maltose
+
+$$
+\boxed{maltose}
+$$
+
+και πιθανώς:
+
+$$
+otherSugars
+$$
+
+Γιατί αυτό είναι σημαντικό;
+
+Επειδή τα σάκχαρα διαφέρουν σε:
+
+* γλυκύτητα,
+* υγροσκοπικότητα,
+* fermentability,
+* reducing capacity,
+* browning.
+
+Άρα:
+
+$$
+50g\ sucrose \neq 50g\ fructose
+$$
+
+λειτουργικά.
+
+---
+
+# 5. Fermentable sugars
+
+Θα απέφευγα να το αποθηκεύσουμε σαν ανεξάρτητο composition field.
+
+Καλύτερα να υπολογίζεται:
+
+$$
+FermentableSugar =
+f(glucose,fructose,sucrose,maltose,\ldots)
+$$
+
+για συγκεκριμένο microorganism.
+
+Για baker's yeast, π.χ., η lactose αντιμετωπίζεται διαφορετικά.
+
+Έτσι το μοντέλο παραμένει σωστό αν αργότερα προσθέσουμε sourdough cultures ή άλλους μικροοργανισμούς.
+
+---
+
+# 6. Protein — εδώ πρέπει να είμαστε πολύ προσεκτικοί
+
+Το:
+
+$$
+proteinTotal
+$$
+
+είναι χρήσιμο αλλά **δεν αρκεί καθόλου**.
+
+Θα κρατούσα:
+
+$$
+\boxed{proteinTotal}
+$$
+
+αλλά και functional subclasses.
+
+### Gluten-forming protein potential
+
+$$
+\boxed{glutenProtein}
+$$
+
+Αφορά κυρίως πρωτεΐνες σίτου που μπορούν να συμμετέχουν σε gluten network.
+
+Δεν σημαίνει ότι όλη η πρωτεΐνη του αλευριού είναι gluten protein.
+
+### Egg proteins
+
+$$
+\boxed{eggProtein}
+$$
+
+Χρήσιμες για:
+
+* foaming,
+* coagulation,
+* setting.
+
+### Dairy proteins
+
+$$
+\boxed{dairyProtein}
+$$
+
+με πιθανό μελλοντικό διαχωρισμό:
+
+* casein
+* whey protein.
+
+### Other structural proteins
+
+$$
+\boxed{otherProtein}
+$$
+
+π.χ. soy, pea κ.λπ.
+
+Έτσι το μοντέλο δεν θα κάνει το λάθος:
+
+> 12 g protein από αυγό = 12 g protein από bread flour.
+
+---
+
+# 7. Fiber
+
+$$
+\boxed{fiber}
+$$
+
+και ιδανικά αργότερα:
+
+* solubleFiber
+* insolubleFiber
+
+Γιατί επηρεάζει:
+
+* απορρόφηση νερού,
+* viscosity,
+* gluten dilution/interference,
+* crumb density.
+
+Ιδιαίτερα σημαντικό για:
+
+* whole wheat,
+* oat flour,
+* rye,
+* fruit powders,
+* cocoa.
+
+---
+
+# 8. Minerals / ash
+
+Θα κρατούσα:
+
+$$
+\boxed{ash}
+$$
+
+όπου είναι διαθέσιμο.
+
+Όχι επειδή το ash από μόνο του μπαίνει σε κάποια μαγική εξίσωση, αλλά επειδή είναι χρήσιμο proxy για:
+
+* extraction,
+* mineral content,
+* degree of refinement.
+
+Για το αλεύρι έχει ιδιαίτερη σημασία.
+
+---
+
+# 9. Salt / sodium chloride
+
+Το αλάτι πρέπει να υπάρχει ως καθαρό primitive:
+
+$$
+\boxed{NaCl}
+$$
+
+και όχι μόνο sodium.
+
+Γιατί η λειτουργική επίδραση στη ζύμη σχετίζεται με το πραγματικό salt load.
+
+Για σύνθετα υλικά, όπως:
+
+* salted butter,
+* cheese,
+* olives,
+
+θα πρέπει να μετατρέπεται το περιεχόμενο σε salt contribution.
+
+Έτσι:
+
+$$
+TotalSalt
+=
+\sum_i salt_i
+$$
+
+και δεν χρειάζεται ο classifier να ξέρει αν το αλάτι ήρθε από «αλάτι» ή από φέτα.
+
+---
+
+# 10. Acidity
+
+Εδώ θα απέφευγα ένα πολύ απλό:
+
+$$
+acid=3\%
+$$
+
+Γιατί η οξύτητα δεν περιγράφεται καλά μόνο ως ποσότητα.
+
+Θέλουμε τουλάχιστον δύο πράγματα:
+
+### pH
+
+$$
+\boxed{pH}
+$$
+
+και
+
+### Titratable acidity / acid neutralization capacity
+
+$$
+\boxed{acidCapacity}
+$$
+
+Το δεύτερο είναι πολύ σημαντικό για baking soda.
+
+Δύο υλικά μπορούν να έχουν παρόμοιο pH αλλά διαφορετική συνολική ποσότητα οξέος.
+
+Άρα:
+
+$$
+pH \neq total\ acidity
+$$
+
+Για τη soda μας ενδιαφέρει περισσότερο:
+
+> πόσο bicarbonate μπορεί πραγματικά να εξουδετερώσει το ingredient.
+
+---
+
+# 11. Leavening chemistry
+
+Τα διογκωτικά δεν πρέπει να αντιμετωπίζονται σαν απλά nutrients.
+
+Για baking soda:
+
+$$
+\boxed{bicarbonateEquivalent}
+$$
+
+Για baking powder χρειαζόμαστε functional metadata:
+
+* gas yield
+* acid balance
+* reaction stages
+
+π.χ.:
+
+$$
+reactionProfile =
+(\text{cold fraction},\text{heat fraction})
+$$
+
+Έτσι ένα double-acting baking powder μπορεί να περιγραφεί διαφορετικά από soda.
+
+---
+
+# 12. Emulsifiers
+
+Θα πρόσθετα:
+
+$$
+\boxed{emulsifierCapacity}
+$$
+
+ή καλύτερα αρχικά συγκεκριμένα component amounts, όπου υπάρχουν:
+
+* lecithin
+* mono/diglycerides
+* other emulsifiers
+
+Ο κρόκος, για παράδειγμα, φέρνει phospholipids που έχουν πολύ σημαντική λειτουργία.
+
+Δεν χρειάζεται από την πρώτη έκδοση να δημιουργήσουμε τέλεια φυσικοχημική μοντελοποίηση emulsification.
+
+Αλλά το schema πρέπει να μπορεί να το εκφράσει.
+
+---
+
+# 13. Alcohol
+
+Θα έβαζα επίσης:
+
+$$
+\boxed{ethanol}
+$$
+
+για ingredients όπως:
+
+* λικέρ,
+* κρασί,
+* μπύρα.
+
+Γιατί επηρεάζει:
+
+* solvent behavior,
+* gluten development,
+* evaporation,
+* flavor.
+
+Δεν είναι βασικό για τα περισσότερα προϊόντα, αλλά κοστίζει ελάχιστα να υπάρχει στο schema.
+
+---
+
+# 14. Organic solids / fruit solids
+
+Εδώ δεν θέλουμε να δημιουργήσουμε εκατό ειδικές κατηγορίες.
+
+Θα μπορούσαμε να έχουμε:
+
+$$
+\boxed{otherSolids}
+$$
+
+αλλά μόνο ως fallback.
+
+Π.χ. puree μπανάνας πρέπει όσο γίνεται να αναλυθεί σε:
+
+* water,
+* sugars,
+* starch,
+* fiber,
+* acid,
+* protein,
+* minerals.
+
+Το `otherSolids` θα είναι μόνο ό,τι δεν έχουμε καλύτερο τρόπο να χαρακτηρίσουμε.
+
+---
+
+# 15. Ingredient physical properties
+
+Τώρα περνάμε πέρα από τη χημική σύνθεση.
+
+Για κάθε υλικό θα ήθελα:
+
+### Physical state
+
+$$
+solid,\ liquid,\ semiSolid,\ powder
+$$
+
+### Fat state
+
+όπου υπάρχει λίπος:
+
+$$
+liquid,\ plastic,\ solid
+$$
+
+### Particle type
+
+ιδιαίτερα για powders:
+
+* fine
+* coarse
+* flakes
+* granules
+
+Δεν είναι απαραίτητο για τον πρώτο classifier, αλλά είναι πολύ χρήσιμο για μελλοντική πρόβλεψη απορρόφησης και texture.
+
+---
+
+# 16. Ingredient functional tags
+
+Παράλληλα θα επέτρεπα tags όπως:
+
+* flour
+* fat
+* dairy
+* egg
+* sweetener
+* acid
+* leavener
+* inclusion
+* starch
+* hydrocolloid
+* emulsifier
+
+Προσοχή όμως:
+
+> Τα tags είναι για taxonomy/UI, όχι για τους υπολογισμούς.
+
+Οι πραγματικοί υπολογισμοί πρέπει να βασίζονται στη composition.
+
+Έτσι το `Greek yogurt` μπορεί να έχει tag:
+
+> dairy, acid
+
+αλλά η μηχανή δουλεύει από:
+
+> water + protein + fat + lactose + acidCapacity.
+
+---
+
+# 17. Τα άλευρα χρειάζονται extension schema
+
+Το flour είναι τόσο σημαντικό που θα του έδινα επιπλέον properties.
+
+### Protein
+
+$$
+proteinTotal
+$$
+
+### Gluten-forming potential
+
+αν μπορούμε να το εκτιμήσουμε.
+
+### W
+
+$$
+W
+$$
+
+### P/L
+
+$$
+P/L
+$$
+
+### Ash
+
+$$
+ash
+$$
+
+### Moisture
+
+### Fiber
+
+### Damaged starch
+
+αν υπάρχει διαθέσιμο.
+
+### Extraction / refinement class
+
+π.χ.:
+
+* refined
+* semi-whole
+* whole.
+
+### Grain
+
+* common wheat
+* durum
+* rye
+* oat
+* corn
+* rice
+* buckwheat...
+
+Αυτό είναι σημαντικό γιατί το:
+
+$$
+Flour=100\%
+$$
+
+δεν σημαίνει απαραίτητα wheat flour.
+
+---
+
+# 18. Composite flour
+
+Θα πρέπει να υποστηρίζεται από την αρχή.
+
+Π.χ.:
+
+* 70% bread flour
+* 20% whole wheat
+* 10% rye
+
+Το συνολικό flour base παραμένει:
+
+$$
+100\%
+$$
+
+αλλά οι flour properties προκύπτουν από το blend.
+
+Π.χ.:
+
+$$
+Protein_{blend}
+=
+0.7P_1+0.2P_2+0.1P_3
+$$
+
+Για W/P-L τα πράγματα δεν είναι πάντα τόσο γραμμικά, οπότε εκεί θα χρησιμοποιούμε approximation και χαμηλότερο confidence.
+
+---
+
+# 19. Ingredient variability
+
+Αυτό είναι απαραίτητο.
+
+«Γιαούρτι» δεν έχει μία σύσταση.
+
+Μπορεί να είναι:
+
+* 0% fat
+* 2%
+* 5%
+* 10%
+* στραγγιστό
+* μη στραγγιστό.
+
+Άρα κάθε ingredient profile πρέπει να μπορεί να είναι:
+
+### Generic
+
+π.χ.:
+
+> Whole milk, typical
+
+ή:
+
+### Specific
+
+π.χ.:
+
+> brand/product profile supplied by user.
+
+Ο χρήστης θα μπορεί αργότερα να εισαγάγει τα στοιχεία της ετικέτας.
+
+---
+
+# 20. Confidence per ingredient
+
+Κάθε ingredient profile θα έχει:
+
+$$
+confidence
+$$
+
+π.χ.:
+
+* exact laboratory/product data → 1.0
+* nutrition label → 0.9
+* generic database average → 0.75
+* inferred estimate → 0.5
+
+Έτσι η αβεβαιότητα μπορεί να προωθείται μέχρι το τελικό αποτέλεσμα.
+
+---
+
+# 21. Το βασικό schema σε compact μορφή
+
+Θα το έβλεπα περίπου έτσι εννοιολογικά:
+
+```text
+Ingredient
+│
+├── Identity
+│   ├── name
+│   ├── category
+│   └── source / confidence
+│
+├── Composition (g / 100 g)
+│   ├── water
+│   ├── fatTotal
+│   ├── proteinTotal
+│   │   ├── glutenProtein
+│   │   ├── eggProtein
+│   │   ├── dairyProtein
+│   │   └── otherProtein
+│   │
+│   ├── carbohydrates
+│   │   ├── starch
+│   │   ├── sucrose
+│   │   ├── glucose
+│   │   ├── fructose
+│   │   ├── lactose
+│   │   ├── maltose
+│   │   └── otherSugars
+│   │
+│   ├── fiber
+│   ├── salt
+│   ├── ash
+│   ├── ethanol
+│   └── otherSolids
+│
+├── Chemistry
+│   ├── pH
+│   ├── acidCapacity
+│   ├── bicarbonateEquivalent
+│   └── emulsifierContent
+│
+├── Physical
+│   ├── state
+│   ├── fatState
+│   └── particleCharacteristics
+│
+└── Baking-specific extensions
+    ├── flourProperties
+    ├── leaveningProperties
+    └── functionalTags
+```
+
+---
+
+# 22. Ένα παράδειγμα: βούτυρο
+
+Για 100 g τυπικού βουτύρου:
+
+$$
+Water\approx16
+$$
+
+$$
+Fat\approx82
+$$
+
+και:
+
+* λίγα milk solids,
+* μικρή dairy protein,
+* μικρή lactose.
+
+Physical:
+
+$$
+state=semiSolid
+$$
+
+$$
+fatState=plastic
+$$
+
+Αυτό είναι αρκετό ώστε το σύστημα να ξέρει ότι 50 g butter φέρνουν περίπου:
+
+$$
+41g\ fat
+$$
+
+και:
+
+$$
+8g\ water
+$$
+
+χωρίς ο classifier να έχει ειδικό κανόνα για «butter».
+
+---
+
+# 23. Γιαούρτι
+
+Έστω ένα συγκεκριμένο γιαούρτι:
+
+$$
+Water=78
+$$
+
+$$
+Fat=10
+$$
+
+$$
+Protein=7
+$$
+
+$$
+Lactose=4
+$$
+
+συν:
+
+$$
+pH\approx4.4
+$$
+
+και κάποια:
+
+$$
+acidCapacity
+$$
+
+Άρα όταν ο χρήστης βάλει:
+
+$$
+40\%\ yogurt
+$$
+
+το εργαλείο θα υπολογίσει αυτόματα περίπου:
+
+$$
+31.2\%\ water
+$$
+
+$$
+4\%\ fat
+$$
+
+$$
+2.8\%\ dairyProtein
+$$
+
+κ.λπ.
+
+Αυτό είναι ακριβώς το \(g()\) που συζητούσαμε.
+
+---
+
+# 24. Αυγό
+
+100 g whole egg:
+
+$$
+Water\approx75
+$$
+
+$$
+Fat\approx10
+$$
+
+$$
+EggProtein\approx12
+$$
+
+και:
+
+$$
+EmulsifierContent>0
+$$
+
+Αν χρησιμοποιηθεί μόνο κρόκος, το composition αλλάζει δραματικά.
+
+Άρα έχουμε τρία διαφορετικά ingredients:
+
+* whole egg
+* egg white
+* egg yolk
+
+και όχι «egg με κάποιο option».
+
+---
+
+# 25. Κακάο — γιατί αποδεικνύει ότι χρειαζόμαστε αυτό το schema
+
+Αρχικά είχες πει ότι ίσως τα flavor ingredients μπορούμε να τα αγνοήσουμε.
+
+Το κακάο δείχνει γιατί όχι.
+
+Μπορεί να φέρνει σημαντικά:
+
+* protein,
+* fat,
+* starch/other carbohydrates,
+* πολύ fiber,
+* acidity ή alkalinity,
+* πολύ μεγάλη water absorption.
+
+Άρα αν βάλεις:
+
+$$
+20\%\ cocoa
+$$
+
+δεν είναι απλώς flavor.
+
+Μπορεί να αλλάξει:
+
+* hydration,
+* viscosity,
+* soda requirement,
+* setting,
+* texture.
+
+Ακριβώς το ίδιο ισχύει για αρκετά «πρόσθετα».
+
+---
+
+# 26. Inclusions vs structural ingredients
+
+Εδώ θα έκανα μία πολύ χρήσιμη διάκριση.
+
+### Structural ingredient
+
+Συμμετέχει ουσιαστικά στη continuous phase της ζύμης.
+
+Π.χ.:
+
+* cocoa powder
+* milk powder
+* honey
+* yogurt
+
+### Inclusion
+
+Παραμένει περισσότερο ξεχωριστό σώμα:
+
+* chocolate chips
+* olives
+* nuts
+* raisins
+* cheese cubes.
+
+Για ένα inclusion εξακολουθούμε να ξέρουμε τη σύνθεσή του, αλλά δεν πρέπει να θεωρούμε ότι όλο το νερό/λίπος του είναι άμεσα διαθέσιμο στη ζύμη.
+
+Αυτό είναι πολύ σημαντικό.
+
+---
+
+# 27. Άρα χρειαζόμαστε availability coefficients
+
+Αυτό είναι ίσως το σημαντικότερο refinement του schema.
+
+Ένα ingredient μπορεί να περιέχει:
+
+$$
+20g\ water
+$$
+
+αλλά δεν σημαίνει ότι όλο αυτό το νερό είναι διαθέσιμο στο flour κατά το mixing.
+
+Άρα μπορούμε αργότερα να έχουμε:
+
+$$
+WaterAvailabilityCoefficient
+$$
+
+π.χ.:
+
+$$
+0\leq A_w\leq1
+$$
+
+και:
+
+$$
+EffectiveWater_i
+=
+Water_i\times A_{w,i}
+$$
+
+Το ίδιο ενδεχομένως για:
+
+* fat availability,
+* sugar availability.
+
+Δεν θα επιχειρούσα ακόμη να δώσουμε αριθμούς σε αυτά, αλλά **το schema πρέπει να προβλέπει τη δυνατότητα**.
+
+---
+
+# 28. Αυτό μας διορθώνει και την έννοια του effective hydration
+
+Μέχρι τώρα χρησιμοποιούσαμε:
+
+$$
+H=
+\frac{\text{total ingredient water}}{\text{flour}}
+$$
+
+ως καλή πρώτη προσέγγιση.
+
+Στο τελικό μοντέλο θα έχουμε τουλάχιστον:
+
+### Total hydration
+
+$$
+H_t=
+\frac{\sum Water_i}{Flour}
+$$
+
+και αργότερα:
+
+### Effective hydration
+
+$$
+H_e=
+\frac{\sum Water_iA_{w,i}}{Flour}
+$$
+
+Αυτό είναι πολύ καλύτερο conceptual model.
+
+---
+
+# 29. Τι ΔΕΝ θα έβαζα ακόμη
+
+Για να μην κάνουμε overengineering, στην πρώτη έκδοση δεν θα προσπαθούσα να αποθηκεύσουμε:
+
+* κάθε μεμονωμένο αμινοξύ,
+* κάθε fatty acid,
+* κάθε mineral,
+* πλήρες rheological profile,
+* detailed thermal curves,
+* gelatinization temperatures για κάθε ingredient,
+* πλήρη water sorption isotherms.
+
+Θα μπορούσαν αργότερα να προστεθούν.
+
+Το schema πρέπει να είναι **extensible**, όχι να προσπαθήσει από την πρώτη ημέρα να γίνει εργαστήριο food science.
+
+---
+
+# 30. Το Minimum Scientific Core
+
+Αν έπρεπε να μειώσω όλο το παραπάνω στα απολύτως απαραίτητα fields για V1, θα ήταν:
+
+$$
+\boxed{
+Water
+}
+$$
+
+$$
+\boxed{
+Fat
+}
+$$
+
+$$
+\boxed{
+Starch
+}
+$$
+
+$$
+\boxed{
+GlutenProtein
+}
+$$
+
+$$
+\boxed{
+OtherProtein
+}
+$$
+
+$$
+\boxed{
+Sucrose
+}
+$$
+
+$$
+\boxed{
+Glucose
+}
+$$
+
+$$
+\boxed{
+Fructose
+}
+$$
+
+$$
+\boxed{
+Lactose
+}
+$$
+
+$$
+\boxed{
+Fiber
+}
+$$
+
+$$
+\boxed{
+Salt
+}
+$$
+
+$$
+\boxed{
+AcidCapacity
+}
+$$
+
+$$
+\boxed{
+Emulsifier
+}
+$$
+
+συν ειδικά properties για:
+
+* flour,
+* leavener,
+* physical state.
+
+Με αυτά μπορούμε ήδη να περιγράψουμε πολύ μεγάλο μέρος του baking universe.
+
+Το **αμέσως επόμενο βήμα** πλέον είναι πιο ενδιαφέρον: να πάρουμε αυτά τα primitives και να ορίσουμε **ακριβώς τους Derived Metrics**. Δηλαδή ποια μεγέθη θα παράγει το \(g()\): Total Hydration, Effective Hydration, Total Fat, Sugar Load, Effective Gluten Potential, Structural Protein, Enrichment, Tenderizing Load κ.λπ., και κυρίως να αποφασίσουμε ποια από αυτά είναι πραγματικές φυσικές ποσότητες και ποια είναι δικοί μας heuristic indices.

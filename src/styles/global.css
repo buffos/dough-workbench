@@ -1,0 +1,11 @@
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  font-size: 112.5%;
+}
+
+::selection {
+  background: #d9b09a;
+  color: #243d33;
+}

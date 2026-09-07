@@ -1,0 +1,1165 @@
+Πάμε λοιπόν στο **Similarity / Distance Model**. Αυτό είναι το κομμάτι που μετατρέπει τα derived metrics σε «πόσο μοιάζει με brioche, cake, crêpe κ.λπ.».
+
+Η πρώτη σημαντική διόρθωση είναι αυτή:
+
+> Το 84% δεν πρέπει να σημαίνει «84% πιθανότητα ότι είναι brioche».
+
+Καλύτερα να σημαίνει:
+
+$$
+\boxed{\text{84% similarity / membership to the brioche prototype}}
+$$
+
+Γιατί δεν κάνουμε στατιστική πρόβλεψη πιθανότητας· μετράμε ομοιότητα με έναν ορισμένο αρχέτυπο.
+
+---
+
+# 1. Το πρόβλημα μαθηματικά
+
+Έστω ότι η φόρμουλα μετατρέπεται στο vector:
+
+$$
+X=(x_1,x_2,\ldots,x_n)
+$$
+
+π.χ.
+
+$$
+X=
+(H,Fat,Sugar,Egg,GPI,EI,FI,\ldots)
+$$
+
+Και το brioche έχει ένα prototype:
+
+$$
+B=(B_1,B_2,\ldots,B_n)
+$$
+
+Δεν θέλουμε όμως απλώς Euclidean distance:
+
+$$
+d(X,B)=
+\sqrt{\sum_i(x_i-B_i)^2}
+$$
+
+γιατί αυτό έχει αρκετά προβλήματα.
+
+---
+
+# 2. Γιατί η απλή Euclidean distance είναι κακή
+
+Έστω:
+
+* hydration = 60
+* fat = 50
+* yeast presence = 1
+* lamination = 0
+
+Δεν έχουν όλες οι μεταβλητές:
+
+* ίδια κλίμακα,
+* ίδια σημασία,
+* ίδια μορφή.
+
+Επιπλέον, το brioche δεν έχει «ιδανικό fat = ακριβώς 52.3%».
+
+Υπάρχει μια περιοχή:
+
+$$
+30\%-70\%
+$$
+
+με κάποια περιοχή που είναι περισσότερο χαρακτηριστική από άλλες.
+
+Άρα χρειαζόμαστε **membership functions ανά dimension**.
+
+---
+
+# 3. Membership function
+
+Για κάθε:
+
+$$
+\text{category } k
+$$
+
+και κάθε metric:
+
+$$
+j
+$$
+
+ορίζουμε:
+
+$$
+\mu_{kj}(x)
+$$
+
+με:
+
+$$
+0\leq\mu_{kj}(x)\leq1
+$$
+
+που απαντά:
+
+> Πόσο συμβατή είναι αυτή η τιμή με αυτή την κατηγορία;
+
+Παράδειγμα για fat στο brioche:
+
+| Fat | Membership |
+| --: | ---------: |
+|  5% |       0.00 |
+| 15% |       0.10 |
+| 30% |       0.60 |
+| 45% |       0.95 |
+| 55% |       1.00 |
+| 70% |       0.80 |
+| 90% |       0.20 |
+
+Άρα:
+
+$$
+\mu_{\text{Brioche,Fat}}(55)=1
+$$
+
+ενώ:
+
+$$
+\mu_{\text{Brioche,Fat}}(10)\approx0
+$$
+
+---
+
+# 4. Τι σχήμα πρέπει να έχει η membership function;
+
+Υπάρχουν αρκετές καλές επιλογές.
+
+### Triangular
+
+Απλή:
+
+$$
+\mu(x)=
+\begin{cases}
+0 & x<a\\
+\dfrac{x-a}{b-a} & a\le x<b\\
+\dfrac{c-x}{c-b} & b\le x<c\\
+0 & x\ge c
+\end{cases}
+$$
+
+με:
+
+* \(a\) lower limit
+* \(b\) optimum
+* \(c\) upper limit
+
+Είναι εύκολη αλλά αρκετά «γωνιώδης».
+
+---
+
+# 5. Trapezoidal membership
+
+Προτιμότερη για πολλές baking κατηγορίες.
+
+Έχουμε:
+
+$$
+a<b<c<d
+$$
+
+και:
+
+* κάτω από \(a\): 0
+* \(a\rightarrow b\): αυξάνει
+* \(b\rightarrow c\): πλήρης compatibility
+* \(c\rightarrow d\): πέφτει
+* πάνω από \(d\): 0
+
+Έτσι μπορούμε να πούμε:
+
+> Για brioche, 45–60% fat είναι απολύτως τυπικό.
+
+χωρίς να ισχυριζόμαστε ότι υπάρχει μία μαγική τιμή.
+
+---
+
+# 6. Gaussian membership
+
+Για άλλες μεταβλητές θα ήταν ωραίο:
+
+$$
+\mu(x)
+=
+e^{-\frac{(x-c)^2}{2\sigma^2}}
+$$
+
+όπου:
+
+* \(c\) = typical center
+* \(\sigma\) = πόσο μεγάλη διασπορά επιτρέπουμε.
+
+Πλεονέκτημα: πολύ ομαλή συμπεριφορά.
+
+Δεν έχει απότομα boundaries.
+
+Αλλά είναι λιγότερο εύκολο να εξηγηθεί στον χρήστη.
+
+---
+
+# 7. Δεν χρειάζεται μία μορφή για όλα
+
+Αυτό είναι σημαντικό.
+
+Θα επέτρεπα διαφορετικό membership type ανά feature.
+
+Π.χ.:
+
+### Fat in brioche
+
+Trapezoidal.
+
+### Fluidity in crêpe
+
+Gaussian ή trapezoidal.
+
+### Yeast required
+
+Categorical constraint.
+
+### Lamination
+
+Boolean.
+
+Άρα το prototype schema πρέπει να μπορεί να δηλώνει διαφορετικό matcher.
+
+---
+
+# 8. Weighted aggregation
+
+Έστω ότι για brioche έχουμε:
+
+$$
+\mu_H=0.8
+$$
+
+$$
+\mu_{Fat}=0.95
+$$
+
+$$
+\mu_{Sugar}=0.9
+$$
+
+$$
+\mu_{Egg}=0.85
+$$
+
+$$
+\mu_{GPI}=0.9
+$$
+
+Δεν θέλουμε απλώς:
+
+$$
+\frac{0.8+0.95+0.9+0.85+0.9}{5}
+$$
+
+γιατί δεν είναι όλα εξίσου σημαντικά.
+
+Θέλουμε:
+
+$$
+S_k=
+\frac{\sum_jw_{kj}\mu_{kj}(x_j)}
+{\sum_jw_{kj}}
+$$
+
+όπου:
+
+$$
+w_{kj}
+$$
+
+είναι η σημασία του metric.
+
+---
+
+# 9. Παράδειγμα brioche
+
+Θα μπορούσε να έχει:
+
+| Metric           | Weight |
+| ---------------- | -----: |
+| Gluten potential |    1.5 |
+| Fat              |    2.0 |
+| Egg              |    1.5 |
+| Sugar            |    1.0 |
+| Hydration        |    0.8 |
+| Enrichment       |    1.5 |
+| Yeast            |    3.0 |
+
+Το yeast παίρνει πολύ μεγάλο βάρος γιατί είναι ουσιαστικό χαρακτηριστικό.
+
+Αλλά αυτό μόνο του ακόμα δεν αρκεί.
+
+---
+
+# 10. Γιατί ένα weighted average μπορεί να αποτύχει
+
+Έστω φόρμουλα:
+
+* τέλειο brioche σε όλα,
+* αλλά **χωρίς μαγιά**.
+
+Αν όλα τα άλλα metrics είναι 0.95–1.0 και yeast=0, το weighted average μπορεί ακόμα να βγάλει:
+
+> Brioche similarity 78%
+
+που είναι παραπλανητικό.
+
+Άρα χρειαζόμαστε **constraints / penalties**.
+
+---
+
+# 11. Hard constraints
+
+Μερικά χαρακτηριστικά είναι σχεδόν απαραίτητα.
+
+Για brioche:
+
+$$
+Yeast = true
+$$
+
+Για croissant:
+
+$$
+Lamination=true
+$$
+
+Για crêpe:
+
+$$
+Fluidity \gg dough
+$$
+
+Για sponge:
+
+$$
+FoamProcess=true
+$$
+
+Αν λείπει ένα hard requirement, μπορούμε να κάνουμε:
+
+$$
+S'_k=S_kP_k
+$$
+
+όπου \(P_k\) είναι penalty.
+
+Π.χ.:
+
+$$
+P_k=0.2
+$$
+
+αν λείπει essential yeast.
+
+---
+
+# 12. Προτιμώ όμως «near-hard constraints»
+
+Θα απέφευγα τα απόλυτα:
+
+```text
+if yeast == false:
+    brioche = 0
+```
+
+γιατί θέλουμε το εργαλείο να μπορεί να πει:
+
+> Compositionally very brioche-like, but it lacks yeast and therefore does not qualify as canonical brioche.
+
+Άρα δύο scores:
+
+### Composition similarity
+
+$$
+S_C=0.91
+$$
+
+### Canonical identity similarity
+
+$$
+S_I=0.18
+$$
+
+Αυτό είναι πολύ καλύτερο.
+
+---
+
+# 13. Δύο διαφορετικά scores
+
+Θα έβγαζα για κάθε named product:
+
+### Formula Similarity
+
+Πόσο μοιάζουν τα ratios:
+
+$$
+S_F
+$$
+
+### Process Compatibility
+
+Πόσο ταιριάζει η τεχνική:
+
+$$
+S_P
+$$
+
+και μετά:
+
+$$
+S_{final}=f(S_F,S_P)
+$$
+
+Παράδειγμα:
+
+> Brioche
+> Formula similarity: 92%
+> Process compatibility: 40%
+> Overall: 61%
+
+και explanation:
+
+> Formula is highly brioche-like, but no yeast fermentation and no late butter incorporation were specified.
+
+Αυτό είναι εξαιρετικά εκπαιδευτικό.
+
+---
+
+# 14. Πώς συνδυάζουμε Formula + Process
+
+Δεν θα χρησιμοποιούσα απλό average.
+
+Π.χ.:
+
+$$
+\frac{0.9+0.1}{2}=0.5
+$$
+
+Μπορεί να είναι υπερβολικά επιεικές.
+
+Θα μπορούσαμε να χρησιμοποιήσουμε geometric mean:
+
+$$
+S=
+S_F^\alpha S_P^\beta
+$$
+
+π.χ.:
+
+$$
+S=\sqrt{S_FS_P}
+$$
+
+Αν:
+
+$$
+S_F=0.9,\quad S_P=0.1
+$$
+
+τότε:
+
+$$
+S=0.30
+$$
+
+που αποδίδει καλύτερα το γεγονός ότι το process είναι εντελώς λάθος.
+
+---
+
+# 15. Feature interactions
+
+Εδώ είναι το δυσκολότερο σημείο.
+
+Δεν είναι όλα τα features ανεξάρτητα.
+
+Π.χ.:
+
+$$
+Fat=60\%
+$$
+
+έχει διαφορετική σημασία όταν:
+
+$$
+Water=10\%
+$$
+
+από όταν:
+
+$$
+Water=60\%
+$$
+
+Στην πρώτη περίπτωση πλησιάζεις short dough.
+
+Στη δεύτερη μπορείς να είσαι brioche.
+
+Άρα:
+
+$$
+S\neq \sum_jf_j(x_j)
+$$
+
+μόνο.
+
+Χρειαζόμαστε και interaction terms.
+
+---
+
+# 16. Pairwise interaction rules
+
+Θα ξεκινούσα απλά με ορισμένα σημαντικά pairs.
+
+Π.χ.:
+
+### Fat × Hydration
+
+$$
+I_{FH}=f(Fat,H)
+$$
+
+### Sugar × Water
+
+$$
+I_{SW}=f(Sugar,H)
+$$
+
+### GlutenPotential × Fat
+
+$$
+I_{GF}=f(GPI,Fat)
+$$
+
+### Egg × Water
+
+$$
+I_{EW}=f(Egg,H)
+$$
+
+### Leavening × Retention
+
+$$
+I_{LG}=f(GasGeneration,GRC)
+$$
+
+Δεν θα κάναμε όλους τους δυνατούς συνδυασμούς.
+
+Μόνο αυτούς που έχουν πραγματική baking σημασία.
+
+---
+
+# 17. Prototype space αντί για απλούς κανόνες
+
+Για κάθε family μπορούμε να έχουμε:
+
+$$
+P_k=
+(\mu_1,\mu_2,\ldots,\mu_n,I_1,\ldots)
+$$
+
+Άρα το prototype δεν είναι ένα σημείο αλλά:
+
+> μια περιοχή με shape.
+
+Αυτό είναι πολύ κοντά στην πραγματικότητα.
+
+---
+
+# 18. Missing data
+
+Πολύ σημαντικό.
+
+Έστω ο χρήστης δεν ξέρει:
+
+* W του αλευριού
+* P/L
+* exact yogurt composition
+
+Δεν πρέπει να θεωρήσουμε:
+
+$$
+W=0
+$$
+
+Απλώς το dimension λείπει.
+
+Άρα:
+
+$$
+S_k=
+\frac{
+\sum_{j\in available}w_j\mu_j
+}{
+\sum_{j\in available}w_j
+}
+$$
+
+και παράλληλα μειώνεται το confidence.
+
+---
+
+# 19. Coverage score
+
+Θα υπολόγιζα:
+
+$$
+Coverage_k=
+\frac{
+\sum_{available}w_j
+}{
+\sum_{all}w_j
+}
+$$
+
+Π.χ.:
+
+$$
+Similarity=0.86
+$$
+
+αλλά:
+
+$$
+Coverage=0.61
+$$
+
+τότε το UI λέει:
+
+> Brioche similarity: 86%
+> Confidence: moderate — several flour/process properties are unknown.
+
+---
+
+# 20. Ingredient uncertainty
+
+Έστω:
+
+> Greek yogurt generic
+
+με uncertain water:
+
+$$
+75\%-82\%
+$$
+
+Δεν θα χρησιμοποιούσα μία ψεύτικη τιμή 78.5 και τέλος.
+
+Μπορούμε να προωθήσουμε uncertainty.
+
+Π.χ.:
+
+$$
+H=59-62\%
+$$
+
+και μετά:
+
+$$
+S_{brioche}=0.81-0.86
+$$
+
+Αυτό είναι πολύ πιο επιστημονικά τίμιο.
+
+Για V1 μπορούμε απλώς να χρησιμοποιούμε central estimate + confidence.
+
+Αργότερα μπορούμε να κάνουμε Monte Carlo uncertainty propagation.
+
+---
+
+# 21. Η ιδέα του Monte Carlo
+
+Σε advanced έκδοση:
+
+αν κάθε ingredient έχει distribution:
+
+$$
+Water_{yogurt}\sim N(78,2)
+$$
+
+$$
+Fat_{egg}\sim N(10,0.5)
+$$
+
+κ.λπ.,
+
+τρέχουμε πολλές δειγματοληψίες:
+
+$$
+X_1,X_2,\ldots,X_{10000}
+$$
+
+και παίρνουμε distribution της similarity.
+
+Τότε μπορούμε να πούμε:
+
+> Brioche similarity: 83%
+> 90% uncertainty interval: 78–87%
+
+Αυτό θα ήταν καταπληκτικό, αλλά όχι V1.
+
+---
+
+# 22. Hierarchical scoring
+
+Θα έκανα classification από πάνω προς τα κάτω.
+
+Πρώτα:
+
+$$
+S(\text{Gluten dough})
+$$
+
+$$
+S(\text{Batter})
+$$
+
+$$
+S(\text{Short/fat structured})
+$$
+
+$$
+S(\text{Foam})
+$$
+
+κ.λπ.
+
+Μετά, αν:
+
+$$
+S(\text{Gluten dough})=0.93
+$$
+
+εξετάζουμε:
+
+* stiff
+* lean
+* enriched
+* laminated
+
+και μετά:
+
+* brioche
+* challah
+* tsoureki...
+
+Αυτό αποφεύγει παράξενες συγκρίσεις όπως brioche vs crêpe στο ίδιο επίπεδο.
+
+---
+
+# 23. Parent score ως prior
+
+Μπορούμε να έχουμε:
+
+$$
+S_{child}^{final}
+=
+S_{parent}^{\alpha}
+\times
+S_{child|parent}^{\beta}
+$$
+
+Π.χ.:
+
+$$
+S_{\text{EnrichedDough}}=0.9
+$$
+
+και:
+
+$$
+S_{\text{Brioche|Enriched}}=0.85
+$$
+
+τότε το τελικό brioche score εξαρτάται και από τα δύο.
+
+Έτσι ένα προϊόν που δεν μοιάζει καν με enriched yeast dough δεν μπορεί ξαφνικά να βγει brioche επειδή έχει πολύ βούτυρο.
+
+---
+
+# 24. Named products vs family prototypes
+
+Εδώ θα χρησιμοποιούσα διαφορετική αυστηρότητα.
+
+### Family prototypes
+
+Πιο broad.
+
+Π.χ.:
+
+> enriched yeast dough
+
+### Named products
+
+Πιο narrow.
+
+Π.χ.:
+
+> brioche
+
+Άρα είναι φυσιολογικό να έχουμε:
+
+$$
+EnrichedYeastDough=0.94
+$$
+
+$$
+Brioche=0.72
+$$
+
+$$
+Challah=0.65
+$$
+
+Δεν χρειάζεται να πάρει 90% σε συγκεκριμένο named product.
+
+---
+
+# 25. Similarity δεν χρειάζεται να αθροίζει σε 100%
+
+Πολύ σημαντικό.
+
+Μπορεί να έχουμε:
+
+* brioche 82%
+* tsoureki 76%
+* challah 64%
+
+και αυτό είναι απολύτως λογικό.
+
+Δεν είναι probabilities.
+
+Δεν χρειάζεται:
+
+$$
+82+76+64=100
+$$
+
+Κάθε ένα είναι ανεξάρτητο fuzzy membership.
+
+---
+
+# 26. Αυτό είναι καλύτερο από softmax classification
+
+Αν κάναμε softmax, θα αναγκαζόμασταν να πούμε:
+
+> 55% brioche, 30% tsoureki, 15% challah
+
+ακόμη κι αν η φόρμουλα μοιάζει πραγματικά πολύ και με τα τρία.
+
+Δεν θέλουμε ανταγωνιστικές probabilities.
+
+Θέλουμε overlap.
+
+---
+
+# 27. Out-of-distribution detection
+
+Έστω μια παράξενη φόρμουλα:
+
+* 100 flour
+* 250 water
+* 90 butter
+* 130 sugar
+* yeast
+* BP
+* whipped eggs
+* lamination
+
+Μπορεί να μη μοιάζει σωστά με τίποτα.
+
+Άρα θέλουμε:
+
+$$
+M=\max_kS_k
+$$
+
+Αν:
+
+$$
+M<0.5
+$$
+
+π.χ., μπορούμε να πούμε:
+
+> No strong canonical match.
+
+και μετά να δώσουμε μόνο structural description:
+
+> High-fluidity, highly enriched hybrid batter/dough.
+
+Αυτό είναι πολύ καλύτερο από forced classification.
+
+---
+
+# 28. Contradiction penalties
+
+Μπορούμε επίσης να εντοπίζουμε εσωτερικές αντιφάσεις.
+
+Παράδειγμα:
+
+* fluidity = 95
+* lamination = true
+
+Αυτό είναι δύσκολο να συμβιβαστεί.
+
+Ή:
+
+* GPI = very low
+* 48h yeast fermentation
+* high gas generation
+
+→ πιθανό structural risk.
+
+Αυτά δεν επηρεάζουν απαραίτητα μόνο classification· μπορούν να εμφανίζονται ως diagnostics.
+
+---
+
+# 29. Explainability
+
+Θεωρώ απαραίτητο το classifier να μπορεί να εξηγήσει το αποτέλεσμα.
+
+Όχι:
+
+> Brioche: 84%
+
+αλλά:
+
+> **Brioche similarity: 84%**
+>
+> Strong matches:
+>
+> * high butter load
+> * high egg content
+> * strong gluten potential
+> * yeast fermentation
+>
+> Differences:
+>
+> * sugar lower than typical brioche
+> * hydration slightly high
+
+Αυτό μετατρέπει το εργαλείο από black box σε εκπαιδευτικό εργαλείο.
+
+---
+
+# 30. Contribution score
+
+Μαθηματικά μπορούμε να κρατάμε για κάθε feature:
+
+$$
+C_{kj}=w_{kj}\mu_{kj}
+$$
+
+και να δείχνουμε τα μεγαλύτερα positive/negative contributions.
+
+Έτσι το explanation παράγεται από το ίδιο μοντέλο, όχι από αυθαίρετο κείμενο.
+
+---
+
+# 31. Prototype calibration
+
+Στην αρχή θα ορίσουμε:
+
+* ranges
+* centers
+* weights
+
+με βάση culinary knowledge.
+
+Αλλά δεν πρέπει να μείνουν για πάντα χειροποίητα.
+
+Όταν έχουμε dataset πραγματικών συνταγών, μπορούμε να υπολογίσουμε για κάθε κατηγορία:
+
+$$
+\mu
+$$
+
+και:
+
+$$
+\sigma
+$$
+
+για κάθε feature.
+
+Και ίσως correlations.
+
+Τότε τα prototypes γίνονται data-informed.
+
+---
+
+# 32. Mahalanobis distance — πιθανή V2 επιλογή
+
+Όταν έχουμε αρκετά δεδομένα, αντί για ανεξάρτητες dimensions μπορούμε να χρησιμοποιήσουμε:
+
+$$
+d_M(x)
+=
+\sqrt{
+(x-\mu)^T\Sigma^{-1}(x-\mu)
+}
+$$
+
+Η Mahalanobis distance λαμβάνει υπόψη correlations.
+
+Π.χ. σε brioche:
+
+* υψηλό fat
+* υψηλό egg
+
+μπορεί να συσχετίζονται.
+
+Αυτό είναι πολύ καλύτερο από Euclidean distance όταν υπάρχει πραγματικό dataset.
+
+Αλλά δεν θα το έκανα στην αρχή.
+
+---
+
+# 33. V1 model
+
+Για V1 θα πρότεινα:
+
+$$
+\boxed{
+S_k=
+P_k
+\cdot
+\frac{\sum_jw_{kj}\mu_{kj}(x_j)}
+{\sum_jw_{kj}}
+}
+$$
+
+όπου:
+
+* \(\mu\) = trapezoidal/Gaussian memberships
+* \(w\) = feature importance
+* \(P_k\) = constraint/process penalty
+
+και παράλληλα:
+
+$$
+Confidence=
+f(Coverage,IngredientConfidence)
+$$
+
+Απλό, explainable και tunable.
+
+---
+
+# 34. Ένα πλήρες παράδειγμα
+
+Έστω:
+
+$$
+Fat=48
+$$
+
+$$
+Egg=50
+$$
+
+$$
+Sugar=18
+$$
+
+$$
+RH=0.95
+$$
+
+$$
+GPI=85
+$$
+
+$$
+Yeast=true
+$$
+
+Για brioche:
+
+| Feature            | Membership | Weight |
+| ------------------ | ---------: | -----: |
+| Fat                |       0.98 |    2.0 |
+| Egg                |       1.00 |    1.5 |
+| Sugar              |       0.95 |    1.0 |
+| Relative hydration |       0.90 |    0.8 |
+| Gluten potential   |       0.95 |    1.5 |
+| Yeast              |       1.00 |    3.0 |
+
+Weighted score:
+
+$$
+S\approx0.97
+$$
+
+Αλλά αν process says:
+
+* no kneading
+* butter mixed into flour before hydration
+
+τότε:
+
+$$
+P_{process}=0.70
+$$
+
+οπότε:
+
+$$
+S_{final}\approx0.68
+$$
+
+Το αποτέλεσμα θα είναι:
+
+> Formula is compositionally very close to brioche, but the specified process is not typical of brioche and is likely to suppress gluten development.
+
+Αυτό είναι ακριβώς το είδος εξήγησης που θέλουμε.
+
+---
+
+# 35. Ένα τελευταίο refinement που θεωρώ σημαντικό
+
+Θα κρατούσα **τρία ξεχωριστά αποτελέσματα**, όχι μόνο ένα:
+
+$$
+\boxed{CompositionSimilarity}
+$$
+
+$$
+\boxed{ProcessSimilarity}
+$$
+
+$$
+\boxed{OverallIdentity}
+$$
+
+Γιατί έτσι μπορούμε να μάθουμε πολύ περισσότερα.
+
+Μπορεί π.χ. να έχεις:
+
+> Croissant composition: 88%
+> Croissant process: 12%
+> Canonical croissant identity: 32%
+
+και αμέσως καταλαβαίνεις:
+
+> «Έχω υλικά croissant, αλλά δεν τα χρησιμοποιώ σαν croissant.»
+
+Αυτό είναι εξαιρετικά ισχυρό εκπαιδευτικά.
+
+Το **επόμενο βήμα** τώρα είναι να σχεδιάσουμε το **Process Model** με την ίδια αυστηρότητα που σχεδιάσαμε το composition: ποιες μεταβλητές χρειαζόμαστε για kneading, mixing intensity, creaming, whipping, lamination, fermentation time/temperature, rest, fat incorporation, baking temperature κ.λπ., και πώς αυτές μετασχηματίζουν τα structural metrics.

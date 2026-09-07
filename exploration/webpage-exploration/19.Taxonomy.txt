@@ -1,0 +1,703 @@
+Πάμε λοιπόν στο **Taxonomy + Prototype Model**. Εδώ αποφασίζουμε τι ακριβώς σημαίνει «αναγνωρίζω τη ζύμη» και πώς αποφεύγουμε ένα χαοτικό flat list από δεκάδες προϊόντα.
+
+Η σωστή λογική είναι **ιεραρχική ταξινόμηση** και μετά fuzzy similarity μέσα στην κάθε οικογένεια.
+
+## 1. Πρώτα η κορυφαία διάκριση
+
+Θα ξεκινούσα με τρεις πολύ γενικές μορφές:
+
+$$
+\boxed{\text{Dough}}
+$$
+
+$$
+\boxed{\text{Batter}}
+$$
+
+$$
+\boxed{\text{Paste / Structured mass}}
+$$
+
+Το τρίτο χρειάζεται για περίεργες περιπτώσεις όπως:
+
+* choux
+* cookie dough
+* shortcrust
+* πολύ λιπαρές πάστες
+
+που δεν κάθονται πάντα όμορφα στον άξονα dough ↔ batter.
+
+## 2. Επόμενο επίπεδο: ποιος μηχανισμός κρατά τη δομή
+
+Αυτό είναι πιο σημαντικό από το όνομα του προϊόντος.
+
+### Gluten-structured
+
+Παραδείγματα:
+
+* bread
+* bagel
+* pizza
+* brioche
+* croissant
+
+### Starch / protein-set
+
+Παραδείγματα:
+
+* cake
+* muffin
+* pancake
+* crêpe
+
+### Fat-shortened
+
+Παραδείγματα:
+
+* shortbread
+* tart dough
+* sablé
+
+### Foam-structured
+
+Παραδείγματα:
+
+* sponge
+* genoise
+* angel food
+
+### Laminated
+
+Παραδείγματα:
+
+* croissant
+* puff pastry
+* Danish
+
+Αυτές οι κατηγορίες μπορούν να επικαλύπτονται. Το croissant, για παράδειγμα, είναι και gluten-structured και laminated.
+
+Άρα δεν πρέπει να είναι αποκλειστικά enum. Καλύτερα ως structural profile.
+
+## 3. Τρίτο επίπεδο: leavening mechanism
+
+Παράλληλος άξονας:
+
+* yeast
+* chemical
+* foam
+* steam
+* none
+* mixed
+
+Παραδείγματα:
+
+* baguette → yeast
+* muffin → chemical
+* genoise → foam
+* choux → steam
+* crêpe → none
+* croissant → yeast + steam
+* cake → chemical + mechanical
+
+Αυτός ο άξονας θα βοηθήσει πολύ στο classification.
+
+## 4. Τέταρτο επίπεδο: enrichment
+
+Θα είχαμε:
+
+* lean
+* lightly enriched
+* enriched
+* highly enriched
+
+με βάση κυρίως:
+
+* total fat
+* total sugar
+* egg solids
+* dairy solids
+
+Παράδειγμα:
+
+* baguette → lean
+* sandwich bread → lightly enriched
+* challah → enriched
+* brioche → highly enriched
+
+## 5. Η αρχική taxonomy
+
+Θα την έστηνα περίπου έτσι:
+
+```text
+Formula
+├── Gluten-Structured Doughs
+│   ├── Stiff Lean Doughs
+│   │   ├── Bagel
+│   │   └── Pretzel
+│   │
+│   ├── Lean Bread Doughs
+│   │   ├── Baguette
+│   │   ├── Country Bread
+│   │   ├── Pizza Dough
+│   │   └── High-Hydration Bread
+│   │
+│   ├── Enriched Yeast Doughs
+│   │   ├── Soft Bread
+│   │   ├── Milk Bread
+│   │   ├── Challah
+│   │   ├── Tsoureki
+│   │   └── Brioche
+│   │
+│   └── Laminated Yeast Doughs
+│       ├── Croissant
+│       └── Danish
+│
+├── Short / Fat-Structured Doughs
+│   ├── Shortcrust
+│   ├── Pâte Sablée
+│   ├── Pâte Sucrée
+│   ├── Shortbread
+│   └── Cookie Dough
+│
+├── Batter Systems
+│   ├── Chemical-Leavened
+│   │   ├── Muffin
+│   │   ├── Pancake
+│   │   ├── Waffle
+│   │   └── Cake
+│   │
+│   ├── Foam-Leavened
+│   │   ├── Sponge
+│   │   ├── Genoise
+│   │   ├── Angel Food
+│   │   └── Chiffon
+│   │
+│   └── Unleavened
+│       └── Crêpe
+│
+└── Steam-Dominant Systems
+    └── Choux
+```
+
+Αυτό είναι αρκετά πλήρες για V1 χωρίς να γίνει εγκυκλοπαίδεια.
+
+## 6. Τώρα τα prototypes
+
+Κάθε family δεν πρέπει να είναι μία συνταγή.
+
+Θα είναι ένα **prototype vector**.
+
+Έστω:
+
+$$
+P_k=
+(
+H,
+Fat,
+Sugar,
+Egg,
+GPI,
+EI,
+FI,
+Leavening,\ldots
+)
+$$
+
+Για παράδειγμα:
+
+### Lean bread prototype
+
+Πολύ χονδρικά:
+
+$$
+H=60-75
+$$
+
+$$
+Fat=0-5
+$$
+
+$$
+Sugar=0-5
+$$
+
+$$
+GPI=high
+$$
+
+$$
+EI=low
+$$
+
+$$
+Leavening=yeast
+$$
+
+### Brioche prototype
+
+$$
+H=50-65\ effective
+$$
+
+$$
+Fat=30-70
+$$
+
+$$
+Sugar=10-30
+$$
+
+$$
+Egg=30-70
+$$
+
+$$
+GPI=high
+$$
+
+$$
+EI=high
+$$
+
+$$
+Leavening=yeast
+$$
+
+### Cake prototype
+
+$$
+H=moderate-high
+$$
+
+$$
+Fat=40-100
+$$
+
+$$
+Sugar=70-120
+$$
+
+$$
+Egg=40-100
+$$
+
+$$
+GPI=low
+$$
+
+$$
+EI=high
+$$
+
+$$
+Leavening=chemical/mechanical
+$$
+
+## 7. Δεν αρκούν ranges
+
+Αν βάλουμε μόνο:
+
+$$
+50<H<70
+$$
+
+θα έχουμε πολύ απότομο classification.
+
+Θέλουμε fuzzy membership.
+
+Κάθε feature θα έχει μια καμπύλη καταλληλότητας.
+
+Παράδειγμα για brioche fat:
+
+$$
+\mu_{fat}(x)
+$$
+
+που μπορεί να είναι:
+
+* χαμηλή στο 10%
+* αυξάνει στο 30%
+* μέγιστη γύρω στο 50%
+* πέφτει πάλι πάνω από 80%
+
+Άρα δεν υπάρχει σκληρό:
+
+> 29% fat = not brioche
+> 30% fat = brioche
+
+Αυτό είναι πολύ πιο φυσικό.
+
+## 8. Weighted similarity
+
+Για κάθε prototype:
+
+$$
+Similarity_k
+=
+\frac{\sum_j w_j\mu_{kj}(x_j)}{\sum_jw_j}
+$$
+
+όπου:
+
+* \(x_j\) = metric της συνταγής
+* \(\mu_{kj}\) = compatibility με την κατηγορία
+* \(w_j\) = σημασία του metric για αυτή την κατηγορία
+
+Παράδειγμα:
+
+Για brioche:
+
+* fat → πολύ υψηλό weight
+* egg → υψηλό
+* yeast → σχεδόν υποχρεωτικό
+* gluten potential → υψηλό
+* hydration → μέτριο
+* fiber → μικρότερο
+
+Για crêpe:
+
+* fluidity → τεράστιο weight
+* egg → σημαντικό
+* leavening ≈ none → σημαντικό
+* gluten potential → μικρότερη σημασία
+
+## 9. Hard constraints vs soft features
+
+Κάποια χαρακτηριστικά πρέπει να είναι σχεδόν hard constraints.
+
+Παράδειγμα:
+
+### Brioche χωρίς yeast;
+
+Αν δεν υπάρχει yeast, μπορεί να μοιάζει compositionally με brioche αλλά δεν είναι brioche ως τεχνική οικογένεια.
+
+Άρα:
+
+$$
+Yeast=false
+$$
+
+θα ρίχνει πολύ το membership.
+
+### Crêpe με 5% hydration;
+
+Αδύνατο πρακτικά.
+
+Άρα fluidity/hydration είναι σχεδόν hard constraint.
+
+Θα έχουμε λοιπόν:
+
+* hard/near-hard constraints
+* soft similarity dimensions
+
+## 10. Category fingerprints
+
+Κάθε category θα έχει fingerprint.
+
+Π.χ. brioche:
+
+| Dimension        | Typical   |
+| ---------------- | --------- |
+| Gluten structure | very high |
+| Hydration        | medium    |
+| Fat              | very high |
+| Sugar            | medium    |
+| Egg              | high      |
+| Enrichment       | very high |
+| Fluidity         | low       |
+| Yeast            | required  |
+| Lamination       | no        |
+
+Cake:
+
+| Dimension           | Typical     |
+| ------------------- | ----------- |
+| Gluten structure    | low         |
+| Hydration           | medium-high |
+| Fat                 | high        |
+| Sugar               | very high   |
+| Egg                 | high        |
+| Enrichment          | very high   |
+| Fluidity            | medium      |
+| Chemical leavening  | common      |
+| Mechanical aeration | common      |
+
+Αυτό είναι εύκολο να διαβάζεται και να calibrate.
+
+## 11. Parent-level classification
+
+Πολύ σημαντικό: πρώτα ταξινομούμε broad family.
+
+Παράδειγμα:
+
+$$
+P(\text{Gluten-structured})=0.91
+$$
+
+$$
+P(\text{Batter})=0.08
+$$
+
+Μετά μόνο μέσα στο gluten family συγκρίνουμε:
+
+* lean bread
+* stiff dough
+* enriched
+* laminated
+
+Και μετά μέσα στο enriched:
+
+* soft bread
+* challah
+* tsoureki
+* brioche
+
+Αυτό μειώνει τα λάθη.
+
+## 12. Unknown / hybrid class
+
+Πρέπει να υπάρχει.
+
+Το εργαλείο πρέπει να μπορεί να πει:
+
+> Hybrid enriched batter-like formula
+> No strong match to a canonical category
+
+Αυτό είναι καλύτερο από το να εξαναγκάζει κάθε formula σε γνωστό προϊόν.
+
+Θα έβαζα threshold π.χ. λογικά:
+
+$$
+maxSimilarity < T
+$$
+
+→ no canonical match
+
+αλλά το \(T\) θα το βρούμε με validation.
+
+## 13. Multi-label output
+
+Το output δεν πρέπει να είναι μόνο:
+
+> Brioche
+
+Αλλά:
+
+**Structural family:** Gluten-structured enriched dough
+**Leavening:** Yeast
+**Enrichment:** Very high
+**Closest archetypes:**
+Brioche 84%
+Tsoureki 69%
+Challah 51%
+
+Αυτό είναι πολύ πιο πλούσιο και ακριβές.
+
+## 14. Τι χρειάζεται για να ξεχωρίζουμε challah, tsoureki και brioche
+
+Εδώ φαίνεται γιατί τα names δεν πρέπει να είναι μόνο composition.
+
+### Brioche
+
+* πολύ υψηλό butter
+* αρκετό egg
+* yeast
+* ισχυρή gluten structure
+
+### Challah
+
+* αρκετό egg
+* συχνά χαμηλότερο fat
+* συχνά oil αντί butter
+* μέτρια sugar
+
+### Tsoureki
+
+* enriched yeast dough
+* egg
+* sugar
+* fat
+* ειδικό aromatic profile και συχνά χαρακτηριστική extensibility
+
+Άρα σε κάποιες κατηγορίες η composition αρκεί αρκετά.
+
+Σε άλλες, όπως tsoureki, η **process + cultural definition + aroma** είναι μέρος της ταυτότητας.
+
+Άρα το σύστημα πρέπει να διακρίνει:
+
+> formula similarity
+
+από
+
+> canonical product identity
+
+## 15. Πολύ σημαντική διάκριση: Formula family vs Named product
+
+Θα είχα δύο διαφορετικά outputs:
+
+### Formula family
+
+Πιο «επιστημονικό».
+
+Π.χ.:
+
+> highly enriched yeasted gluten dough
+
+### Named-product similarity
+
+Πιο ανθρώπινο.
+
+Π.χ.:
+
+> resembles brioche / tsoureki
+
+Αυτό αποφεύγει το να λέμε λανθασμένα ότι κάθε παρόμοια φόρμουλα «είναι brioche».
+
+## 16. Τα βασικά prototype dimensions για V1
+
+Δεν θα χρησιμοποιούσα 30 dimensions από την αρχή.
+
+Για V1 θα έβαζα περίπου:
+
+1. Relative hydration
+2. Total fat
+3. Total sugar
+4. Egg fraction
+5. Gluten potential
+6. Enrichment index
+7. Fluidity index
+8. Yeast presence/strength
+9. Chemical leavening
+10. Foam/mechanical aeration
+11. Lamination
+12. Structural setting profile
+
+Αυτά αρκούν για να χωρίσουμε πολύ μεγάλο μέρος του χώρου.
+
+## 17. Παράδειγμα classification
+
+Έστω φόρμουλα:
+
+$$
+H=58
+$$
+
+$$
+Fat=42
+$$
+
+$$
+Sugar=16
+$$
+
+$$
+Egg=48
+$$
+
+$$
+GPI=82
+$$
+
+$$
+Yeast=true
+$$
+
+$$
+FI=22
+$$
+
+Το σύστημα θα μπορούσε να βγάλει:
+
+> Gluten-structured: 96%
+> Enriched yeast dough: 94%
+> Brioche similarity: 86%
+> Tsoureki similarity: 72%
+> Challah similarity: 57%
+
+Αυτό είναι ακριβώς το behavior που θέλουμε.
+
+## 18. Παράδειγμα border case
+
+$$
+H=75
+$$
+
+$$
+Fat=15
+$$
+
+$$
+Sugar=15
+$$
+
+$$
+Egg=20
+$$
+
+$$
+GPI=65
+$$
+
+$$
+Yeast=true
+$$
+
+Μπορεί να βγει:
+
+> Soft enriched bread: 71%
+> Milk bread: 64%
+> Brioche: 28%
+
+Άρα δεν υπάρχει αυθαίρετη μεταπήδηση κατηγορίας.
+
+## 19. Prototype inheritance
+
+Η taxonomy μας επιτρέπει και inheritance.
+
+Π.χ.:
+
+`EnrichedYeastDough` μπορεί να απαιτεί γενικά:
+
+* yeast > 0
+* gluten structure medium-high
+* enrichment medium+
+
+Και το `Brioche` προσθέτει:
+
+* fat high
+* egg high
+* fluidity low-medium
+* lamination false
+
+Άρα δεν επαναλαμβάνουμε όλους τους κανόνες σε κάθε category.
+
+Αυτό είναι σημαντικό και εννοιολογικά και για υλοποίηση.
+
+## 20. Το επόμενο βήμα
+
+Τώρα έχουμε:
+
+$$
+Ingredients
+\rightarrow Composition
+$$
+
+$$
+Composition
+\rightarrow DerivedMetrics
+$$
+
+$$
+DerivedMetrics
+\rightarrow Taxonomy/Prototypes
+$$
+
+Το επόμενο βήμα είναι να σχεδιάσουμε **το Similarity / Distance Model μαθηματικά**: ποια membership functions χρησιμοποιούμε, πώς ζυγίζονται τα dimensions, πώς χειριζόμαστε hard constraints, missing data, uncertainty και prototype overlap.
+
+Εκεί θα αποφασίσουμε ουσιαστικά πώς μετατρέπεται ένα vector σε:
+
+$$
+\text{Brioche }84\%
+$$
+
+και όχι 61% ή 97%.

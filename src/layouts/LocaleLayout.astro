@@ -1,0 +1,16 @@
+---
+import '../styles/global.css';
+const { locale, basePath } = Astro.props;
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="theme-color" content="#f5f1eb" />
+    <link rel="icon" href={`${basePath}favicon.svg`} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

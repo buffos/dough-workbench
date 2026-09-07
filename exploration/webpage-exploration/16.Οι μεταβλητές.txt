@@ -1,0 +1,905 @@
+Ναι. Το επόμενο σωστό βήμα είναι να ορίσουμε το εργαλείο σαν **μαθηματικό μοντέλο φόρμουλας** και όχι σαν λίστα recipes.
+
+Θα το έστηνα σε 6 επίπεδα.
+
+## 1. Raw recipe layer
+
+Ο χρήστης δηλώνει πραγματικά υλικά και ποσότητες:
+
+* flour 500 g
+* milk 250 g
+* eggs 100 g
+* butter 80 g
+* sugar 50 g
+* yeast 5 g
+
+Αυτό είναι απλώς η είσοδος.
+
+Το αλεύρι γίνεται πάντα η βάση:
+
+$$
+F=100
+$$
+
+και όλα τα υπόλοιπα μετατρέπονται σε baker's percentages.
+
+---
+
+## 2. Ingredient decomposition layer
+
+Κάθε υλικό αναλύεται σε λειτουργικά συστατικά.
+
+Για κάθε ingredient \(i\) μπορούμε να έχουμε διάνυσμα:
+
+$$
+I_i=
+(W,Fat,Protein,Sugar,Starch,Fiber,Salt,Acid,\ldots)
+$$
+
+Παράδειγμα:
+
+### Γάλα
+
+$$
+Milk \approx
+(0.87,\ 0.035,\ 0.033,\ 0.05,\ldots)
+$$
+
+### Αυγό
+
+$$
+Egg \approx
+(0.75,\ 0.10,\ 0.12,\ 0.01,\ldots)
+$$
+
+### Βούτυρο
+
+$$
+Butter \approx
+(0.16,\ 0.82,\ 0.01,\ldots)
+$$
+
+Έτσι τα 100 g αυγού δεν αντιμετωπίζονται ως «100 g egg», αλλά ως περίπου:
+
+$$
+75g\ water +10g\ fat+12g\ protein+\ldots
+$$
+
+Αυτό είναι η καρδιά του συστήματος.
+
+---
+
+# 3. Το functional composition vector
+
+Μετά αθροίζουμε όλα τα υλικά και δημιουργούμε μία εσωτερική περιγραφή της συνταγής.
+
+Κάτι σαν:
+
+$$
+\boxed{
+X=
+(H,\ Fat,\ Sugar,\ Protein,\ EggProtein,\ MilkSolids,\ Fiber,\ Salt,\ Acidity,\ldots)
+}
+$$
+
+όλα ως ποσοστά του αλευριού.
+
+Για παράδειγμα:
+
+$$
+X=
+(62,\ 28,\ 15,\ 8,\ 5,\ 4,\ 0,\ 2,\ldots)
+$$
+
+Αυτό πλέον είναι πολύ πιο ενδιαφέρον από τη λίστα των υλικών.
+
+---
+
+## 4. Δεν αρκεί όμως το total protein
+
+Εδώ πρέπει να κάνουμε μία σημαντική διάκριση.
+
+Η πρωτεΐνη του:
+
+* αλευριού,
+* αυγού,
+* γάλακτος
+
+δεν κάνει την ίδια δουλειά.
+
+Άρα δεν θέλουμε μόνο:
+
+$$
+TotalProtein
+$$
+
+αλλά π.χ.:
+
+$$
+FlourProtein
+$$
+
+$$
+EggProtein
+$$
+
+$$
+DairyProtein
+$$
+
+Γιατί το FlourProtein επηρεάζει το gluten potential, ενώ το EggProtein κυρίως το heat-setting.
+
+Αυτό είναι ακριβώς το είδος πληροφορίας που θα χαθεί αν κάνουμε ένα υπερβολικά απλό μοντέλο.
+
+---
+
+# 5. Flour model
+
+Το αλεύρι πρέπει να είναι σχεδόν ξεχωριστό entity.
+
+Θα μπορούσε να έχει:
+
+$$
+Flour=
+(
+protein,
+W,
+P/L,
+ash,
+fiber,
+starchDamage,
+type
+)
+$$
+
+Δεν θα είναι όλα υποχρεωτικά.
+
+Ο απλός χρήστης μπορεί να πει:
+
+> αλεύρι γενικής χρήσης, 11% protein
+
+Ο πιο προχωρημένος:
+
+> 13% protein, W=320, P/L=0.55
+
+Το εργαλείο δουλεύει και στις δύο περιπτώσεις, απλώς με διαφορετική confidence.
+
+---
+
+# 6. Και μετά δημιουργούμε derived variables
+
+Από το raw composition δεν θέλουμε απλώς να εμφανίζουμε αριθμούς.
+
+Θέλουμε να υπολογίζουμε **λειτουργικούς δείκτες**.
+
+Εδώ θα ξεκινούσα περίπου έτσι.
+
+### A. Total Water
+
+$$
+W_t=\sum_i m_i\,water_i
+$$
+
+και:
+
+$$
+H=\frac{W_t}{Flour}\times100
+$$
+
+Αυτό είναι η πραγματική hydration.
+
+---
+
+### B. Total Fat
+
+$$
+F_t=\frac{\sum_i m_i\,fat_i}{Flour}\times100
+$$
+
+---
+
+### C. Total Sugars
+
+$$
+S_t=\frac{\sum_i m_i\,sugar_i}{Flour}\times100
+$$
+
+Αλλά ίσως αργότερα ξεχωρίζουμε:
+
+* sucrose
+* glucose
+* fructose
+* lactose
+
+γιατί δεν είναι λειτουργικά ταυτόσημα.
+
+---
+
+### D. Structural protein
+
+Θα πρέπει να διαχωριστεί σε τουλάχιστον:
+
+$$
+P_g = gluten\ forming\ protein
+$$
+
+και
+
+$$
+P_e = egg/dairy\ setting\ proteins
+$$
+
+---
+
+# 7. Οι πραγματικά ενδιαφέροντες δείκτες
+
+Εδώ θα απέφευγα αρχικά να τους παρουσιάσουμε σαν «επιστημονικές σταθερές». Θα είναι **δικοί μας μοντελοποιητικοί δείκτες**.
+
+Για παράδειγμα:
+
+### Gluten Potential Index
+
+Κάτι σαν:
+
+$$
+GPI =
+f(
+FlourProtein,
+W,
+P/L,
+Hydration
+)
+$$
+
+και μετά θα επηρεάζεται αρνητικά από:
+
+$$
+Fat,\ Sugar
+$$
+
+και θετικά/αρνητικά από την τεχνική.
+
+Έτσι το ίδιο αλεύρι:
+
+100 flour
+65 water
+
+μπορεί να έχει υψηλό GPI,
+
+ενώ:
+
+100 flour
+65 water
+70 butter
+80 sugar
+
+πολύ χαμηλότερο **effective gluten potential**.
+
+---
+
+# 8. Tenderness index
+
+Θα μπορούσε σχηματικά να είναι:
+
+$$
+TI=
+f(Fat,Sugar,Yolk,Water)
+$$
+
+όσο αυξάνεται:
+
+* λίπος,
+* ζάχαρη,
+* κρόκος,
+
+τόσο μετακινούμαστε από:
+
+$$
+chewy \rightarrow tender
+$$
+
+Δεν θα χρησιμοποιούσα απλή πρόσθεση επειδή:
+
+$$
+50\% fat +50\% sugar
+$$
+
+δεν είναι απαραίτητα ισοδύναμο με:
+
+$$
+100\% fat
+$$
+
+Θα θέλαμε διαφορετικά weights.
+
+---
+
+# 9. Fluidity / Batter index
+
+Εδώ θέλουμε να προβλέψουμε:
+
+$$
+stiff
+\rightarrow
+soft
+\rightarrow
+sticky
+\rightarrow
+thick\ batter
+\rightarrow
+pourable
+$$
+
+Δεν μπορεί να είναι μόνο hydration.
+
+Πρέπει περίπου:
+
+$$
+BI=f(
+Water,
+Sugar,
+Fat,
+Egg,
+FlourAbsorption,
+Temperature
+)
+$$
+
+Για παράδειγμα:
+
+100 flour + 100 water
+
+δεν έχει ίδια ρεολογία με:
+
+100 flour + 70 egg + 30 water.
+
+---
+
+# 10. Enrichment index
+
+Αυτό είναι αρκετά διαισθητικό:
+
+$$
+EI=f(
+Fat,Sugar,EggSolids,DairySolids
+)
+$$
+
+Χαμηλό:
+
+→ lean bread
+
+Μέτριο:
+
+→ soft/enriched bread
+
+Υψηλό:
+
+→ brioche/tsoureki
+
+Πολύ υψηλό:
+
+→ cake/cookie systems
+
+Αλλά κάποια στιγμή ο δείκτης μόνος του δεν αρκεί, γιατί cake και cookie μπορούν να έχουν ίδιο enrichment αλλά διαφορετικό water regime.
+
+---
+
+# 11. Gas-generation model
+
+Το εργαλείο πρέπει να ξέρει και **πώς παράγεται το αέριο**.
+
+Θα το χώριζα σε τέσσερα ανεξάρτητα scores:
+
+$$
+L_y = yeast
+$$
+
+$$
+L_c = chemical
+$$
+
+$$
+L_m = mechanical
+$$
+
+$$
+L_s = steam
+$$
+
+Άρα ένα croissant μπορεί να έχει:
+
+$$
+(L_y,L_c,L_m,L_s)
+=
+(high,0,low,high)
+$$
+
+Ένα genoise:
+
+$$
+(0,0,high,medium)
+$$
+
+Ένα muffin:
+
+$$
+(0,high,low,medium)
+$$
+
+Αυτό είναι πολύ πιο χρήσιμο από ένα απλό:
+
+> leavening = baking powder.
+
+---
+
+# 12. Gas-retention model
+
+Άλλο παραγωγή αερίου και άλλο συγκράτηση.
+
+Θα θέλαμε:
+
+$$
+GR =
+f(
+Gluten,
+EggProtein,
+Viscosity,
+Emulsion,
+Starch
+)
+$$
+
+Αν:
+
+$$
+GasGeneration > GasRetention
+$$
+
+τότε έχεις πιθανότητα:
+
+* πολύ μεγάλων κυψελών,
+* collapse,
+* overflow.
+
+Αυτό θα γίνει αργότερα εξαιρετικά χρήσιμο στο diagnostic mode.
+
+---
+
+# 13. Set index
+
+Πρέπει επίσης να προβλέψουμε **πώς και πόσο καλά σταθεροποιείται το προϊόν στον φούρνο**.
+
+$$
+Set =
+f(
+Starch,
+EggProtein,
+Gluten,
+Sugar,
+Water
+)
+$$
+
+Η ζάχαρη και το νερό καθυστερούν σε κάποιο βαθμό το set.
+
+Αυγό και άμυλο παρέχουν δομή.
+
+Και έτσι κάποια στιγμή μπορούμε να δώσουμε προειδοποίηση:
+
+> High leavening relative to structural setting capacity — collapse risk.
+
+Αυτό θα ήταν πολύ πιο προηγμένο από έναν απλό recipe classifier.
+
+---
+
+# 14. Process vector
+
+Μετά έχουμε δεύτερο διάνυσμα, ανεξάρτητο από τα υλικά:
+
+$$
+P=
+(
+mixing,
+fatMethod,
+aeration,
+fermentation,
+temperature,
+rest,
+lamination
+)
+$$
+
+Για παράδειγμα:
+
+### Brioche
+
+$$
+P=
+(
+strong\ kneading,
+late\ butter,
+none,
+yeast,
+controlled,
+long,
+no
+)
+$$
+
+### Butter cake
+
+$$
+P=
+(
+minimal\ gluten,
+creaming,
+mechanical,
+none,
+room\ temp,
+none,
+no
+)
+$$
+
+### Croissant
+
+$$
+P=
+(
+moderate\ gluten,
+laminated\ butter,
+none,
+yeast,
+cold,
+long,
+yes
+)
+$$
+
+---
+
+# 15. Άρα η συνάρτηση γίνεται
+
+Τελικά έχουμε:
+
+$$
+\boxed{
+Outcome=f(X,F,P)
+}
+$$
+
+όπου:
+
+* \(X\) = functional composition
+* \(F\) = flour properties
+* \(P\) = process
+
+Και το Outcome δεν είναι ένα label.
+
+Είναι ένα σύνολο προβλέψεων:
+
+$$
+Outcome=
+(
+Family,
+Similarities,
+Texture,
+Structure,
+Behavior,
+Risks
+)
+$$
+
+---
+
+# 16. Πώς ταξινομούμε τις γνωστές οικογένειες
+
+Δεν θα έγραφα κανόνες όπως:
+
+```text
+if butter > 40 and egg > 40 => brioche
+```
+
+Αυτό θα είναι υπερβολικά εύθραυστο.
+
+Καλύτερα κάθε οικογένεια να είναι **περιοχή στο multidimensional space**.
+
+Για παράδειγμα, πολύ απλοποιημένα:
+
+### Brioche
+
+$$
+Fat=30-80
+$$
+
+$$
+Egg=30-70
+$$
+
+$$
+Sugar=10-30
+$$
+
+$$
+GlutenPotential=high
+$$
+
+$$
+Yeast=true
+$$
+
+### Lean bread
+
+$$
+Fat=0-5
+$$
+
+$$
+Sugar=0-5
+$$
+
+$$
+Hydration=55-85
+$$
+
+$$
+GlutenPotential=high
+$$
+
+$$
+Yeast=true
+$$
+
+### Crêpe
+
+$$
+Hydration=very\ high
+$$
+
+$$
+Egg=medium-high
+$$
+
+$$
+GlutenDevelopment=low
+$$
+
+$$
+Leavening\approx0
+$$
+
+Κάθε formula αποκτά μια **απόσταση** από κάθε prototype.
+
+---
+
+# 17. Fuzzy membership αντί για απόλυτες κατηγορίες
+
+Αυτό θεωρώ πολύ σημαντικό.
+
+Δεν θέλουμε:
+
+> Είναι brioche: TRUE/FALSE.
+
+Θέλουμε:
+
+$$
+Membership_{brioche}=0.82
+$$
+
+$$
+Membership_{tsoureki}=0.68
+$$
+
+$$
+Membership_{challah}=0.51
+$$
+
+$$
+Membership_{softbread}=0.35
+$$
+
+Έτσι το εργαλείο μπορεί να πει:
+
+> **Primary family:** Rich enriched yeast dough
+> **Closest known style:** Brioche
+> **Secondary similarity:** Tsoureki / challah
+
+Αυτό ανταποκρίνεται πολύ καλύτερα στην πραγματικότητα.
+
+---
+
+# 18. Hierarchical classification
+
+Θα έκανα επίσης την taxonomy ιεραρχική.
+
+Για παράδειγμα:
+
+```text
+Formula
+├── Dough
+│   ├── Yeasted dough
+│   │   ├── Lean
+│   │   ├── Stiff
+│   │   ├── Enriched
+│   │   │   ├── Soft bread
+│   │   │   ├── Challah
+│   │   │   ├── Tsoureki
+│   │   │   └── Brioche
+│   │   └── Laminated
+│   │       └── Croissant
+│   └── Unleavened
+│       ├── Pasta
+│       ├── Shortcrust
+│       └── ...
+│
+└── Batter
+    ├── Chemical-leavened
+    │   ├── Cake
+    │   ├── Muffin
+    │   └── Pancake
+    ├── Foam
+    │   ├── Genoise
+    │   └── Sponge
+    └── Unleavened
+        └── Crêpe
+```
+
+Έτσι ακόμα και αν δεν μπορούμε να πούμε «είναι ακριβώς brioche», μπορούμε με μεγάλη βεβαιότητα να πούμε:
+
+> enriched yeasted dough.
+
+---
+
+# 19. Confidence
+
+Το εργαλείο πρέπει να ξέρει πότε **δεν ξέρει**.
+
+Παράδειγμα:
+
+> Flour protein: unknown
+> Butter type: assumed 82% fat
+> Yogurt composition: estimated
+
+τότε:
+
+> Classification confidence: 71%
+
+Αν ο χρήστης δώσει ακριβή nutritional information:
+
+> confidence: 91%.
+
+Αυτό είναι καλύτερο από ψεύτικη ακρίβεια.
+
+---
+
+# 20. Και ένα δεύτερο αποτέλεσμα: formula coordinates
+
+Θα ήθελα το εργαλείο να εμφανίζει κάτι σαν:
+
+| Dimension           |  Value |
+| ------------------- | -----: |
+| Effective hydration |    61% |
+| Gluten potential    | 82/100 |
+| Enrichment          | 74/100 |
+| Tenderness          | 68/100 |
+| Sweetness           | 22/100 |
+| Fat load            | 56/100 |
+| Gas production      | 52/100 |
+| Gas retention       | 79/100 |
+| Batter fluidity     | 18/100 |
+
+και μετά:
+
+> **Rich, structured, yeasted dough.**
+
+Αυτό εκπαιδευτικά είναι πιθανώς πιο πολύτιμο από το «brioche».
+
+---
+
+# 21. Το πιο ενδιαφέρον feature
+
+Θα μπορούσες μετά να αλλάζεις ένα slider:
+
+$$
+Butter:50\%\rightarrow20\%
+$$
+
+και να βλέπεις:
+
+**Brioche similarity**
+
+$$
+82\%\rightarrow55\%
+$$
+
+**Soft bread similarity**
+
+$$
+31\%\rightarrow68\%
+$$
+
+και:
+
+**Tenderness**
+
+$$
+72\rightarrow49
+$$
+
+Αυτό πραγματικά θα σου δείχνει τη **συνάρτηση \(f\)** που αρχικά ψάχναμε.
+
+---
+
+# 22. Δεν θα προσπαθούσα όμως από την πρώτη έκδοση να προβλέψω τα πάντα
+
+Θα έφτιαχνα το μοντέλο σε τρία επίπεδα.
+
+### Level 1 — Classification
+
+> Τι οικογένεια είναι;
+
+Αυτό είναι πολύ εφικτό.
+
+### Level 2 — Structural prediction
+
+> Πόσο stiff, tender, chewy, airy, rich;
+
+Επίσης αρκετά εφικτό.
+
+### Level 3 — Exact outcome prediction
+
+> Θα πάρεις crumb size 3.2 mm, volume +37%, συγκεκριμένο spread κ.λπ.
+
+Αυτό είναι πολύ πιο δύσκολο και θα απαιτούσε πραγματικά experimental data.
+
+---
+
+# 23. Και θα άλλαζα ελαφρά τον αρχικό στόχο
+
+Δεν θα προσπαθούσα να βρούμε μία:
+
+$$
+f:\ Ingredients\rightarrow Product
+$$
+
+Θα έλεγα ότι υπάρχουν δύο συναρτήσεις:
+
+$$
+\boxed{
+g(Ingredients)\rightarrow Functional\ Composition
+}
+$$
+
+και μετά:
+
+$$
+\boxed{
+f(Functional\ Composition,\ Flour,\ Process)
+\rightarrow Outcome
+}
+$$
+
+Αυτός ο διαχωρισμός είναι πολύ σημαντικός.
+
+Το:
+
+$$
+g()
+$$
+
+είναι σχεδόν καθαρή χημεία/λογιστική.
+
+Το:
+
+$$
+f()
+$$
+
+είναι το πραγματικό μοντέλο baking.
+
+Και θα μας επιτρέψει αργότερα να βάλουμε **οποιοδήποτε νέο υλικό** χωρίς να αλλάζουμε τον classifier. Αρκεί να ξέρουμε τη σύστασή του.
+
+Αν π.χ. αύριο προσθέσουμε mascarpone, δεν χρειάζεται ο classifier να «ξέρει mascarpone». Το \(g\) το μετατρέπει σε νερό + λίπος + πρωτεΐνη + sugars + acidity και το \(f\) δουλεύει κανονικά.
+
+Αυτό θεωρώ ότι είναι η σωστή αρχιτεκτονική του μοντέλου.

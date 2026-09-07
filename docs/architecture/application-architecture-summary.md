@@ -1,0 +1,185 @@
+# Dough Formula Intelligence — Application Architecture Summary
+
+Status: Initial application synthesis
+Date: 2026-09-07
+
+This summary consolidates the initial architecture direction and links back to
+the durable planning graph. Capability-specific exact contracts are created
+under their owning folders after bounded-node refinement.
+
+## System constraints
+
+- Frontend-only application.
+- Static deployment to GitHub Pages.
+- All formula analysis runs locally in the browser.
+- Greek and English are first-class locales.
+- No backend, account system, database, or server API is required for V1.
+- The calculation core must be deterministic, explainable, versioned, and
+  independent from the presentation framework.
+
+## Platform decision
+
+The baseline is Astro + TypeScript + Svelte:
+
+- Astro provides static site generation, file-based routes, content-oriented
+  pages, and bilingual route support.
+- Svelte owns the stateful analysis workspace as a client-side island.
+- TypeScript owns the domain model and engines without importing UI concerns.
+- GitHub Actions builds and deploys the static output to GitHub Pages.
+
+The deployment configuration must account for a repository base path, generated
+static assets, and a public `404.html`. The platform decision is recorded in
+[ADR-0006](../agents/adr/0006-static-frontend-platform.md).
+
+## Logical layers
+
+### Content and presentation
+
+Astro layouts and content collections provide the public educational pages,
+localized navigation, metadata, glossary, and prototype explanations. Content
+is organized by locale and uses stable canonical IDs for concepts that appear
+in both languages.
+
+### Interactive analysis UI
+
+Svelte components provide formula editing, process editing, result cards,
+metric labels, explanations, language-aware presentation, and counterfactual
+comparison. They consume domain results; they do not reimplement composition or
+classification rules.
+
+### Domain engine
+
+Framework-independent TypeScript modules follow the boundaries established by
+the formal domain specification:
+
+```text
+IngredientCatalog
+FormulaNormalization
+CompositionEngine
+MetricEngine
+ProcessEngine
+PrototypeCatalog
+SimilarityEngine
+ExplanationEngine
+Validation
+```
+
+The primary data flow is:
+
+```text
+Ingredients
+  -> Composition
+  -> IntrinsicMetrics
+  -> Process
+  -> EffectiveMetrics
+  -> Classification
+  -> OutcomeDescription
+```
+
+The classifier receives effective metrics and process features, not raw
+ingredient names. Formula and Process remain independent input structures.
+
+## Input contract decisions
+
+- A formula with no positive-mass structural flour component is invalid and
+  cannot be analyzed.
+- Missing composition or Process data produces partial analysis with explicit
+  unavailable metrics and reduced coverage/confidence.
+- V1 accepts grams only, including eggs by mass.
+- Catalog definitions are immutable from the UI. Custom functional ingredients
+  and per-line composition/availability overrides are local to the line and
+  carry provenance.
+- Only structural flour components establish the flour denominator.
+  `ContinuousPhase` participates in effective metrics; inclusion, surface,
+  filling, topping, and other roles remain separate from the continuous phase.
+- Process fields distinguish known values, explicit `None`, and `Unknown`.
+
+### Versioned model data
+
+Ingredient definitions, prototype definitions, matcher metadata, model
+parameters, and future validation records are static, versioned project data.
+They are not hidden inside UI components. The future dataset capability remains
+open about collection source and storage format.
+
+## Proposed project boundaries
+
+```text
+src/
+  components/              # framework-neutral visual/presentation pieces
+  content/                  # bilingual educational/content sources
+  islands/                  # stateful Svelte analysis UI
+  lib/
+    domain/                # Formula, Process, composition, metrics, models
+    i18n/                  # locale helpers and translated UI labels
+  data/
+    ingredients/           # versioned functional ingredient definitions
+    prototypes/            # versioned prototype definitions
+```
+
+The exact folder names can change during implementation, but the dependency
+direction must remain: UI -> application adapters -> domain engine/data. The
+domain engine must not depend on Astro, Svelte, browser storage, or translated
+display text.
+
+## Bilingual architecture
+
+The initial public route policy is explicit `/en/` and `/el/` paths. Both
+locales receive stable route counterparts where content exists. The language
+switcher uses route metadata rather than string replacement. Canonical IDs,
+metric names, model versions, and dataset identifiers are language-neutral;
+Greek and English labels/explanations are presentation data.
+
+Fallback behavior and parity verification are owned by [Bilingual Content and
+Localization](../../.okf/capabilities/shared/bilingual-content.md).
+
+## Trust and uncertainty boundary
+
+Each result carries semantic class, confidence, coverage, provenance, and model
+version where applicable. The UI must distinguish calculated facts from
+estimates and heuristic scores, must preserve unknown values, and must never
+render similarity as probability. These rules are owned by [Trust, Provenance,
+and Uncertainty](../../.okf/capabilities/shared/trust-and-provenance.md).
+
+## Cross-capability sequencing
+
+```text
+Input/Normalization
+  -> Composition/Intrinsic Metrics
+  -> Process/Effective Behavior
+  -> Classification/Similarity/Explanation
+  -> Counterfactual Exploration
+```
+
+The Ingredient and Prototype Knowledge capability supplies the catalog and
+prototype definitions across this path. Validation and Calibration supplies
+model maturity and regression evidence. Application-level changes must refresh
+this summary when boundaries, dependencies, verification, or sequencing
+change.
+
+## Verification strategy
+
+The architecture expects:
+
+- unit tests for normalization, invariants, deterministic metrics, and pure
+  model functions;
+- scenario-linked integration tests for formula/process editing and result
+  rendering;
+- static build and route checks for GitHub Pages base paths, 404 behavior, and
+  `/en/`/`/el/` parity;
+- counterfactual regression tests for smooth changes and process independence;
+- validation datasets and confusion/unknown-detection evidence once calibration
+  begins.
+
+The inherited root verification policy is `when-supported`: backend-boundary is
+not applicable, frontend-integration coverage is required when supported, and
+end-to-end coverage is catalogued without blocking until a suitable harness
+exists.
+
+## Architecture open decisions
+
+- Refine the first vertical-slice catalog and decide how seed data is stored.
+- Clear the fog around dataset ownership, sources, curation, and collection.
+- Confirm the final locale fallback and default-entry behavior after the first
+  bilingual page prototype.
+
+These are intentionally tracked as planning frontiers, not hidden assumptions.

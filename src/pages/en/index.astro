@@ -1,0 +1,11 @@
+---
+import LocaleLayout from '../../layouts/LocaleLayout.astro';
+import FormulaWorkspace from '../../components/FormulaWorkspace.svelte';
+
+const locale = 'en';
+const basePath = import.meta.env.BASE_URL;
+---
+
+<LocaleLayout locale={locale} basePath={basePath}>
+  <FormulaWorkspace locale={locale} basePath={basePath} client:load />
+</LocaleLayout>

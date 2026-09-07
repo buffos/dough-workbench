@@ -1,0 +1,1046 @@
+Πάμε στο **Validation Dataset Design**. Εδώ ο στόχος δεν είναι να μαζέψουμε απλώς πολλές συνταγές, αλλά να δημιουργήσουμε ένα dataset που να μας επιτρέπει να **βαθμονομήσουμε και να ελέγξουμε** το μοντέλο.
+
+Το βασικό πρόβλημα είναι ότι οι πραγματικές συνταγές έχουν τεράστιο θόρυβο: άλλες μονάδες, άλλα άλευρα, ασαφείς όροι, διαφορετικές τεχνικές, λάθη, «σπιτικές» παραλλαγές και διαφορετικές πολιτισμικές ονομασίες για παρόμοιες ζύμες.
+
+## 1. Τι θέλουμε να μάθουμε από το dataset
+
+Για κάθε γνωστή οικογένεια θέλουμε να εκτιμήσουμε:
+
+* ποια είναι η τυπική περιοχή κάθε metric,
+* ποια metrics είναι πραγματικά discriminative,
+* ποιες μεταβλητές συσχετίζονται,
+* πόσο μεγάλη φυσική διακύμανση υπάρχει,
+* πού επικαλύπτονται δύο κατηγορίες,
+* ποια χαρακτηριστικά είναι σχεδόν απαραίτητα.
+
+Δηλαδή δεν ψάχνουμε:
+
+$$
+\text{average brioche recipe}
+$$
+
+αλλά την κατανομή:
+
+$$
+P(X\mid Brioche)
+$$
+
+---
+
+# 2. Dataset unit
+
+Κάθε εγγραφή πρέπει να είναι μία **Formula + Process**, όχι απλώς recipe.
+
+Π.χ.:
+
+```text
+RecipeRecord
+├── Identity
+├── Source
+├── Ingredients
+├── Flour properties
+├── Process
+├── Baking
+├── Declared product family
+├── Derived metrics
+└── Data quality
+```
+
+Έτσι δύο recipes με ίδια ingredients αλλά διαφορετική μέθοδο είναι διαφορετικά observations.
+
+---
+
+# 3. Raw data πρέπει να διατηρούνται
+
+Δεν θα αποθηκεύουμε μόνο normalized percentages.
+
+Θα κρατάμε:
+
+* ακριβή ποσότητα όπως δόθηκε,
+* αρχική μονάδα,
+* normalized grams,
+* baker's percentage,
+* ingredient mapping.
+
+Γιατί αν αργότερα αλλάξει το ingredient composition model, πρέπει να μπορούμε να ξαναϋπολογίσουμε όλα τα derived metrics.
+
+---
+
+# 4. Η κανονικοποίηση
+
+Κάθε recipe πρέπει να μετατρέπεται σε:
+
+$$
+FlourTotal=100\%
+$$
+
+Αν έχει:
+
+* 400 g bread flour
+* 100 g whole wheat
+
+τότε:
+
+$$
+F=500g
+$$
+
+και:
+
+$$
+BreadFlour=80\%
+$$
+
+$$
+WholeWheat=20\%
+$$
+
+Όλα τα υπόλοιπα διαιρούνται με τα 500 g.
+
+---
+
+# 5. Τι θεωρούμε flour base
+
+Αυτό χρειάζεται σαφή κανόνα.
+
+Στο flour denominator θα έβαζα τα υλικά που λειτουργούν ως **κύρια farinaceous structural base**:
+
+* wheat flour
+* rye flour
+* whole wheat
+* semolina
+* oat flour
+* rice flour κ.λπ.
+
+Αλλά όχι αυτομάτως:
+
+* cocoa powder
+* milk powder
+* sugar
+* cornstarch.
+
+Για starch-heavy προϊόντα θα χρειαστούμε ίσως και δεύτερο denominator αργότερα:
+
+$$
+StructuralDryMatter
+$$
+
+αλλά το baker's percentage θα παραμένει flour-based για να είναι ανθρώπινα αναγνώσιμο.
+
+---
+
+# 6. Τι κάνουμε με το cornstarch
+
+Καλή edge case.
+
+Έστω cake:
+
+* 80 g flour
+* 20 g cornstarch
+
+Θα κρατούσα:
+
+$$
+FlourBase=80g
+$$
+
+και cornstarch σαν ingredient.
+
+Άρα:
+
+$$
+Cornstarch=25\%
+$$
+
+σε baker's %.
+
+Όμως στα derived metrics:
+
+$$
+TotalStarch
+$$
+
+θα συμπεριλάβει φυσικά και το cornstarch.
+
+Έτσι δεν παραποιούμε ούτε την παραδοσιακή αναλογία ούτε τη φυσική δομή.
+
+---
+
+# 7. Πρώτη taxonomy για dataset
+
+Για αρχή θα ήθελα περίπου 15–20 families, όχι 100 named products.
+
+### Gluten doughs
+
+* stiff lean
+* lean bread
+* high hydration
+* pizza
+* soft/enriched bread
+* challah-type
+* brioche-type
+* laminated yeasted
+
+### Short systems
+
+* shortcrust
+* sablé/sucrée
+* shortbread
+* cookie
+
+### Batter
+
+* butter cake
+* oil cake
+* muffin
+* pancake
+* waffle
+* crêpe
+
+### Foam
+
+* sponge
+* genoise
+* chiffon
+* angel food
+
+### Steam
+
+* choux
+
+Μετά μπορούμε να προσθέσουμε named subtypes.
+
+---
+
+# 8. Πόσες συνταγές χρειαζόμαστε
+
+Για exploratory calibration, δεν χρειάζονται χιλιάδες.
+
+Θα στόχευα αρχικά περίπου:
+
+$$
+30-50
+$$
+
+καλές φόρμουλες ανά μεγάλη κατηγορία.
+
+Για 20 κατηγορίες:
+
+$$
+600-1000
+$$
+
+records.
+
+Αυτό είναι ήδη αρκετό για να δούμε distributions και overlaps.
+
+Μετά μπορούμε να πάμε σε 2.000–5.000 για σοβαρότερο calibration.
+
+---
+
+# 9. Όχι όμως 50 copies της ίδιας συνταγής
+
+Πολύ σημαντικό.
+
+Αν 30 blogs έχουν αντιγράψει σχεδόν το ίδιο brioche, δεν έχουμε 30 ανεξάρτητα observations.
+
+Χρειαζόμαστε deduplication με βάση:
+
+* ingredient ratios,
+* process,
+* source lineage,
+* wording similarity όπου χρειάζεται.
+
+Θέλουμε **formula diversity**, όχι URL count.
+
+---
+
+# 10. Source tiers
+
+Θα βαθμολογούσα τις πηγές.
+
+### Tier A
+
+* culinary schools
+* professional baking textbooks
+* mill technical formulas
+* pastry schools
+* professional associations
+* peer-reviewed food science όπου υπάρχει
+
+### Tier B
+
+* σοβαρά professional bakery sites
+* established chefs
+* reputable test kitchens
+* established recipe publishers
+
+### Tier C
+
+* καλά τεκμηριωμένα blogs
+* community recipes με σαφή ratios/process
+
+### Tier D
+
+* ασαφείς ή πιθανώς μη δοκιμασμένες συνταγές
+
+Για calibration:
+
+$$
+TierA > TierB > TierC
+$$
+
+με source weighting.
+
+---
+
+# 11. Η declared label δεν είναι πάντα ground truth
+
+Αν κάποιος blog γράψει:
+
+> “Easy Brioche”
+
+και έχει:
+
+* 8% butter
+* 5% egg
+* 2% sugar
+
+δεν πρέπει να θεωρήσουμε ότι αυτό αποδεικνύει πως η περιοχή του brioche περιλαμβάνει αυτές τις τιμές.
+
+Άρα χρειαζόμαστε:
+
+### Declared label
+
+Τι λέει ο συγγραφέας.
+
+και
+
+### Curated canonical label
+
+Τι πιστεύουμε ότι είναι σύμφωνα με την taxonomy.
+
+Αυτό είναι σημαντικό.
+
+---
+
+# 12. Μπορούμε να έχουμε label confidence
+
+Π.χ.:
+
+$$
+LabelConfidence=1.0
+$$
+
+για textbook brioche formula.
+
+$$
+0.8
+$$
+
+για σοβαρή culinary source.
+
+$$
+0.4
+$$
+
+για blog “brioche-style buns”.
+
+Αυτό θα περιορίζει την επιρροή αμφίβολων recipes.
+
+---
+
+# 13. Cultural identity vs structural identity
+
+Πρέπει να αποθηκεύονται ξεχωριστά.
+
+Για παράδειγμα:
+
+**Declared product:** Tsoureki
+
+**Structural family:** Highly enriched yeasted gluten dough
+
+Έτσι το dataset μπορεί να μας μάθει δύο διαφορετικά πράγματα:
+
+$$
+P(X\mid StructuralFamily)
+$$
+
+και
+
+$$
+P(X\mid NamedProduct)
+$$
+
+Αυτό είναι πολύ σημαντικό για challah / tsoureki / brioche.
+
+---
+
+# 14. Process annotation
+
+Κάθε recipe πρέπει να μετατρέπεται στο process schema που φτιάξαμε.
+
+Π.χ.:
+
+```text
+mixing.method = knead
+mixing.intensity = high
+fat.mode = lateIncorporation
+fermentation.agent = yeast
+bulk.temperature = 24
+bulk.time = 120 min
+proof.time = 90 min
+lamination = false
+```
+
+Αν η πληροφορία λείπει:
+
+$$
+unknown
+$$
+
+όχι default 0.
+
+---
+
+# 15. Missing information
+
+Θα είναι τεράστιο θέμα.
+
+Πολλές συνταγές δεν γράφουν:
+
+* protein %
+* flour W
+* dough temperature
+* actual egg weight
+* precise yogurt fat
+* room temperature.
+
+Άρα κάθε field πρέπει να μπορεί να είναι:
+
+* observed
+* inferred
+* generic default
+* unknown.
+
+Και κάθε inference να έχει confidence.
+
+---
+
+# 16. Αυγά σε «τεμάχια»
+
+Αν γράφει:
+
+> 3 large eggs
+
+πρέπει να γίνει grams.
+
+Αλλά δεν θα μετατρέπεται σαν απόλυτη αλήθεια.
+
+Θα έχουμε:
+
+$$
+EggMass=150g
+$$
+
+π.χ. ως estimated,
+
+με uncertainty.
+
+Αν γράφει:
+
+> 150 g eggs
+
+τότε είναι exact.
+
+---
+
+# 17. Cups / tablespoons
+
+Το ίδιο.
+
+`1 cup flour` είναι προβληματικό γιατί η μάζα εξαρτάται από:
+
+* scoop method,
+* τύπο αλευριού,
+* source convention.
+
+Άρα:
+
+* recipes σε grams → υψηλότερο data-quality score
+* volume-only recipes → χαμηλότερο.
+
+Δεν χρειάζεται να τις απορρίψουμε, αλλά δεν πρέπει να έχουν ίδιο βάρος.
+
+---
+
+# 18. Ingredient matching
+
+Θα χρειαστούμε canonical ingredient mapping.
+
+Π.χ.:
+
+* “whole milk”
+* “full-fat milk”
+* “milk 3.5%”
+
+→ canonical ingredient family `whole_milk`
+
+αλλά αν υπάρχει nutritional label, δημιουργείται specific composition profile.
+
+Το ίδιο:
+
+* butter
+* European butter
+* 82% butter
+* salted butter.
+
+---
+
+# 19. Recipe confidence score
+
+Θα μπορούσαμε να δημιουργήσουμε:
+
+$$
+Q=
+f(
+SourceQuality,
+MeasurementQuality,
+IngredientSpecificity,
+ProcessCompleteness,
+LabelConfidence
+)
+$$
+
+π.χ. 0–1.
+
+Αυτό το \(Q\) θα χρησιμοποιείται ως statistical weight.
+
+Έτσι μία ασαφής blog συνταγή δεν μετακινεί το brioche prototype όσο μια επαγγελματική φόρμουλα.
+
+---
+
+# 20. Outlier handling
+
+Δεν πρέπει να πετάμε αυτόματα τα outliers.
+
+Ένα outlier μπορεί να είναι:
+
+1. λάθος δεδομένο,
+2. λάθος label,
+3. πραγματική ενδιαφέρουσα παραλλαγή.
+
+Άρα πρώτα flag:
+
+$$
+|z|>3
+$$
+
+ή άλλο robust criterion,
+
+και μετά review.
+
+---
+
+# 21. Median περισσότερο από mean
+
+Για πολλές οικογένειες θα χρησιμοποιούσα:
+
+* median
+* interquartile range
+* percentiles
+
+αντί μόνο:
+
+* mean
+* standard deviation
+
+γιατί οι distributions πιθανότατα δεν θα είναι Gaussian.
+
+Π.χ.:
+
+$$
+Fat_{brioche}
+$$
+
+μπορεί να έχει μεγάλες ουρές.
+
+---
+
+# 22. Prototype από distributions
+
+Αν έχουμε π.χ. brioche dataset, μπορούμε να πάρουμε:
+
+$$
+P_{10},P_{25},P_{50},P_{75},P_{90}
+$$
+
+για κάθε dimension.
+
+Και να φτιάξουμε trapezoidal membership όπως:
+
+$$
+a=P_{10}
+$$
+
+$$
+b=P_{25}
+$$
+
+$$
+c=P_{75}
+$$
+
+$$
+d=P_{90}
+$$
+
+ως αρχική προσέγγιση.
+
+Αυτό είναι πολύ καλύτερο από το να επινοούμε ranges.
+
+---
+
+# 23. Feature importance
+
+Δεν θα επιλέγουμε weights μόνο «με το μάτι».
+
+Μπορούμε να δούμε πόσο καλά κάθε metric διαχωρίζει κατηγορίες.
+
+Π.χ.:
+
+* Fat διαχωρίζει brioche από lean bread εξαιρετικά.
+* Hydration ίσως δεν διαχωρίζει brioche από bread τόσο καλά.
+* Leavening type διαχωρίζει cake από brioche πολύ ισχυρά.
+
+Άρα μπορούμε να εκτιμήσουμε weights από:
+
+* effect size,
+* mutual information,
+* classification performance.
+
+Ακόμη κι αν το τελικό μοντέλο παραμείνει explainable fuzzy model.
+
+---
+
+# 24. Correlations
+
+Θα πρέπει να κοιτάξουμε και:
+
+$$
+Corr(Fat,Egg)
+$$
+
+$$
+Corr(Sugar,Fat)
+$$
+
+$$
+Corr(Hydration,FlourStrength)
+$$
+
+κ.λπ.
+
+Γιατί αν δύο dimensions είναι σχεδόν το ίδιο signal, δεν θέλουμε να τα διπλομετρήσουμε υπερβολικά.
+
+---
+
+# 25. Train / calibration / test split
+
+Ακόμη κι αν δεν κάνουμε ML, πρέπει να έχουμε διαχωρισμό.
+
+### Calibration set
+
+Χρησιμοποιείται για:
+
+* ranges
+* weights
+* memberships.
+
+### Validation set
+
+Για tuning.
+
+### Test set
+
+Μένει ανέγγιχτο μέχρι το τέλος.
+
+Π.χ.:
+
+$$
+70/15/15
+$$
+
+ή
+
+$$
+60/20/20
+$$
+
+ανάλογα με το μέγεθος.
+
+---
+
+# 26. Source-level splitting
+
+Πολύ σημαντικό:
+
+Δεν πρέπει recipes από το ίδιο βιβλίο ή website να εμφανίζονται και calibration και test αν είναι πολύ παρόμοιες.
+
+Θα κάνουμε split κατά **source group**, όχι μόνο random recipe.
+
+Έτσι ελέγχουμε πραγματική generalization.
+
+---
+
+# 27. Τι μετράμε στην validation
+
+Για family classification:
+
+* top-1 accuracy
+* top-3 accuracy
+* family accuracy
+* confusion matrix
+
+Αλλά επειδή είναι fuzzy system, θέλουμε και:
+
+* membership calibration,
+* overlap quality,
+* unknown detection.
+
+---
+
+# 28. Confusion matrix
+
+Αυτό θα είναι πολύ χρήσιμο.
+
+Π.χ.:
+
+| Actual  | Predicted |
+| ------- | --------- |
+| Brioche | Brioche   |
+| Brioche | Challah   |
+| Challah | Brioche   |
+| Muffin  | Cake      |
+| Pancake | Muffin    |
+
+Κάποια «λάθη» μπορεί να είναι πολύ λογικά.
+
+Brioche ↔ challah είναι λιγότερο σοβαρό από:
+
+Brioche ↔ crêpe.
+
+Άρα η hierarchical accuracy είναι σημαντική.
+
+---
+
+# 29. Hierarchical error cost
+
+Θα μπορούσαμε να ορίσουμε:
+
+* wrong named subtype → μικρό penalty
+* wrong family → μεγαλύτερο
+* wrong structural system → πολύ μεγάλο
+
+Έτσι το evaluation αντανακλά την πραγματική χρησιμότητα.
+
+---
+
+# 30. Pairwise boundary tests
+
+Εκτός από real recipes, θα ήθελα synthetic tests ανάμεσα σε κοντινές οικογένειες.
+
+Π.χ.:
+
+$$
+Brioche \leftrightarrow Challah
+$$
+
+$$
+Cake \leftrightarrow Muffin
+$$
+
+$$
+Pancake \leftrightarrow Crêpe
+$$
+
+$$
+Shortbread \leftrightarrow Cookie
+$$
+
+και να μεταβάλλουμε σταδιακά ένα metric.
+
+Θέλουμε η classification να αλλάζει **ομαλά**, όχι απότομα.
+
+---
+
+# 31. Counterfactual validation
+
+Αυτό είναι ίσως ακόμη καλύτερο.
+
+Παίρνουμε πραγματικό brioche:
+
+$$
+Fat=50
+$$
+
+και αλλάζουμε:
+
+$$
+50\rightarrow40\rightarrow30\rightarrow20\rightarrow10
+$$
+
+Θέλουμε:
+
+$$
+BriocheSimilarity
+$$
+
+να πέφτει σταδιακά και:
+
+$$
+SoftBreadSimilarity
+$$
+
+να ανεβαίνει.
+
+Αν δεν συμβαίνει, έχουμε πρόβλημα στο μοντέλο.
+
+---
+
+# 32. Process counterfactuals
+
+Το ίδιο:
+
+Brioche formula:
+
+* late butter incorporation → high process compatibility.
+
+Αλλάζουμε:
+
+* butter rubbed into flour first
+
+και θέλουμε:
+
+$$
+ProcessCompatibility_{\text{brioche}}\downarrow
+$$
+
+χωρίς να αλλάξει πολύ το:
+
+$$
+CompositionSimilarity
+$$
+
+Αυτό είναι εξαιρετικό test της αρχιτεκτονικής μας.
+
+---
+
+# 33. Extreme tests
+
+Χρειαζόμαστε και deliberately absurd formulas:
+
+* 400% water
+* 200% fat
+* 0 flour protein
+* yeast + no fermentable structure
+* huge soda with no acid
+
+Το σύστημα πρέπει να λέει:
+
+> no canonical match / structurally implausible
+
+και όχι να βρίσκει το «πλησιέστερο» προϊόν με 72%.
+
+---
+
+# 34. Dataset versions
+
+Πρέπει να είναι versioned.
+
+Π.χ.:
+
+$$
+Dataset\ v1.0
+$$
+
+με ingredient database v1.
+
+Αν αλλάξουμε:
+
+* composition assumptions,
+* canonical labels,
+* normalization,
+
+δημιουργούμε νέα version.
+
+Έτσι ξέρουμε γιατί άλλαξε ένα prototype.
+
+---
+
+# 35. Gold dataset
+
+Θα ήθελα τελικά ένα μικρό, εξαιρετικά καθαρό subset.
+
+Π.χ.:
+
+$$
+10-20
+$$
+
+canonical formulas ανά major category,
+
+επιλεγμένες χειροκίνητα από πολύ αξιόπιστες πηγές.
+
+Αυτό είναι το **Gold Set**.
+
+Δεν χρησιμοποιείται μόνο για calibration. Είναι και regression suite.
+
+Κάθε νέα αλλαγή στο μοντέλο πρέπει να περνά από αυτά.
+
+---
+
+# 36. Broad dataset
+
+Παράλληλα:
+
+$$
+hundreds/thousands
+$$
+
+πραγματικές formulas από ευρύτερες πηγές.
+
+Αυτό μας δείχνει:
+
+* πραγματικό variation,
+* popular adaptations,
+* noisy boundaries.
+
+Άρα έχουμε:
+
+$$
+Gold\ Dataset
++
+Broad\ Dataset
+$$
+
+και τα δύο είναι χρήσιμα για διαφορετικούς λόγους.
+
+---
+
+# 37. Θα έβαζα και outcome data όπου υπάρχει
+
+Αν μια πηγή αναφέρει:
+
+* chewy
+* tender
+* open crumb
+* dense
+* crisp
+* cakey
+* spread diameter
+* loaf volume
+
+θα τα αποθηκεύουμε.
+
+Όχι απαραίτητα για V1 classification.
+
+Αλλά αυτά θα είναι μελλοντικά ground truth για:
+
+$$
+TexturePrediction
+$$
+
+και:
+
+$$
+OutcomeModel
+$$
+
+---
+
+# 38. Ακόμη καλύτερα: δικά μας controlled experiments
+
+Κάποια στιγμή το καλύτερο data source θα είναι πειράματα όπου αλλάζει **μία μόνο μεταβλητή**.
+
+Παράδειγμα:
+
+100 flour
+65 water
+2 salt
+
+και:
+
+$$
+Fat=0,5,10,20,40
+$$
+
+με όλα τα άλλα ίδια.
+
+Αυτό μας δίνει causal πληροφορία που δεν μπορείς εύκολα να πάρεις από τυχαίες recipes.
+
+---
+
+# 39. Άρα το ιδανικό dataset έχει τρία layers
+
+### A. Canonical formulas
+
+Τι θεωρούν οι ειδικοί ότι είναι τα προϊόντα.
+
+### B. Real-world recipes
+
+Πώς πραγματικά χρησιμοποιούνται οι όροι.
+
+### C. Controlled experiments
+
+Τι προκαλεί πραγματικά κάθε μεταβλητή.
+
+Αυτό είναι πολύ ισχυρότερο από ένα απλό scrape recipes.
+
+---
+
+# 40. Το σημαντικό methodological σημείο
+
+Δεν θέλουμε να εκπαιδεύσουμε το εργαλείο να απαντά:
+
+> «Οι περισσότεροι bloggers βάζουν τόσο βούτυρο, άρα αυτό είναι brioche.»
+
+Θέλουμε να ενώσουμε:
+
+$$
+\boxed{
+Food\ Science
++
+Culinary\ Definitions
++
+Empirical\ Recipe\ Distributions
++
+Controlled\ Experiments
+}
+$$
+
+Αυτό θα κάνει το μοντέλο πολύ πιο αξιόπιστο.
+
+## Το επόμενο βήμα
+
+Τώρα έχουμε ουσιαστικά ολοκληρώσει το conceptual pipeline:
+
+$$
+Ingredients
+\rightarrow
+Composition
+\rightarrow
+DerivedMetrics
+\rightarrow
+Process
+\rightarrow
+Taxonomy
+\rightarrow
+Similarity
+\rightarrow
+Validation
+$$
+
+Το επόμενο βήμα θα ήταν να φτιάξουμε ένα **Formal Domain Specification** του συστήματος: entities, value objects, enums, invariants, formulas και boundaries, χωρίς UI και χωρίς implementation language.
+
+Με άλλα λόγια, να μετατρέψουμε όλη τη συζήτησή μας μέχρι εδώ σε ένα αυστηρό τεχνικό spec που ένας agent ή developer θα μπορούσε μετά να υλοποιήσει χωρίς να χρειάζεται να ξαναερμηνεύσει τις αποφάσεις μας.

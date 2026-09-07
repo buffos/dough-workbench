@@ -1,0 +1,1068 @@
+Πάμε στο **Process Model**. Εδώ πλέον μοντελοποιούμε το δεύτερο μισό της συνάρτησης:
+
+$$
+\boxed{
+Outcome=f(Composition,Flour,Process)
+}
+$$
+
+Μέχρι τώρα ξέραμε τι υπάρχει μέσα στη φόρμουλα. Τώρα θέλουμε να ξέρουμε **τι κάνουμε σε αυτή τη φόρμουλα**.
+
+Το process δεν πρέπει να αποθηκεύεται ως ένα απλό label τύπου “kneaded”. Χρειάζεται να σπάσει σε ανεξάρτητες μεταβλητές.
+
+## 1. Οι βασικές οικογένειες process variables
+
+Θα τις χώριζα σε:
+
+$$
+P=
+(
+Mixing,
+Aeration,
+FatHandling,
+Fermentation,
+Resting,
+Lamination,
+ThermalProcess,
+Geometry
+)
+$$
+
+Αυτές είναι αρκετές για V1 και επεκτείνονται εύκολα.
+
+---
+
+# 2. Mixing
+
+Πρώτα:
+
+$$
+MixingIntensity
+$$
+
+π.χ. normalized:
+
+$$
+0\rightarrow1
+$$
+
+όπου:
+
+* 0 = σχεδόν καθόλου mixing
+* 0.2 = gentle combining
+* 0.5 = moderate mixing
+* 0.8 = strong kneading
+* 1.0 = intensive mechanical mixing
+
+Αλλά το intensity μόνο του δεν αρκεί.
+
+Χρειαζόμαστε και:
+
+$$
+MixingDuration
+$$
+
+και:
+
+$$
+MixingMethod
+$$
+
+π.χ.:
+
+* hand
+* planetary
+* spiral
+* paddle
+* whisk
+* folding
+
+Δεν θα προσπαθούσα από V1 να κάνω φυσικό μοντέλο ισχύος mixer. Θα τα μετατρέπαμε σε **effective mechanical work score**.
+
+---
+
+# 3. Effective Mechanical Work
+
+Θα μπορούσαμε να έχουμε:
+
+$$
+MW=f(Intensity,Duration,Method)
+$$
+
+και μετά αυτό να επηρεάζει:
+
+$$
+EffectiveGlutenIndex
+$$
+
+Παράδειγμα:
+
+$$
+EGI=
+GPI \times M_{mix}
+$$
+
+όπου:
+
+$$
+0\le M_{mix}\le1
+$$
+
+Αν έχεις δυνατό αλεύρι αλλά σχεδόν καθόλου mixing:
+
+$$
+GPI=90
+$$
+
+αλλά ίσως:
+
+$$
+EGI=45
+$$
+
+πριν μπουν folds/time.
+
+---
+
+# 4. Δεν πρέπει όμως το mixing να αυξάνει πάντα το gluten
+
+Σωστά.
+
+Μετά από κάποιο σημείο μπορεί να έχουμε:
+
+$$
+overmixing
+$$
+
+και degradation.
+
+Άρα ιδανικά η σχέση είναι:
+
+$$
+EGI(MW)
+$$
+
+που αρχικά αυξάνει, κορυφώνεται και μετά πέφτει.
+
+Μια Gaussian-like ή bell-shaped modifier θα ήταν πιο σωστή από γραμμική σχέση.
+
+---
+
+# 5. Folding
+
+Τα folds πρέπει να είναι ανεξάρτητη μεταβλητή.
+
+Π.χ.:
+
+$$
+FoldCount
+$$
+
+$$
+FoldStrength
+$$
+
+$$
+FoldInterval
+$$
+
+Για V1 μπορούμε να τα συμπτύξουμε σε:
+
+$$
+FoldDevelopmentScore
+$$
+
+Το οποίο αυξάνει gluten organization με μικρότερο mechanical stress από continuous kneading.
+
+---
+
+# 6. Resting / autolyse
+
+Χρειαζόμαστε:
+
+$$
+RestDuration
+$$
+
+και:
+
+$$
+RestType
+$$
+
+π.χ.:
+
+* autolyse
+* bench rest
+* intermediate rest
+* post-mixing rest
+
+Το autolyse πρέπει να επηρεάζει κυρίως:
+
+* hydration completeness
+* extensibility
+* gluten development efficiency
+
+Άρα:
+
+$$
+HydrationEfficiency \uparrow
+$$
+
+και:
+
+$$
+RequiredMechanicalWork \downarrow
+$$
+
+---
+
+# 7. Order of ingredient addition
+
+Αυτό είναι κρίσιμο.
+
+Θα είχαμε:
+
+$$
+AdditionSequence
+$$
+
+και όχι μόνο ingredient list.
+
+Για παράδειγμα brioche:
+
+1. flour
+2. liquid/egg
+3. gluten development
+4. butter
+
+Shortcrust:
+
+1. flour
+2. butter
+3. minimal liquid
+
+Οι ίδιες ποσότητες μπορεί να δώσουν τελείως διαφορετικό αποτέλεσμα.
+
+---
+
+# 8. Fat incorporation mode
+
+Θα το έκανα ξεχωριστό enum:
+
+$$
+FatMode\in
+\{
+earlyCoating,
+creamed,
+melted,
+lateIncorporation,
+coldChunks,
+laminated,
+emulsified
+\}
+$$
+
+Αυτό είναι εξαιρετικά σημαντικό.
+
+Παράδειγμα:
+
+### earlyCoating
+
+Λίπος πριν από σημαντική hydration.
+
+$$
+GlutenDevelopment \downarrow
+$$
+
+### lateIncorporation
+
+Πρώτα gluten, μετά fat.
+
+$$
+GlutenPreservation \uparrow
+$$
+
+### creamed
+
+$$
+MechanicalAeration \uparrow
+$$
+
+### laminated
+
+$$
+LayerFormation \uparrow
+$$
+
+---
+
+# 9. Fat temperature
+
+Χρειαζόμαστε επίσης:
+
+$$
+FatTemperature
+$$
+
+ή ακόμα καλύτερα:
+
+$$
+FatPhysicalState
+$$
+
+κατά το mixing:
+
+* hard
+* plastic
+* soft
+* melted
+
+Αυτό είναι συχνά πιο ουσιαστικό από τον απόλυτο αριθμό °C.
+
+Για creaming θέλεις:
+
+$$
+plastic
+$$
+
+Για lamination:
+
+$$
+plastic\ but\ firm
+$$
+
+Για melted-butter cake:
+
+$$
+melted
+$$
+
+---
+
+# 10. Mechanical aeration
+
+Άλλος άξονας:
+
+$$
+AerationMethod
+$$
+
+π.χ.:
+
+* none
+* creaming
+* whole-egg whipping
+* egg-white whipping
+* whipped cream
+* mechanical beating
+
+και:
+
+$$
+AerationLevel
+$$
+
+0–1.
+
+Έτσι το model μπορεί να ξέρει ότι ένα sponge χωρίς chemical leavener μπορεί παρ' όλα αυτά να έχει πολύ υψηλό gas potential.
+
+---
+
+# 11. Foam stability
+
+Δεν αρκεί:
+
+$$
+AerationLevel
+$$
+
+Θέλουμε:
+
+$$
+FoamStability
+$$
+
+που εξαρτάται από:
+
+* egg whites
+* sugar
+* fat contamination
+* overwhipping
+* folding intensity
+
+Άρα:
+
+$$
+EffectiveMechanicalGas
+=
+AerationLevel\times FoamStability
+$$
+
+---
+
+# 12. Folding after aeration
+
+Σε sponge/chiffon πρέπει να ξέρουμε και πόσο επιθετικό είναι το folding.
+
+Θα μπορούσαμε να έχουμε:
+
+$$
+FoamLossFactor
+$$
+
+π.χ.:
+
+* gentle folding → low loss
+* moderate → medium
+* vigorous mixing → high
+
+Άρα:
+
+$$
+GasRetained=
+GasCreated\times(1-FoamLoss)
+$$
+
+---
+
+# 13. Fermentation model
+
+Για yeast systems χρειαζόμαστε τουλάχιστον:
+
+$$
+YeastAmount
+$$
+
+$$
+FermentationTime
+$$
+
+$$
+FermentationTemperature
+$$
+
+$$
+ProofStages
+$$
+
+$$
+ColdFermentation
+$$
+
+και ίσως:
+
+$$
+PrefermentFraction
+$$
+
+αργότερα.
+
+---
+
+# 14. Bulk fermentation
+
+Ξεχωριστά:
+
+$$
+BulkTime
+$$
+
+$$
+BulkTemperature
+$$
+
+$$
+BulkExpansionTarget
+$$
+
+Το expansion target είναι σημαντικότερο από τον χρόνο.
+
+Μπορεί να είναι:
+
+* 30%
+* 50%
+* 100%
+* doubled
+
+Το tool θα μπορούσε αργότερα να προτιμά target rise αντί exact hours.
+
+---
+
+# 15. Final proof
+
+Ξεχωριστά:
+
+$$
+ProofTime
+$$
+
+$$
+ProofTemperature
+$$
+
+$$
+ProofExpansion
+$$
+
+και ίσως:
+
+$$
+ProofState
+\in
+\{under,optimal,over\}
+$$
+
+αν ο χρήστης το δηλώσει εκ των υστέρων.
+
+---
+
+# 16. Fermentation severity
+
+Θα μπορούσαμε να δημιουργήσουμε derived metric:
+
+$$
+FSV=
+f(
+Yeast,
+Time,
+Temperature,
+Sugar,
+Salt,
+Hydration
+)
+$$
+
+Δεν θα ήταν ακριβής κινητική ζύμωσης αλλά normalized score.
+
+Παράδειγμα:
+
+$$
+0=almost\ none
+$$
+
+$$
+1=very\ aggressive
+$$
+
+Αυτό θα μας βοηθά να συγκρίνουμε 0.1% yeast / 24h με 2% yeast / 1h.
+
+---
+
+# 17. Temperature correction
+
+Η θερμοκρασία δεν πρέπει να μπαίνει απλώς σαν linear coefficient.
+
+Η βιολογική δραστηριότητα έχει nonlinear response.
+
+Για V1 μπορούμε να χρησιμοποιήσουμε piecewise modifier:
+
+$$
+T_f=
+\begin{cases}
+very\ low & T<8\\
+low & 8-18\\
+normal & 18-26\\
+high & 26-30\\
+stress & >30
+\end{cases}
+$$
+
+και μετά calibration.
+
+---
+
+# 18. Preferments / sourdough
+
+Δεν θα τα αγνοούσα αρχιτεκτονικά.
+
+Θα έβαζα από τώρα:
+
+$$
+FermentationAgent
+$$
+
+με:
+
+* commercial yeast
+* sourdough culture
+* mixed
+
+και:
+
+$$
+PrefermentPercentage
+$$
+
+π.χ.:
+
+* poolish
+* biga
+* levain
+
+Για V1 ο classifier μπορεί να μη μοντελοποιεί πλήρως τη μικροβιολογία, αλλά το schema πρέπει να το χωρά.
+
+---
+
+# 19. Lamination model
+
+Για laminated doughs θέλουμε:
+
+$$
+Lamination=true/false
+$$
+
+αλλά και:
+
+$$
+LayerFatPercentage
+$$
+
+$$
+FoldCount
+$$
+
+$$
+FoldType
+$$
+
+π.χ.:
+
+* single fold
+* double fold
+
+και:
+
+$$
+DoughFatTemperatureRelationship
+$$
+
+Το σημαντικότερο είναι αν fat και dough έχουν παρόμοια plasticity.
+
+Αυτό αργότερα θα επηρεάζει:
+
+$$
+LayerIntegrity
+$$
+
+---
+
+# 20. Layer Integrity Score
+
+Heuristic:
+
+$$
+LI=
+f(
+FatState,
+DoughState,
+FoldCount,
+Temperature,
+Handling
+)
+$$
+
+Υψηλό:
+
+→ καθαρές στρώσεις.
+
+Χαμηλό:
+
+→ butter smearing / breakage.
+
+Για classification ίσως δεν χρειάζεται, αλλά για outcome prediction είναι πολύ χρήσιμο.
+
+---
+
+# 21. Thermal process
+
+Χρειαζόμαστε τουλάχιστον:
+
+$$
+BakeTemperature
+$$
+
+$$
+BakeTime
+$$
+
+και:
+
+$$
+OvenMode
+$$
+
+π.χ.:
+
+* static
+* fan
+* steam-assisted
+* griddle/pan
+* fryer
+
+Γιατί crêpe και bread δεν έχουν ίδιο thermal geometry.
+
+---
+
+# 22. Initial heat intensity
+
+Το ίδιο 220°C δεν σημαίνει το ίδιο σε:
+
+* preheated baking steel
+* cold cake tin
+* cast iron
+* air fryer
+
+Άρα αργότερα ίσως χρειαζόμαστε:
+
+$$
+HeatTransferIntensity
+$$
+
+Αλλά για V1 θα μείνουμε σε oven mode + temperature.
+
+---
+
+# 23. Steam during baking
+
+Ξεχωριστή μεταβλητή:
+
+$$
+ExternalSteam
+$$
+
+π.χ.:
+
+* none
+* low
+* high
+
+Στο bread μπορεί να επηρεάσει:
+
+* crust delay
+* oven spring
+* gloss
+* crust thickness
+
+Δεν αλλάζει family classification, αλλά αλλάζει outcome.
+
+---
+
+# 24. Geometry
+
+Πολύ σημαντικό αλλά συχνά αγνοημένο.
+
+Θα ήθελα:
+
+$$
+ShapeType
+$$
+
+και:
+
+$$
+CharacteristicThickness
+$$
+
+π.χ.:
+
+* thin sheet
+* pancake
+* loaf
+* muffin cup
+* cake pan
+* roll
+* cookie
+
+Γιατί η ίδια formula σε πάχος 5 mm και σε loaf 10 cm ψήνεται τελείως διαφορετικά.
+
+---
+
+# 25. Surface-to-volume ratio
+
+Αυτό είναι ίσως το πιο χρήσιμο geometry metric:
+
+$$
+SVR=
+\frac{SurfaceArea}{Volume}
+$$
+
+Δεν χρειάζεται από V1 ακριβής γεωμετρία.
+
+Μπορούμε να έχουμε κατηγορίες:
+
+* very high → crackers, crêpes
+* high → cookies
+* medium → rolls
+* low → loaf/cake
+
+Αυτό επηρεάζει:
+
+* moisture loss
+* crust fraction
+* crispness
+* baking time.
+
+---
+
+# 26. Process-derived structural modifiers
+
+Τώρα μπορούμε να δούμε πώς το process επηρεάζει τα προηγούμενα metrics.
+
+### Effective gluten
+
+$$
+EGI=
+GPI
+\times
+M_{mix}
+\times
+M_{rest}
+\times
+M_{fatMode}
+\times
+M_{fermentation}
+$$
+
+εννοιολογικά.
+
+### Effective gas retention
+
+$$
+GRC'=
+GRC
+\times
+M_{foam}
+\times
+M_{handling}
+\times
+M_{proof}
+$$
+
+### Fluidity
+
+$$
+FI'=
+f(FI,Temperature,FatState,Rest)
+$$
+
+### Layering
+
+$$
+LI=
+f(LaminationProcess)
+$$
+
+---
+
+# 27. Process is not only modifier — sometimes it defines the product
+
+Αυτό είναι θεμελιώδες.
+
+Croissant χωρίς lamination:
+
+→ δεν είναι croissant, ακόμη κι αν composition είναι σωστό.
+
+Genoise χωρίς whipping:
+
+→ δεν είναι ουσιαστικά genoise process.
+
+Brioche χωρίς yeast fermentation:
+
+→ brioche-like composition, αλλά όχι canonical brioche.
+
+Άρα process έχει δύο ρόλους:
+
+1. μεταβάλλει texture
+2. συμμετέχει στην ίδια την identity.
+
+---
+
+# 28. V1 Process Schema
+
+Θα το κρατούσα αρκετά compact:
+
+```text
+Process
+├── Mixing
+│   ├── method
+│   ├── intensity
+│   ├── duration
+│   ├── folds
+│   └── rest/autolyse
+│
+├── Ingredient Order
+│   └── fat incorporation mode
+│
+├── Aeration
+│   ├── method
+│   ├── intensity
+│   └── foam handling
+│
+├── Fermentation
+│   ├── agent
+│   ├── bulk time/temp
+│   ├── final proof time/temp
+│   └── cold fermentation
+│
+├── Lamination
+│   ├── enabled
+│   ├── fold type/count
+│   └── fat state
+│
+└── Baking
+    ├── temperature
+    ├── time
+    ├── oven mode
+    └── geometry
+```
+
+Αυτό είναι ήδη πολύ δυνατό.
+
+---
+
+# 29. Δεν θα ζητούσα όλα αυτά από τον απλό χρήστη
+
+Πολύ σημαντικό για το μελλοντικό UI.
+
+Θα είχα δύο modes.
+
+### Basic
+
+Ρωτά:
+
+* kneaded?
+* yeast?
+* whipped eggs?
+* creamed butter?
+* laminated?
+* fermentation time?
+* bake method?
+
+### Advanced
+
+Δίνει:
+
+* intensity
+* temperature
+* duration
+* folds
+* fat state
+* proof stages
+* geometry
+
+Το underlying model είναι το ίδιο.
+
+---
+
+# 30. Defaults από technique presets
+
+Ακόμη καλύτερα, ο χρήστης μπορεί να επιλέγει:
+
+> Technique: brioche method
+
+και αυτό φορτώνει preset process vector.
+
+Ή:
+
+> muffin method
+> creaming method
+> reverse creaming
+> laminated croissant method
+> no-knead bread
+
+και μετά μπορεί να αλλάξει επιμέρους τιμές.
+
+---
+
+# 31. Τι output θα δίνει το process model
+
+Όχι μόνο `ProcessSimilarity`.
+
+Θα μπορούσε να υπολογίζει:
+
+* Effective gluten development
+* Aeration efficiency
+* Fermentation severity
+* Foam retention
+* Lamination integrity
+* Proof risk
+* Expected moisture loss
+* Set timing tendency
+
+και μετά αυτά τροφοδοτούν τον classifier/outcome model.
+
+---
+
+# 32. Η συνολική συνάρτηση τώρα γίνεται
+
+$$
+g(Ingredients)
+\rightarrow
+Composition
+$$
+
+$$
+h(Composition,Flour)
+\rightarrow
+IntrinsicMetrics
+$$
+
+$$
+p(Process,IntrinsicMetrics)
+\rightarrow
+EffectiveMetrics
+$$
+
+και μετά:
+
+$$
+f(EffectiveMetrics)
+\rightarrow
+Family/Similarity/Behavior
+$$
+
+Αυτό είναι καλύτερο από το να έχουμε ένα τεράστιο αδιαφανές \(f()\).
+
+---
+
+# 33. Ένα παράδειγμα
+
+Formula:
+
+* 100 flour
+* 50 egg
+* 50 butter
+* 15 sugar
+* yeast
+
+Compositionally:
+
+> highly enriched yeast dough
+> brioche-like: πολύ υψηλά
+
+### Process A
+
+* strong kneading
+* butter added late
+* controlled proof
+
+→ high effective gluten
+→ canonical brioche compatibility υψηλή.
+
+### Process B
+
+* butter rubbed into flour first
+* minimal mixing
+
+→ gluten development πολύ χαμηλότερο.
+
+Το tool θα μπορούσε να πει:
+
+> Formula similarity to brioche: 92%
+> Process similarity: 35%
+> Expected structure: short/tender rather than fibrous brioche-like crumb.
+
+Αυτό δείχνει γιατί όλη αυτή η δουλειά αξίζει.
+
+Το επόμενο βήμα πλέον είναι το **Validation Dataset Design**: πριν βάλουμε πραγματικά ranges και weights στα prototypes, πρέπει να αποφασίσουμε τι dataset πραγματικών συνταγών χρειαζόμαστε, πώς θα τις κανονικοποιούμε, ποιες πηγές θεωρούμε αξιόπιστες και πώς θα χρησιμοποιήσουμε τα δεδομένα για να βαθμονομήσουμε το μοντέλο χωρίς να το κάνουμε απλώς «μέσο όρο recipes».

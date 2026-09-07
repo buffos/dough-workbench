@@ -1,0 +1,1131 @@
+Πάμε λοιπόν στο **Derived Metrics Model**. Εδώ αρχίζει ουσιαστικά να σχηματίζεται το \(g()\): παίρνουμε τα raw ingredient compositions και τα μετατρέπουμε σε χρήσιμες μεταβλητές για το baking.
+
+Το κρίσιμο είναι να χωρίσουμε τα metrics σε δύο κατηγορίες:
+
+1. **Physical / directly calculable metrics** — προκύπτουν σχεδόν αντικειμενικά από τη σύνθεση.
+2. **Heuristic / model-derived indices** — είναι δικά μας scores που προσπαθούν να προβλέψουν συμπεριφορά.
+
+Αυτός ο διαχωρισμός πρέπει να είναι απολύτως καθαρός στο μοντέλο.
+
+# 1. Πρώτα ορίζουμε τη βάση
+
+Έστω συνολικό βάρος flour-base:
+
+$$
+F=\sum_j Flour_j
+$$
+
+και το θέτουμε:
+
+$$
+F=100\%
+$$
+
+Όλα τα ingredient quantities μετατρέπονται σε:
+
+$$
+q_i=\frac{m_i}{F}\times100
+$$
+
+Άρα αν έχουμε:
+
+* flour 500 g
+* milk 250 g
+* butter 100 g
+
+τότε:
+
+$$
+Milk=50\%
+$$
+
+$$
+Butter=20\%
+$$
+
+Αυτό παραμένει το input representation.
+
+# 2. Total Water
+
+Αυτό είναι καθαρά φυσικό metric:
+
+$$
+W_T=
+\frac{
+\sum_i m_i w_i
+}{F}
+\times100
+$$
+
+όπου \(w_i\) είναι το water fraction του ingredient.
+
+Παράδειγμα:
+
+100% flour
+40% milk
+30% egg
+20% butter
+
+Αν έχουμε περίπου:
+
+* milk 87% water
+* egg 75%
+* butter 16%
+
+τότε:
+
+$$
+W_T =
+40(0.87)+30(0.75)+20(0.16)
+$$
+
+$$
+=34.8+22.5+3.2
+$$
+
+$$
+=60.5\%
+$$
+
+Άρα:
+
+$$
+\boxed{TotalWater=60.5\%}
+$$
+
+Αυτό είναι πραγματικό, σχετικά αντικειμενικό metric.
+
+# 3. Effective Water
+
+Εδώ αρχίζει το μοντέλο.
+
+Δεν είναι όλο το νερό εξίσου διαθέσιμο.
+
+Θα μπορούσαμε να έχουμε:
+
+$$
+W_E=
+\frac{
+\sum_i m_iw_iA_{w,i}
+}{F}
+\times100
+$$
+
+όπου:
+
+$$
+0\le A_{w,i}\le1
+$$
+
+είναι availability coefficient.
+
+Παράδειγμα:
+
+* καθαρό νερό → \(A_w\approx1\)
+* milk → κοντά στο 1
+* yogurt → ίσως μικρότερο
+* fruit puree → μικρότερο
+* raisins → πολύ μικρότερο
+* chocolate chip → πρακτικά σχεδόν 0 για τη continuous phase
+
+Αλλά εδώ θέλει προσοχή:
+
+> Δεν έχουμε ακόμη αρκετή βάση για να δώσουμε αυθαίρετα coefficients.
+
+Άρα για V1 θα έκανα:
+
+$$
+\boxed{TotalWater}
+$$
+
+ως authoritative metric
+
+και:
+
+$$
+\boxed{EffectiveWater}
+$$
+
+ως experimental/heuristic metric.
+
+# 4. Total Fat
+
+Καθαρά υπολογίσιμο:
+
+$$
+Fat_T=
+\frac{
+\sum_i m_if_i
+}{F}
+\times100
+$$
+
+Παράδειγμα:
+
+20% butter με 82% fat:
+
+$$
+20\times0.82=16.4\%
+$$
+
+30% whole egg με 10% fat:
+
+$$
+30\times0.10=3\%
+$$
+
+άρα:
+
+$$
+Fat_T=19.4\%
+$$
+
+Αυτό είναι πολύ πιο σωστό από το να πεις:
+
+> «έχει 20% βούτυρο».
+
+# 5. Fat by physical behavior
+
+Θα κρατούσα επίσης ξεχωριστά:
+
+$$
+Fat_{liquid}
+$$
+
+$$
+Fat_{plastic}
+$$
+
+$$
+Fat_{hard}
+$$
+
+Γιατί:
+
+20% olive oil
+
+και
+
+20% butter fat
+
+δεν είναι λειτουργικά το ίδιο.
+
+Άρα:
+
+$$
+Fat_T=
+Fat_L+Fat_P+Fat_H
+$$
+
+Αυτό θα γίνει πολύ χρήσιμο για:
+
+* tenderness,
+* creaming,
+* lamination,
+* cookie spread.
+
+# 6. Total Sugar
+
+Θέλουμε:
+
+$$
+Sugar_T=
+Sucrose+Glucose+Fructose+Lactose+Maltose+\ldots
+$$
+
+ως baker's %.
+
+Αλλά παράλληλα κρατάμε τα επιμέρους.
+
+Γιατί:
+
+$$
+100g\ total\ sugar
+$$
+
+δεν περιγράφει σωστά ούτε sweetness ούτε fermentation ούτε browning.
+
+# 7. Sweetness Equivalent
+
+Αυτό είναι πλέον derived functional metric.
+
+Μπορούμε να χρησιμοποιήσουμε sucrose ως reference:
+
+$$
+Sweetness_{sucrose}=1
+$$
+
+και κατά προσέγγιση:
+
+* glucose < 1
+* fructose > 1
+* lactose πολύ χαμηλότερη
+
+οπότε:
+
+$$
+SE=
+\sum_j Sugar_jR_{sweet,j}
+$$
+
+Αυτό μπορεί να εκφράζεται ως:
+
+> sucrose-equivalent sweetness per 100 flour.
+
+Έτσι δύο φόρμουλες με ίδιο total sugar μπορεί να έχουν διαφορετική αντιληπτή γλυκύτητα.
+
+# 8. Fermentable Sugar Load
+
+Άλλο metric:
+
+$$
+FS=
+\sum_j Sugar_jR_{ferm,j}
+$$
+
+όπου ο συντελεστής εξαρτάται από τον οργανισμό.
+
+Για baker's yeast:
+
+* glucose → άμεσα διαθέσιμη
+* fructose → διαθέσιμη
+* sucrose → διαθέσιμη μετά από hydrolysis
+* maltose → διαθέσιμη
+* lactose → πρακτικά όχι
+
+Άρα:
+
+$$
+\boxed{TotalSugar \neq FermentableSugar}
+$$
+
+Πολύ σημαντικό.
+
+# 9. Reducing Sugar Load
+
+Για Maillard:
+
+$$
+RS=
+Glucose+Fructose+Lactose+Maltose+\ldots
+$$
+
+με κατάλληλα weights αργότερα.
+
+Η sucrose δεν είναι reducing sugar στην αρχική της μορφή.
+
+Άρα μπορούμε να έχουμε ξεχωριστό metric:
+
+$$
+\boxed{ReducingSugarLoad}
+$$
+
+που θα βοηθήσει στο browning model.
+
+# 10. Starch Load
+
+$$
+Starch_T=
+\frac{
+\sum_i m_i starch_i
+}{F}
+\times100
+$$
+
+Αυτό ακούγεται περίεργο επειδή το flour είναι ήδη η βάση.
+
+Αλλά είναι χρήσιμο όταν έχουμε:
+
+* flour blends,
+* cocoa,
+* cornstarch,
+* potato starch,
+* tapioca,
+* fruit powders.
+
+Δύο formulas με 100% «flour base» δεν έχουν αναγκαστικά ίδιο συνολικό starch.
+
+# 11. Gluten-forming Protein Load
+
+$$
+GP=
+\frac{
+\sum_i m_i glutenProtein_i
+}{F}
+\times100
+$$
+
+Αυτό είναι πολύ καλύτερο από:
+
+$$
+TotalProtein
+$$
+
+αλλά πάλι δεν αρκεί.
+
+Γιατί:
+
+$$
+12\% glutenProtein
+$$
+
+σε δύο άλευρα δεν σημαίνει ίδια strength.
+
+Εδώ θα μπει αργότερα flour quality.
+
+# 12. Non-gluten Structural Protein
+
+Θέλουμε ξεχωριστά:
+
+$$
+EP = EggProtein
+$$
+
+$$
+DP = DairyProtein
+$$
+
+$$
+OP = OtherProtein
+$$
+
+και πιθανώς:
+
+$$
+SP = EP+DP+\alpha OP
+$$
+
+όπου \(SP\) είναι non-gluten structural protein potential.
+
+Αυτό θα βοηθήσει πολύ στα:
+
+* cakes,
+* sponge,
+* crêpes,
+* custard-like batters.
+
+# 13. Fiber Load
+
+$$
+Fiber_T=
+\frac{\sum_i m_iFiber_i}{F}\times100
+$$
+
+Αυτό μπορεί αργότερα να διορθώνει:
+
+* water absorption,
+* viscosity,
+* gluten interference.
+
+Σημαντικό ειδικά σε:
+
+* whole wheat,
+* rye,
+* oat,
+* cocoa,
+* fruit/vegetable powders.
+
+# 14. Salt Load
+
+$$
+Salt_T=
+\frac{
+\sum_i m_iNaCl_i
+}{F}
+\times100
+$$
+
+Από οποιαδήποτε πηγή:
+
+* salt
+* salted butter
+* cheese
+* olives
+
+Άρα το πρόγραμμα ξέρει το πραγματικό salt load.
+
+# 15. Acid Capacity
+
+Θα ήθελα metric:
+
+$$
+AC
+$$
+
+που να εκφράζει:
+
+> πόση sodium bicarbonate μπορεί να εξουδετερώσει η φόρμουλα.
+
+Ιδανικά:
+
+$$
+AC=
+\sum_i m_i \cdot NeutralizationCapacity_i
+$$
+
+Αυτό είναι πολύ πιο χρήσιμο από το pH για soda calculation.
+
+Το pH θα υπάρχει ως άλλο metric:
+
+$$
+pH_{estimated}
+$$
+
+αλλά το pH ολόκληρου batter δεν υπολογίζεται με απλή γραμμική πρόσθεση, άρα θα είναι πολύ πιο δύσκολο.
+
+# 16. Bicarbonate Balance
+
+Αν έχουμε soda:
+
+$$
+B = SodiumBicarbonate
+$$
+
+τότε μπορούμε να ορίσουμε:
+
+$$
+ABR=
+\frac{B}{AC}
+$$
+
+ή πιο πρακτικά:
+
+$$
+NeutralizationBalance=
+B_{required}-B_{actual}
+$$
+
+και να έχουμε:
+
+* acid excess
+* balanced
+* bicarbonate excess
+
+Αυτό μπορεί αργότερα να δίνει πολύ χρήσιμα warnings.
+
+# 17. Emulsifier Load
+
+$$
+EM=
+\frac{
+\sum_i m_i emulsifier_i
+}{F}
+\times100
+$$
+
+Δεν ξέρουμε ακόμη πώς ακριβώς θα μεταφραστεί σε emulsion stability, αλλά πρέπει να υπάρχει.
+
+Πηγές:
+
+* egg yolk phospholipids
+* lecithin
+* mono/diglycerides
+
+# 18. Total Solids
+
+Ένα απλό αλλά χρήσιμο metric:
+
+$$
+Solids=
+\frac{
+TotalMass-Water
+}{F}
+$$
+
+και επίσης:
+
+$$
+WaterToSolids=
+\frac{Water}{Solids}
+$$
+
+Αυτό μπορεί να βοηθήσει πολύ στον διαχωρισμό:
+
+* batter,
+* dough,
+* syrupy systems.
+
+# 19. Free-water competition load
+
+Τώρα μπαίνουμε στα heuristics.
+
+Ξέρουμε ότι:
+
+* sugar,
+* salt,
+* protein,
+* fiber
+
+ανταγωνίζονται το flour για νερό.
+
+Άρα μπορούμε να δημιουργήσουμε:
+
+$$
+WCL=
+aS+bSalt+cProtein+dFiber+\ldots
+$$
+
+ως **Water Competition Load**.
+
+Δεν θα το παρουσιάζουμε ως φυσική ποσότητα.
+
+Θα είναι:
+
+> model score.
+
+Και μετά:
+
+$$
+EffectiveHydrationIndex
+=
+f(TotalWater,WCL)
+$$
+
+Αυτό θα είναι πιο έξυπνο από το απλό total hydration.
+
+# 20. Flour Absorption Demand
+
+Ένας άλλος χρήσιμος δείκτης:
+
+$$
+FAD=
+f(
+FlourProtein,
+Fiber,
+DamagedStarch,
+WholegrainFraction
+)
+$$
+
+Υψηλό FAD σημαίνει:
+
+> αυτή η flour system μπορεί/χρειάζεται περισσότερο νερό.
+
+Έτσι:
+
+$$
+70\% hydration
+$$
+
+με χαμηλό FAD
+
+και
+
+$$
+70\% hydration
+$$
+
+με υψηλό FAD
+
+δεν θα θεωρούνται ίδια.
+
+# 21. Relative Hydration
+
+Αντί να κοιτάμε μόνο:
+
+$$
+H=70
+$$
+
+θα μπορούσαμε να ορίσουμε:
+
+$$
+RH=
+\frac{EffectiveWater}
+{ExpectedAbsorption}
+$$
+
+και έτσι να έχουμε:
+
+* \(RH<1\) → comparatively stiff
+* \(RH\approx1\) → normal
+* \(RH>1\) → wetter than flour's typical absorption
+
+Αυτό θεωρώ εξαιρετικά χρήσιμο για classification.
+
+# 22. Gluten Potential Index
+
+Τώρα πάμε στους καθαρά heuristic δείκτες.
+
+Θα μπορούσε να είναι:
+
+$$
+GPI=
+f(
+GlutenProtein,
+W,
+P/L,
+RelativeHydration
+)
+$$
+
+Αυτό λέει:
+
+> πόσο ισχυρό gluten network *θα μπορούσε* θεωρητικά να δημιουργήσει αυτή η formula.
+
+Αλλά μετά θέλουμε άλλο metric:
+
+$$
+EGI
+$$
+
+**Effective Gluten Index**
+
+που θα λαμβάνει υπόψη:
+
+* sugar interference,
+* fat interference,
+* acid,
+* process,
+* mixing.
+
+Δηλαδή:
+
+$$
+EGI =
+GPI
+\times
+M_{hydration}
+\times
+M_{fat}
+\times
+M_{sugar}
+\times
+M_{process}
+$$
+
+όχι απαραίτητα ως απλό γινόμενο τελικά, αλλά αυτή είναι η λογική.
+
+# 23. Tenderizing Load
+
+Ένας πρώτος compositional metric:
+
+$$
+TL=
+aFat+bSugar+cYolk+\ldots
+$$
+
+και μετά:
+
+$$
+TendernessIndex=
+f(TL,StructuralCapacity)
+$$
+
+Γιατί 50% fat σε πολύ ισχυρό structure δεν έχει ίδιο αποτέλεσμα με 50% fat σε weak flour.
+
+Άρα το tenderness πρέπει να είναι **σχετικό με τη δομή**.
+
+# 24. Enrichment Index
+
+Αυτό μπορεί να είναι πιο απλό:
+
+$$
+EI=
+f(
+Fat,
+Sugar,
+EggSolids,
+DairySolids
+)
+$$
+
+και να απαντά:
+
+> πόσο μακριά είμαστε από lean flour-water dough;
+
+Π.χ.:
+
+* 0–10 → lean
+* 10–30 → lightly enriched
+* 30–60 → enriched
+* 60+ → heavily enriched
+
+Τα boundaries θα προκύψουν αργότερα από calibration.
+
+# 25. Fluidity Index
+
+Δεν θα χρησιμοποιούσα μόνο hydration.
+
+Θα έβαζα:
+
+$$
+FI=
+f(
+EffectiveWater,
+Sugar,
+LiquidFat,
+Egg,
+Starch,
+Protein,
+Fiber
+)
+$$
+
+και θα το βαθμονομούσαμε περίπου:
+
+$$
+0 = rigid
+$$
+
+$$
+25 = stiff dough
+$$
+
+$$
+50 = soft dough
+$$
+
+$$
+75 = thick batter
+$$
+
+$$
+100 = thin/pourable batter
+$$
+
+Αυτό θα είναι πολύ χρήσιμο στο UI.
+
+# 26. Gas Generation Potential
+
+Θα το χωρίσουμε σε τέσσερα metrics.
+
+### Yeast Gas Potential
+
+$$
+G_y
+$$
+
+εξαρτάται από:
+
+* yeast quantity
+* fermentable sugar
+* salt
+* sugar osmotic load
+* temperature
+* time
+
+### Chemical Gas Potential
+
+$$
+G_c
+$$
+
+εξαρτάται από:
+
+* baking powder quantity
+* soda
+* acid balance
+
+### Mechanical Gas Potential
+
+$$
+G_m
+$$
+
+εξαρτάται από:
+
+* creaming,
+* whipped eggs,
+* foam potential
+
+### Steam Potential
+
+$$
+G_s
+$$
+
+κυρίως από:
+
+* water
+* baking geometry
+* containment.
+
+Τότε:
+
+$$
+G_{total}
+=
+f(G_y,G_c,G_m,G_s)
+$$
+
+χωρίς να τα προσθέσουμε απλοϊκά.
+
+# 27. Gas Retention Capacity
+
+$$
+GRC=
+f(
+EffectiveGluten,
+EggProtein,
+Viscosity,
+EmulsionStability,
+Starch
+)
+$$
+
+και αυτό θα είναι άλλο score 0–100.
+
+Τότε μπορούμε να συγκρίνουμε:
+
+$$
+GasGeneration
+$$
+
+με:
+
+$$
+GasRetention
+$$
+
+Αυτό θα μας δώσει αργότερα diagnostics.
+
+# 28. Setting Capacity
+
+$$
+SC=
+f(
+Starch,
+Gluten,
+EggProtein,
+DairyProtein
+)
+$$
+
+και μετά ένα:
+
+$$
+SetDelay=
+f(
+Sugar,
+Water,
+Fat
+)
+$$
+
+Ο πραγματικός κίνδυνος κατάρρευσης σχετίζεται περισσότερο με:
+
+$$
+\frac{GasExpansion}
+{SettingRate}
+$$
+
+παρά με ένα μόνο συστατικό.
+
+# 29. Browning Potential
+
+Θα μπορούσαμε να έχουμε:
+
+$$
+BP=
+f(
+ReducingSugars,
+Protein,
+pH,
+Temperature,
+SurfaceMoisture
+)
+$$
+
+και ξεχωριστά:
+
+$$
+CaramelizationPotential
+$$
+
+από sugar load και θερμοκρασία.
+
+Για classification δεν είναι απαραίτητο, αλλά για outcome prediction είναι εξαιρετικό.
+
+# 30. Staling Resistance
+
+Πιο προχωρημένο:
+
+$$
+SR=
+f(
+Sugar,
+Fat,
+Emulsifier,
+Water,
+Starch
+)
+$$
+
+Υψηλό:
+
+→ brioche/cake παραμένει μαλακό.
+
+Χαμηλό:
+
+→ lean baguette σκληραίνει γρήγορα.
+
+Θα το έβαζα σε V2, όχι στον πρώτο classifier.
+
+# 31. Η σημαντικότερη διάκριση
+
+Θέλω το μοντέλο να λέει καθαρά:
+
+### Measured / calculated
+
+Παράδειγμα:
+
+$$
+TotalWater=63.4\%
+$$
+
+$$
+TotalFat=21.7\%
+$$
+
+$$
+Sucrose=15.0\%
+$$
+
+Αυτά είναι σχετικά αντικειμενικά.
+
+### Estimated
+
+Παράδειγμα:
+
+$$
+EffectiveHydration=59\%
+$$
+
+### Model scores
+
+Παράδειγμα:
+
+$$
+Tenderness=72/100
+$$
+
+$$
+GlutenPotential=81/100
+$$
+
+Δεν πρέπει ποτέ να τα παρουσιάσουμε όλα σαν να έχουν την ίδια επιστημονική ακρίβεια.
+
+# 32. Θα χώριζα λοιπόν το output vector
+
+Το \(g()\) θα έβγαζε:
+
+$$
+g(I)=
+(C,D,H)
+$$
+
+όπου:
+
+### \(C\) — Composition metrics
+
+$$
+C=
+(
+Water,
+Fat,
+Sugars,
+Starch,
+Proteins,
+Fiber,
+Salt,
+Acid,\ldots
+)
+$$
+
+### \(D\) — Derived physical metrics
+
+$$
+D=
+(
+TotalHydration,
+RelativeHydration,
+SugarLoad,
+FatLoad,
+FermentableSugar,
+ReducingSugar,\ldots
+)
+$$
+
+### \(H\) — Heuristic indices
+
+$$
+H=
+(
+GlutenPotential,
+Tenderness,
+Enrichment,
+Fluidity,
+GasRetention,
+Setting,\ldots
+)
+$$
+
+Αυτός ο διαχωρισμός είναι πολύ καθαρός αρχιτεκτονικά.
+
+# 33. Για V1 θα κρατούσα μόνο 10 βασικά outputs
+
+Για να μη χαθούμε, το πρώτο usable model θα μπορούσε να εμφανίζει:
+
+| Metric                       | Τύπος                  |
+| ---------------------------- | ---------------------- |
+| Total hydration              | calculated             |
+| Relative/effective hydration | estimated              |
+| Total fat                    | calculated             |
+| Total sugars                 | calculated             |
+| Gluten-forming protein       | calculated/estimated   |
+| Enrichment                   | heuristic              |
+| Gluten potential             | heuristic              |
+| Tenderness                   | heuristic              |
+| Fluidity                     | heuristic              |
+| Leavening profile            | calculated + heuristic |
+
+Και στο background θα κρατάμε τα υπόλοιπα primitives για μελλοντική χρήση.
+
+# 34. Η πιο σημαντική συνέπεια
+
+Τώρα μια συνταγή δεν περιγράφεται πλέον ως:
+
+> 100 flour, 40 milk, 30 egg, 20 butter, 15 sugar
+
+αλλά σαν:
+
+$$
+\boxed{
+H=60.5,\;
+Fat=19.4,\;
+Sugar=16.5,\;
+GPI=74,\;
+EI=46,\;
+TI=52,\;
+FI=31
+}
+$$
+
+και αυτό είναι πλέον ένα σημείο σε πολυδιάστατο χώρο.
+
+Ακριβώς εκεί πάνω μπορούμε στο επόμενο στάδιο να ορίσουμε:
+
+$$
+\text{Bread}
+$$
+
+$$
+\text{Brioche}
+$$
+
+$$
+\text{Cake}
+$$
+
+$$
+\text{Cookie}
+$$
+
+$$
+\text{Crêpe}
+$$
+
+ως **περιοχές** αυτού του χώρου.
+
+Το επόμενο βήμα λοιπόν είναι πλέον η **Taxonomy + Prototype Model**: να ορίσουμε ποιες οικογένειες πρέπει να αναγνωρίζει το σύστημα, σε ποια ιεραρχία ανήκουν και ποια derived dimensions είναι πραγματικά σημαντικά για να διαχωρίζουμε π.χ. bagel από bread, brioche από challah, muffin από cake και pancake από crêpe.
