@@ -224,3 +224,36 @@ canonical domain modeling. No new topology or delivery work was created.
 - Issue 006 is now `awaiting-human-review`; the capability remains `specified`
   and the Formula Analysis Workspace roll-up remains `bounded` because Issue
   007 and the other structural children are not complete.
+
+## 2026-09-08
+
+- The user accepted Issue 006 after bilingual visual review of complete,
+  partial, and conflict analysis states, Formula/Process isolation, recovery
+  guidance, and the plain-language readiness presentation.
+- Closed and archived Issue 006 as `docs/agents/issues/done/20260908-006-formula-process-handoff.md`.
+- Unblocked Issue 007, Bilingual parity and verification. The Formula Input and
+  Normalization capability remains `specified`; the Formula Analysis Workspace
+  roll-up remains `bounded` because Issue 007 and the other structural
+  children are not complete.
+- Implemented Issue 007 with exact English/Greek message parity, Process/help
+  vocabulary coverage, locale-neutral canonical state and session persistence
+  checks, plus static route/base-path/404 verification. `npm run verify` passes
+  with 42 tests, and the configured GitHub Pages base-path check passes.
+- Issue 007 is awaiting the user's final bilingual visual review; the Formula
+  Input and Normalization capability remains `specified` and the Formula
+  Analysis Workspace roll-up remains `bounded`.
+
+## 2026-09-08
+
+- The user accepted Issue 007 after bilingual visual review of the complete
+  Formula Input journey, route switching, validation, partial-result, conflict,
+  explanation, direct-route, and mobile layout states.
+- Closed and archived Issue 007 as
+  `docs/agents/issues/done/20260908-007-bilingual-parity-verification.md`.
+- Exhausted the scoped delivery batch for Formula Input and Normalization;
+  recomputed its state from `specified` to `implemented`. The parent Formula
+  Analysis Workspace roll-up remains `bounded` from child states
+  `implemented`, `bounded`, `bounded`, and `bounded`.
+- Current capability totals are `foggy: 1`, `bounded: 8`, `specified: 0`,
+  `implemented: 1`. No product or cross-capability architecture truth changed;
+  the application PRD and architecture summary remain current.

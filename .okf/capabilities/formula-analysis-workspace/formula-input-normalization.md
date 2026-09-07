@@ -3,8 +3,9 @@ type: capability
 title: Formula Input and Normalization
 description: Capture formula ingredients, flour structure, roles, units, and process inputs in a canonical form.
 tags: [formula, input, normalization, baker-percentage]
-timestamp: 2026-09-07T19:58:12Z
-state: specified
+timestamp: 2026-09-07T22:22:44Z
+state: implemented
+state_changed: 2026-09-07T22:22:44Z
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
 shared_with:
@@ -26,8 +27,7 @@ issues:
   - docs/agents/issues/done/20260907-003-uncertainty-explanation.md
   - docs/agents/issues/done/20260907-004-roles-and-overrides.md
   - docs/agents/issues/done/20260907-005-process-capture.md
-  - docs/agents/issues/pending/006-formula-process-handoff.md
-  - docs/agents/issues/pending/007-bilingual-parity-verification.md
+  - docs/agents/issues/done/20260908-007-bilingual-parity-verification.md
 adrs:
   - docs/agents/adr/0002-formula-process-separation.md
   - docs/agents/adr/0004-unknown-is-not-zero.md
@@ -54,8 +54,8 @@ classification and final interpretation.
 
 # Notes
 
-The first vertical slice should support the ingredient and process subset named
-in the formal domain specification. Issues 001–005 are implemented and
-archived; Issue 006 is implemented and awaiting bilingual visual review; Issue
-007 remains active for final parity verification. The capability remains
-`specified` until that frontier is complete.
+The first vertical slice supports the ingredient and process subset named in
+the formal domain specification. Issues 001–007 are implemented and archived;
+the scoped Formula Input and Normalization delivery is `implemented`. Broader
+analysis behavior remains owned by the sibling capabilities under the Formula
+Analysis Workspace roll-up.

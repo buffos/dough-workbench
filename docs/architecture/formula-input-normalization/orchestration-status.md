@@ -1,15 +1,15 @@
 # Formula Input and Normalization — Orchestration Status
 
-State: `specified`
+State: `implemented`
 
-The boundary and exact specification are ready for implementation issue
-slicing. The capability owns
+The boundary and exact specification have been delivered for the scoped first
+vertical slice. The capability owns
 canonical Formula input, flour denominator rules, baker's percentages,
 ingredient roles, process input capture, and preservation of missing data.
 
 ## Artifact inventory
 
-- Planning node: current and `specified`.
+- Planning node: current and `implemented` for the scoped first vertical slice.
 - Application PRD: current.
 - Application architecture summary: current.
 - Source domain specification: strong on invariants and conceptual boundaries.
@@ -31,9 +31,8 @@ ingredient roles, process input capture, and preservation of missing data.
   confirmed V1 tolerance policy. R-006 was resolved by the
   `process-input-v0.2` typed-vocabulary refinement. Implementation handoff is
   ready.
-- Delivery issue batch: Issues 001–005 are archived as completed in
-  `docs/agents/issues/done/`; Issue 006 is implemented and awaiting its
-  bilingual visual review; Issue 007 remains active behind Issue 006.
+- Delivery issue batch: Issues 001–007 are archived as completed in
+  `docs/agents/issues/done/` after the required visual-review gates.
 
 ## Current assessment
 
@@ -44,11 +43,13 @@ boundaries, explicit invariants, and honest partial-data behavior.
 
 Artifact impact assessment for the domain model:
 
-- planning topology: no change; the node remains bounded;
+- planning topology: the owning node is now `implemented`; its parent roll-up
+  remains `bounded` because three sibling children are still bounded;
 - capability truth: updated with the canonical model reference;
 - application PRD: no scope change; its product rules already cover the model;
 - application architecture summary: no boundary or sequencing change;
-- delivery issues: none created; exact contract and acceptance work remains.
+- delivery issues: Issues 001–007 are archived; no active issue remains under
+  this capability.
 
 The use-case model keeps the frontend's initial in-memory/static execution
 explicit while preserving stable command/query, revision, idempotency, and
@@ -72,8 +73,8 @@ through R-004 are now harmonized across the glossary, PRD, domain model,
 use-cases, contract, and scenarios. The user confirmed the V1
 `formula-normalization-v1` policy with an inclusive `[99.99%, 100.01%]` range;
 the later Process refinement versioned the controlled fields as
-`process-input-v0.2`. The readiness review is now clear and the node is
-`specified`.
+`process-input-v0.2`. The readiness review is now clear and the node's scoped
+first vertical slice is `implemented`.
 
 The Process editor originally exposed several advanced fields as free text.
 That was a material vocabulary gap: an arbitrary phrase could be stored but
@@ -86,6 +87,7 @@ free text as an algorithm-facing value.
 
 ## Next action
 
-Complete the bilingual visual review for Issue 006. After explicit approval,
-close it out and unlock Issue 007. All seven issues carry the mandatory
-`visual-review` gate because they change rendered frontend behavior.
+No active delivery issue remains under this capability. Future work should be
+routed to the remaining Formula Analysis Workspace children or to the separate
+Validation and Calibration frontier; the roll-up remains `bounded` until those
+areas mature.

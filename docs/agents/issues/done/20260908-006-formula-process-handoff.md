@@ -7,7 +7,7 @@
 - Category: `feature`
 - Execution type: `AFK`
 - Review gate: `visual-review`
-- Suggested state: `awaiting-human-review`
+- Suggested state: `done`
 
 ## Parent Artifacts
 
@@ -65,9 +65,10 @@ silently overwrite newer state.
 
 ## Human review gate
 
-After automated checks pass, the user must inspect complete/partial/conflict
-handoff states, Formula/Process isolation after edits, and visible recovery
-guidance in both locales.
+Completed on 2026-09-08: the user accepted the bilingual visual review of the
+complete/partial/conflict analysis states, Formula/Process isolation after
+edits, recovery guidance, and the removal of technical debug metadata from the
+primary view.
 
 ## Blocked by
 
@@ -96,10 +97,10 @@ guidance in both locales.
 
 | Scenario | Backend boundary | Frontend integration | End-to-end journey |
 |---|---|---|---|
-| `SC-010` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-011` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-012` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-013` | `not-applicable` | `deferred: no frontend integration harness; visual review pending` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-010` | `not-applicable` | `deferred: no frontend integration harness; visual review accepted 2026-09-08` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-011` | `not-applicable` | `deferred: no frontend integration harness; visual review accepted 2026-09-08` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-012` | `not-applicable` | `deferred: no frontend integration harness; visual review accepted 2026-09-08` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-013` | `not-applicable` | `deferred: no frontend integration harness; visual review accepted 2026-09-08` | `deferred: no E2E harness; catalog-only policy` |
 
 ## Implementation record
 
@@ -125,6 +126,9 @@ guidance in both locales.
 - Automated evidence: `npm run verify` passes with 36 tests, lint,
   typecheck, static build, and route checks. `git diff --check` and OKF
   validation also pass.
+- Human review: the user accepted the bilingual visual review on 2026-09-08,
+  including complete/partial/conflict states, Formula/Process isolation,
+  recovery guidance, and the plain-language readiness copy.
 - Scenario trace: `SC-010` → partial policy and preserved Process unknowns in
   `src/lib/domain/handoff.test.ts`; `SC-011` → independent revision/data
   assertions in the same suite; `SC-012` → reference and stale-revision
@@ -132,4 +136,4 @@ guidance in both locales.
   in `src/lib/application/command-ledger.test.ts`.
 - End-to-end remains deferred under the root `catalog-only` policy. Frontend
   integration remains deferred because no integration harness exists; the
-  bilingual visual-review gate is now open for the user.
+  bilingual visual-review gate is complete.

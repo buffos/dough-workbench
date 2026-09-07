@@ -846,6 +846,17 @@ export function localeHref(basePath: string, locale: Locale): string {
   return `${base}/${locale}/`;
 }
 
+export function messageKeys(locale: Locale): string[] {
+  return Object.keys(messages[locale]);
+}
+
 export function missingMessageKeys(locale: Locale): string[] {
-  return Object.keys(messages.en).filter((key) => !(key in messages[locale]));
+  const available = new Set(messageKeys(locale));
+  return messageKeys('en').filter((key) => !available.has(key));
+}
+
+export function extraMessageKeys(locale: Locale): string[] {
+  const otherLocale: Locale = locale === 'en' ? 'el' : 'en';
+  const available = new Set(messageKeys(otherLocale));
+  return messageKeys(locale).filter((key) => !available.has(key));
 }

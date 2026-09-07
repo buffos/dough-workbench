@@ -14,24 +14,40 @@ const english = readFileSync(resolve(dist, 'en/index.html'), 'utf8');
 const greek = readFileSync(resolve(dist, 'el/index.html'), 'utf8');
 const englishHelp = readFileSync(resolve(dist, 'en/help/index.html'), 'utf8');
 const greekHelp = readFileSync(resolve(dist, 'el/help/index.html'), 'utf8');
+const notFound = readFileSync(resolve(dist, '404.html'), 'utf8');
 
+const configuredBase = process.env.BASE_PATH || '/';
+const basePrefix = configuredBase === '/' ? '' : configuredBase.replace(/\/$/, '');
+/** @param {string} locale @param {string} [suffix] */
+const routeHref = (locale, suffix = '') => `${basePrefix}/${locale}/${suffix}/`.replace(/\/$/, '/')
+  .replace(/\/\//g, '/');
+
+/** @type {Array<{route: string, html: string, languageMarker: string, workspaceMarker: string, routeMarkers: string[]}>} */
 const requiredRouteContent = [
-  ['en', english, 'lang="en"', 'Formula workspace'],
-  ['el', greek, 'lang="el"', 'Χώρος εργασίας φόρμουλας'],
-  ['en/help', englishHelp, 'lang="en"', 'A shared language for reading a formula.'],
-  ['el/help', greekHelp, 'lang="el"', 'Μια κοινή γλώσσα για να διαβάζεις μια φόρμουλα.'],
+  { route: 'en', html: english, languageMarker: 'lang="en"', workspaceMarker: 'Formula workspace', routeMarkers: [`href="${routeHref('el')}"`, `href="${routeHref('en', 'help')}"`] },
+  { route: 'el', html: greek, languageMarker: 'lang="el"', workspaceMarker: 'Χώρος εργασίας φόρμουλας', routeMarkers: [`href="${routeHref('en')}"`, `href="${routeHref('el', 'help')}"`] },
+  { route: 'en/help', html: englishHelp, languageMarker: 'lang="en"', workspaceMarker: 'A shared language for reading a formula.', routeMarkers: [`href="${routeHref('el', 'help')}"`, `href="${routeHref('en')}"`] },
+  { route: 'el/help', html: greekHelp, languageMarker: 'lang="el"', workspaceMarker: 'Μια κοινή γλώσσα για να διαβάζεις μια φόρμουλα.', routeMarkers: [`href="${routeHref('en', 'help')}"`, `href="${routeHref('el')}"`] },
 ];
 
-for (const [locale, html, languageMarker, workspaceMarker] of requiredRouteContent) {
-  if (!html.includes(languageMarker) || !html.includes(workspaceMarker)) {
-    console.error(`The ${locale} route is missing its locale or workspace shell.`);
+for (const { route, html, languageMarker, workspaceMarker, routeMarkers } of requiredRouteContent) {
+  if (!html.includes(languageMarker) || !html.includes(workspaceMarker) || routeMarkers.some((marker) => !html.includes(marker))) {
+    console.error(`The ${route} route is missing its locale or workspace shell.`);
     process.exit(1);
   }
 }
 
-const expectedBase = process.env.BASE_PATH || '/';
-if (expectedBase !== '/' && !english.includes(`${expectedBase}/_astro/`)) {
-  console.error(`The generated assets do not use the configured base path: ${expectedBase}`);
+if (configuredBase !== '/') {
+  const assetMarker = `${basePrefix}/_astro/`;
+  const pages = [english, greek, englishHelp, greekHelp];
+  if (pages.some((html) => !html.includes(assetMarker))) {
+    console.error(`The generated assets do not use the configured base path: ${configuredBase}`);
+    process.exit(1);
+  }
+}
+
+if (!notFound.includes('lang="en"') || !notFound.includes(`href="${routeHref('en')}"`)) {
+  console.error('The generated public 404.html is missing its locale or workspace route.');
   process.exit(1);
 }
 

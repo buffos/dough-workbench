@@ -7,7 +7,7 @@
 - Category: `feature`
 - Execution type: `AFK`
 - Review gate: `visual-review`
-- Suggested state: `ready-for-agent`
+- Suggested state: `done`
 
 ## Parent Artifacts
 
@@ -36,19 +36,19 @@ end-to-end policy.
 
 ## Acceptance criteria
 
-- [ ] Every Formula Input/Process control and visible state has an equivalent
+- [x] Every Formula Input/Process control and visible state has an equivalent
   English and Greek label/message.
-- [ ] Switching locale preserves Formula/Process IDs, masses, roles,
+- [x] Switching locale preserves Formula/Process IDs, masses, roles,
   overrides, value states, derived values, diagnostics, and readiness.
-- [ ] Validation, partial-analysis, conflict, and explanation surfaces are
+- [x] Validation, partial-analysis, conflict, and explanation surfaces are
   reachable and understandable in both locales.
-- [ ] Direct `/en/` and `/el/` routes work with the configured GitHub Pages
+- [x] Direct `/en/` and `/el/` routes work with the configured GitHub Pages
   repository base path and the static output includes the public `404.html`.
-- [ ] Automated checks compare canonical payload/state parity across locales
+- [x] Automated checks compare canonical payload/state parity across locales
   without comparing translated prose as domain data.
-- [ ] The user can reach and observe the complete Formula Input journey in
+- [x] The user can reach and observe the complete Formula Input journey in
   both locales; no behavior is left only behind a domain/service test.
-- [ ] The user completes the visual review of the final bilingual workspace.
+- [x] The user completes the visual review of the final bilingual workspace.
 
 ## Artifact sync required
 
@@ -66,13 +66,14 @@ end-to-end policy.
 
 ## Human review gate
 
-After automated checks pass, the user must inspect the complete Formula Input
-journey in both locales, including layout, translated labels, validation and
-partial-result states, route switching, and direct-route loading behavior.
+Completed on 2026-09-08: the user approved the bilingual visual review of the
+complete Formula Input journey in both locales, including translated labels,
+validation, partial-result, conflict, explanation, route switching, direct
+route loading, and mobile layout behavior.
 
 ## Blocked by
 
-- Blocked by `docs/agents/issues/pending/006-formula-process-handoff.md`
+- —
 
 ## Artifact anchors
 
@@ -92,4 +93,28 @@ partial-result states, route switching, and direct-route loading behavior.
 
 | Scenario | Backend boundary | Frontend integration | End-to-end journey |
 |---|---|---|---|
-| `SC-015` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-015` | `not-applicable` | `deferred: no frontend integration harness; automated parity/static checks implemented; visual review accepted 2026-09-08` | `deferred: no E2E harness; catalog-only policy` |
+
+## Implementation record
+
+- Added exact English/Greek message-key parity checks and structural parity checks
+  for the bilingual help content.
+- Added coverage checks for every Process field, controlled option, unit, and
+  ingredient-addition action used by the UI.
+- Added locale-neutral canonical snapshots for Formula, Process, analysis
+  readiness, diagnostics, and derived state; translated prose is not compared as
+  domain data.
+- Added session-storage round-trip tests proving a locale switch can preserve
+  Formula/Process drafts, IDs, roles, overrides, and value states.
+- Strengthened the static build check for `/en/`, `/el/`, help routes, cross-locale
+  links, configured GitHub Pages base paths, and public `404.html`.
+- `npm run verify` passes: 10 test files, 42 tests, lint, typecheck, static build,
+  and default-route checks. A separate build/check with
+  `BASE_PATH=/dough-formula-intelligence` also passes.
+- Human review: the user accepted the bilingual visual review on 2026-09-08,
+  including the complete journey, route switching, validation, partial-result,
+  conflict, explanation, and mobile layout states.
+
+## Final status
+
+Automated verification and the required visual-review gate are complete.

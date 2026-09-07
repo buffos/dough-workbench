@@ -21,6 +21,9 @@ Formula Intelligence product.
 
 ## Planning status
 
-The initial topology is confirmed by the user. All delivery work remains behind
-the fog-clearing and application-synthesis workflow; no implementation issues
-have been created yet.
+The initial topology is confirmed by the user. The Formula Input and
+Normalization capability has an implemented first vertical slice with its
+delivery issues archived. The Formula Analysis Workspace remains a bounded
+roll-up while its Composition, Process, and Classification children are still
+bounded; Validation and Calibration remains foggy. Further planning should
+select one of those active frontiers explicitly.
