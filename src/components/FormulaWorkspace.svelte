@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import FieldHelp from './FieldHelp.svelte';
   import {
     COMPOSITION_FIELDS,
     INGREDIENT_ROLES,
@@ -10,7 +11,16 @@
     noneDraftValue,
     unknownDraftValue,
   } from '../lib/domain/normalization';
-  import { normalizeFormulaDraft } from '../lib/application/formula-workspace';
+  import { normalizeFormulaDraft, normalizeProcessDraft } from '../lib/application/formula-workspace';
+  import {
+    PROCESS_ADDITION_ACTIONS,
+    PROCESS_FIELD_DESCRIPTORS,
+    createInitialProcessDraft,
+    type ProcessDraft,
+    type ProcessFieldDescriptor,
+    type ProcessNormalizationOutcome,
+    type ProcessValuePath,
+  } from '../lib/domain/process';
   import {
     STARTER_CATALOG,
     STARTER_CATALOG_VERSION,
@@ -27,17 +37,40 @@
     NormalizationOutcome,
   } from '../lib/domain/types';
   import { localeHref, t, type Locale } from '../lib/i18n/messages';
-  import { clearDraft, loadDraft, persistDraft } from '../lib/state/workspace';
+  import {
+    clearDraft,
+    clearProcess,
+    loadDraft,
+    loadProcess,
+    persistDraft,
+    persistProcess,
+  } from '../lib/state/workspace';
 
   export let locale: Locale;
   export let basePath = '/';
 
+  const processSections: Array<{ key: string; fields: ProcessFieldDescriptor[] }> = [
+    { key: 'mixing', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('mixing.')) as ProcessFieldDescriptor[] },
+    { key: 'ingredientAddition', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('ingredientAddition.')) as ProcessFieldDescriptor[] },
+    { key: 'aeration', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('aeration.')) as ProcessFieldDescriptor[] },
+    { key: 'fermentation', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('fermentation.')) as ProcessFieldDescriptor[] },
+    { key: 'lamination', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('lamination.')) as ProcessFieldDescriptor[] },
+    { key: 'thermalProcess', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('thermalProcess.')) as ProcessFieldDescriptor[] },
+    { key: 'geometry', fields: PROCESS_FIELD_DESCRIPTORS.filter((field) => field.path.startsWith('geometry.')) as ProcessFieldDescriptor[] },
+  ];
+  const PROCESS_NONE_VALUE = '__process_none__';
+
   let draft: FormulaDraft = createInitialFormulaDraft();
+  let processDraft: ProcessDraft = createInitialProcessDraft(draft.formulaId);
   let result: NormalizationOutcome | null = null;
+  let processResult: ProcessNormalizationOutcome | null = null;
   let hydrated = false;
   let explanationOpen = false;
 
-  $: if (hydrated) persistDraft(draft);
+  $: if (hydrated) {
+    persistDraft(draft);
+    persistProcess(processDraft);
+  }
 
   onMount(() => {
     const savedDraft = loadDraft();
@@ -45,13 +78,26 @@
       draft = savedDraft;
       result = normalizeFormulaDraft(savedDraft);
     }
+    const savedProcess = loadProcess();
+    if (savedProcess && savedProcess.formulaId === draft.formulaId) {
+      processDraft = savedProcess;
+      processResult = normalizeProcessDraft(savedProcess, draft.ingredientLines.map((line) => line.id));
+    } else {
+      processDraft = createInitialProcessDraft(draft.formulaId);
+    }
     hydrated = true;
   });
 
   function touch(next: FormulaDraft): void {
     draft = { ...next, revision: next.revision + 1 };
     result = null;
+    processResult = null;
     explanationOpen = false;
+  }
+
+  function touchProcess(next: ProcessDraft): void {
+    processDraft = { ...next, revision: next.revision + 1 };
+    processResult = null;
   }
 
   function createId(prefix: string): string {
@@ -138,6 +184,14 @@
       composition: selected
         ? compositionFromCatalog(selected.composition, STARTER_CATALOG_VERSION, selected.id)
         : emptyComposition(),
+      definitionSource: selected ? 'catalog' : 'custom',
+      catalogReference: selected ? { ingredientId: selected.id, version: STARTER_CATALOG_VERSION } : undefined,
+      definitionProvenance: selected
+        ? { kind: 'catalog', sourceId: selected.id, sourceVersion: STARTER_CATALOG_VERSION }
+        : { kind: 'custom', sourceId: 'local-custom-ingredient' },
+      definitionConfidence: 1,
+      compositionOverride: undefined,
+      availabilityOverride: undefined,
     });
   }
 
@@ -155,7 +209,10 @@
     } else {
       nextValue = unknownDraftValue();
     }
-    updateLine(lineId, { composition: { ...line.composition, [field]: nextValue } });
+    updateLine(lineId, {
+      composition: { ...line.composition, [field]: nextValue },
+      compositionOverride: { ...line.compositionOverride, [field]: nextValue },
+    });
   }
 
   function updateCompositionValue(lineId: string, field: CompositionField, value: string): void {
@@ -166,7 +223,47 @@
         ...line.composition,
         [field]: { ...line.composition[field], value },
       },
+      compositionOverride: {
+        ...line.compositionOverride,
+        [field]: { ...line.composition[field], value },
+      },
     });
+  }
+
+  function updateDefinitionConfidence(lineId: string, value: string): void {
+    const confidence = Number(value.replace(',', '.'));
+    updateLine(lineId, { definitionConfidence: Number.isFinite(confidence) ? Math.min(1, Math.max(0, confidence)) : 0 });
+  }
+
+  function availabilityState(line: IngredientLineDraft): string {
+    return line.availabilityOverride?.state ?? 'unset';
+  }
+
+  function updateAvailabilityState(lineId: string, nextState: string): void {
+    const line = draft.ingredientLines.find((candidate) => candidate.id === lineId);
+    if (!line) return;
+    if (nextState === 'unset') {
+      updateLine(lineId, { availabilityOverride: undefined });
+      return;
+    }
+    if (nextState === 'none') {
+      updateLine(lineId, { availabilityOverride: noneDraftValue() });
+      return;
+    }
+    if (nextState === 'unknown') {
+      updateLine(lineId, { availabilityOverride: unknownDraftValue('not-supplied') });
+      return;
+    }
+    const current = line.availabilityOverride;
+    updateLine(lineId, {
+      availabilityOverride: current?.state === 'known' ? current : knownDraftValue('1'),
+    });
+  }
+
+  function updateAvailabilityValue(lineId: string, value: string): void {
+    const line = draft.ingredientLines.find((candidate) => candidate.id === lineId);
+    if (!line || line.availabilityOverride?.state !== 'known') return;
+    updateLine(lineId, { availabilityOverride: { ...line.availabilityOverride, value } });
   }
 
   function addFlour(): void {
@@ -204,6 +301,9 @@
           massUnit: 'g',
           role: 'other',
           composition: emptyComposition(),
+          definitionSource: 'custom',
+          definitionProvenance: { kind: 'custom', sourceId: 'local-custom-ingredient' },
+          definitionConfidence: 1,
         },
       ],
     });
@@ -218,10 +318,131 @@
     explanationOpen = result.outcome !== 'rejected';
   }
 
+  function processField(path: ProcessValuePath): DraftValueState {
+    const [section, field] = path.split('.') as [keyof ProcessDraft, string];
+    return (processDraft[section] as Record<string, DraftValueState>)[field];
+  }
+
+  function updateProcessState(path: ProcessValuePath, nextState: string): void {
+    const current = processField(path);
+    let nextValue: DraftValueState;
+    if (nextState === 'known') {
+      nextValue = current.state === 'known' ? current : knownDraftValue('');
+    } else if (nextState === 'none') {
+      nextValue = noneDraftValue();
+    } else {
+      nextValue = unknownDraftValue();
+    }
+    updateProcessField(path, nextValue);
+  }
+
+  function updateProcessKnownValue(path: ProcessValuePath, value: string): void {
+    const current = processField(path);
+    if (current.state !== 'known') return;
+    updateProcessField(path, { ...current, value });
+  }
+
+  function processControlValue(current: DraftValueState): string {
+    if (current.state === 'known') return current.value;
+    return current.state === 'none' ? PROCESS_NONE_VALUE : '';
+  }
+
+  function processInputValue(current: DraftValueState): string {
+    return current.state === 'known' ? current.value : '';
+  }
+
+  function updateProcessControl(path: ProcessValuePath, value: string): void {
+    if (value === '') {
+      updateProcessState(path, 'unknown');
+      return;
+    }
+    if (value === PROCESS_NONE_VALUE) {
+      updateProcessState(path, 'none');
+      return;
+    }
+    const current = processField(path);
+    if (current.state === 'known') {
+      updateProcessKnownValue(path, value);
+    } else {
+      updateProcessField(path, knownDraftValue(value));
+    }
+  }
+
+  function updateProcessInput(path: ProcessValuePath, value: string): void {
+    if (!value.trim()) {
+      updateProcessState(path, 'unknown');
+      return;
+    }
+    const current = processField(path);
+    if (current.state === 'known') {
+      updateProcessKnownValue(path, value);
+    } else {
+      updateProcessField(path, knownDraftValue(value));
+    }
+  }
+
+  function updateProcessNone(path: ProcessValuePath, checked: boolean): void {
+    updateProcessState(path, checked ? 'none' : 'unknown');
+  }
+
+  function updateProcessField(path: ProcessValuePath, value: DraftValueState): void {
+    const [section, field] = path.split('.') as [keyof ProcessDraft, string];
+    const nextSection = { ...(processDraft[section] as Record<string, unknown>), [field]: value };
+    touchProcess({ ...processDraft, [section]: nextSection } as ProcessDraft);
+  }
+
+  function addAdditionStep(): void {
+    const nextSequence = processDraft.ingredientAddition.steps.reduce((max, step) => Math.max(max, Number(step.sequence) || 0), 0) + 1;
+    touchProcess({
+      ...processDraft,
+      ingredientAddition: {
+        ...processDraft.ingredientAddition,
+        steps: [
+          ...processDraft.ingredientAddition.steps,
+          { id: `${processDraft.processId}-step-${nextSequence}`, sequence: String(nextSequence), lineIds: [], action: '', durationSeconds: '' },
+        ],
+      },
+    });
+  }
+
+  function updateAdditionStep(id: string, patch: Partial<ProcessDraft['ingredientAddition']['steps'][number]>): void {
+    touchProcess({
+      ...processDraft,
+      ingredientAddition: {
+        ...processDraft.ingredientAddition,
+        steps: processDraft.ingredientAddition.steps.map((step) => step.id === id ? { ...step, ...patch } : step),
+      },
+    });
+  }
+
+  function toggleStepLine(stepId: string, lineId: string, checked: boolean): void {
+    const step = processDraft.ingredientAddition.steps.find((candidate) => candidate.id === stepId);
+    if (!step) return;
+    const lineIds = checked ? [...new Set([...step.lineIds, lineId])] : step.lineIds.filter((id) => id !== lineId);
+    updateAdditionStep(stepId, { lineIds });
+  }
+
+  function removeAdditionStep(id: string): void {
+    touchProcess({
+      ...processDraft,
+      ingredientAddition: {
+        ...processDraft.ingredientAddition,
+        steps: processDraft.ingredientAddition.steps.filter((step) => step.id !== id),
+      },
+    });
+  }
+
+  function runProcessNormalization(): void {
+    processResult = normalizeProcessDraft(processDraft, draft.ingredientLines.map((line) => line.id));
+  }
+
   function resetDraft(): void {
     clearDraft();
+    clearProcess();
     draft = createInitialFormulaDraft();
+    processDraft = createInitialProcessDraft(draft.formulaId);
     result = null;
+    processResult = null;
     explanationOpen = false;
     hydrated = true;
   }
@@ -254,6 +475,40 @@
 
   function diagnosticMessage(key: string, parameters: Record<string, string | number>): string {
     return t(locale, key, parameters);
+  }
+
+  function processStatusLabel(): string {
+    return processResult ? t(locale, `process.status.${processResult.readiness}`) : t(locale, 'process.status.editing');
+  }
+
+  function processFieldLabel(field: ProcessFieldDescriptor): string {
+    return t(locale, `process.field.${field.key}`);
+  }
+
+  function processUnitLabel(field: ProcessFieldDescriptor): string {
+    return field.unit ? t(locale, `process.unit.${field.unit}`) : '';
+  }
+
+  function processOptionLabel(option: string): string {
+    return t(locale, `process.enum.${option}`);
+  }
+
+  function processReferenceLabel(line: IngredientLineDraft): string {
+    const mass = line.massGrams.trim() ? ` · ${line.massGrams} g` : '';
+    return `${ingredientDisplayName(line)}${mass}`;
+  }
+
+  function sourceLabel(line: IngredientLineDraft): string {
+    return line.definitionSource === 'custom' || line.ingredientId === 'custom'
+      ? t(locale, 'ingredient.custom')
+      : t(locale, 'ingredient.catalog');
+  }
+
+  function overrideLabel(line: IngredientLineDraft): string {
+    const fields = COMPOSITION_FIELDS.filter((field) => line.compositionOverride?.[field] !== undefined)
+      .map((field) => t(locale, `field.${field}`));
+    if (line.availabilityOverride) fields.push(t(locale, 'ingredient.availability'));
+    return fields.length > 0 ? fields.join(', ') : t(locale, 'ingredient.noOverride');
   }
 </script>
 
@@ -337,7 +592,11 @@
               <div class="input-row flour-row">
                 <span class="row-index">{String(index + 1).padStart(2, '0')}</span>
                 <label class="field field-name">
-                  <span>{t(locale, 'field.flour')}</span>
+                  <FieldHelp
+                    label={t(locale, 'field.flour')}
+                    help={t(locale, 'help.field.flour')}
+                    helpId={`help-flour-name-${flour.id}`}
+                  />
                   <select
                     aria-label={`${t(locale, 'field.flour')} ${index + 1}`}
                     value={selectedFlourId(flour)}
@@ -358,7 +617,11 @@
                   {/if}
                 </label>
                 <label class="field field-mass">
-                  <span>{t(locale, 'field.mass')} <em>({t(locale, 'unit.grams')})</em></span>
+                  <FieldHelp
+                    label={`${t(locale, 'field.mass')} (${t(locale, 'unit.grams')})`}
+                    help={t(locale, 'help.field.mass')}
+                    helpId={`help-flour-mass-${flour.id}`}
+                  />
                   <input
                     class="mass-input"
                     aria-label={`${t(locale, 'field.mass')} ${flourDisplayName(flour)}`}
@@ -368,7 +631,11 @@
                   />
                 </label>
                 <label class="field field-blend">
-                  <span>{t(locale, 'field.blend')}</span>
+                  <FieldHelp
+                    label={t(locale, 'field.blend')}
+                    help={t(locale, 'help.field.blend')}
+                    helpId={`help-flour-blend-${flour.id}`}
+                  />
                   <input
                     aria-label={`${t(locale, 'field.blend')} ${flourDisplayName(flour)}`}
                     inputmode="decimal"
@@ -415,7 +682,11 @@
                 <div class="ingredient-card-head">
                   <span class="row-index">{String(index + 1).padStart(2, '0')}</span>
                   <label class="field field-name">
-                    <span>{t(locale, 'field.ingredient')}</span>
+                    <FieldHelp
+                      label={t(locale, 'field.ingredient')}
+                      help={t(locale, 'help.field.ingredient')}
+                      helpId={`help-ingredient-name-${line.id}`}
+                    />
                     <select
                       aria-label={`${t(locale, 'field.ingredient')} ${index + 1}`}
                       value={selectedIngredientId(line)}
@@ -436,7 +707,11 @@
                     {/if}
                   </label>
                   <label class="field field-mass">
-                    <span>{t(locale, 'field.mass')} <em>({t(locale, 'unit.grams')})</em></span>
+                    <FieldHelp
+                      label={`${t(locale, 'field.mass')} (${t(locale, 'unit.grams')})`}
+                      help={t(locale, 'help.field.mass')}
+                      helpId={`help-ingredient-mass-${line.id}`}
+                    />
                     <input
                       class="mass-input"
                       aria-label={`${t(locale, 'field.mass')} ${ingredientDisplayName(line)}`}
@@ -446,7 +721,11 @@
                     />
                   </label>
                   <label class="field field-role">
-                    <span>{t(locale, 'field.role')}</span>
+                    <FieldHelp
+                      label={t(locale, 'field.role')}
+                      help={t(locale, 'help.field.role')}
+                      helpId={`help-ingredient-role-${line.id}`}
+                    />
                     <select
                       aria-label={`${t(locale, 'field.role')} ${ingredientDisplayName(line)}`}
                       value={line.role}
@@ -473,7 +752,11 @@
                   <div class="composition-grid">
                     {#each COMPOSITION_FIELDS as field (field)}
                       <div class="composition-field">
-                        <span class="composition-label">{t(locale, `field.${field}`)}</span>
+                        <FieldHelp
+                          label={`${t(locale, `field.${field}`)}${line.compositionOverride?.[field] !== undefined ? ' *' : ''}`}
+                          help={t(locale, `help.field.${field}`)}
+                          helpId={`help-composition-${line.id}-${field}`}
+                        />
                         <select
                           aria-label={`${t(locale, `field.${field}`)} ${t(locale, 'field.state')}`}
                           value={line.composition[field].state}
@@ -499,6 +782,81 @@
                     {/each}
                   </div>
                 </div>
+
+                <div class="ingredient-meta">
+                  <div class="ingredient-source-line">
+                    <FieldHelp
+                      label={t(locale, 'ingredient.source')}
+                      help={t(locale, 'help.ingredient.source')}
+                      helpId={`help-ingredient-source-${line.id}`}
+                    />
+                    <strong>{sourceLabel(line)}</strong>
+                    {#if line.catalogReference}
+                      <small>{t(locale, 'ingredient.catalogVersion')}: {line.catalogReference.version}</small>
+                    {/if}
+                  </div>
+                  <label class="meta-field">
+                    <FieldHelp
+                      label={t(locale, 'ingredient.confidence')}
+                      help={t(locale, 'help.ingredient.confidence')}
+                      helpId={`help-ingredient-confidence-${line.id}`}
+                    />
+                    <input
+                      aria-label={`${t(locale, 'ingredient.confidence')} ${ingredientDisplayName(line)}`}
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={line.definitionConfidence ?? 1}
+                      on:input={(event) => updateDefinitionConfidence(line.id, (event.currentTarget as HTMLInputElement).value)}
+                    />
+                  </label>
+                  <div class="override-summary">
+                    <FieldHelp
+                      label={t(locale, 'ingredient.localOverride')}
+                      help={t(locale, 'help.ingredient.localOverride')}
+                      helpId={`help-ingredient-override-${line.id}`}
+                    />
+                    <strong>{overrideLabel(line)}</strong>
+                  </div>
+                  <div class="availability-row">
+                    <label class="meta-field">
+                      <FieldHelp
+                        label={t(locale, 'ingredient.availability')}
+                        help={t(locale, 'help.ingredient.availability')}
+                        helpId={`help-ingredient-availability-${line.id}`}
+                      />
+                      <select
+                        aria-label={`${t(locale, 'ingredient.availability')} ${ingredientDisplayName(line)}`}
+                        value={availabilityState(line)}
+                        on:change={(event) => updateAvailabilityState(line.id, (event.currentTarget as HTMLSelectElement).value)}
+                      >
+                        <option value="unset">{t(locale, 'ingredient.noAvailabilityOverride')}</option>
+                        <option value="none">{t(locale, 'state.none')}</option>
+                        <option value="unknown">{t(locale, 'state.unknown')}</option>
+                        <option value="known">{t(locale, 'state.known')}</option>
+                      </select>
+                    </label>
+                    {#if line.availabilityOverride?.state === 'known'}
+                      <label class="meta-field availability-value">
+                        <FieldHelp
+                          label={`${t(locale, 'ingredient.availabilityOverrideShort')} (0–1)`}
+                          help={t(locale, 'help.ingredient.availabilityOverride')}
+                          helpId={`help-ingredient-availability-value-${line.id}`}
+                        />
+                        <input
+                          aria-label={`${t(locale, 'ingredient.availabilityOverride')} ${ingredientDisplayName(line)}`}
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={line.availabilityOverride.value}
+                          on:input={(event) => updateAvailabilityValue(line.id, (event.currentTarget as HTMLInputElement).value)}
+                        />
+                      </label>
+                    {/if}
+                  </div>
+                </div>
               </article>
             {/each}
           </div>
@@ -510,6 +868,211 @@
             <span>{t(locale, 'action.normalize')}</span><span class="button-arrow">→</span>
           </button>
         </div>
+      </section>
+
+      <section class="process-panel panel">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-number">03</span>
+            <h3>{t(locale, 'section.process')}</h3>
+          </div>
+          <span class="draft-status"><span class="status-dot"></span>{processStatusLabel()}</span>
+        </div>
+
+        <div class="process-intro">
+          <div>
+            <p>{t(locale, 'section.processHelp')}</p>
+            <p class="process-state-help">{t(locale, 'process.valueHelp')}</p>
+          </div>
+          <span>{t(locale, 'process.revision')}: {processDraft.revision}</span>
+        </div>
+
+        <div class="process-grid">
+          {#each processSections as section (section.key)}
+            <fieldset class="process-section">
+              <legend>{t(locale, `process.section.${section.key}`)}</legend>
+              <div class="process-fields">
+                {#each section.fields as field (field.path)}
+                  {@const current = processField(field.path)}
+                  <div class="process-field">
+                    <FieldHelp
+                      label={`${processFieldLabel(field)}${processUnitLabel(field) ? ` (${processUnitLabel(field)})` : ''}`}
+                      help={t(locale, `help.process.${field.path}`)}
+                      helpId={`help-process-${field.path.replace('.', '-')}`}
+                    />
+                    {#if field.kind === 'enum' || field.kind === 'boolean'}
+                      <select
+                        aria-label={processFieldLabel(field)}
+                        value={processControlValue(current)}
+                        on:change={(event) => updateProcessControl(field.path, (event.currentTarget as HTMLSelectElement).value)}
+                      >
+                        <option value="">{t(locale, 'process.notRecorded')}</option>
+                        <option value={PROCESS_NONE_VALUE}>{t(locale, 'state.none')}</option>
+                        {#each field.options ?? [] as option (option)}
+                          <option value={option}>{processOptionLabel(option)}</option>
+                        {/each}
+                      </select>
+                    {:else if field.kind === 'reference'}
+                      <select
+                        aria-label={processFieldLabel(field)}
+                        value={processControlValue(current)}
+                        on:change={(event) => updateProcessControl(field.path, (event.currentTarget as HTMLSelectElement).value)}
+                      >
+                        <option value="">{t(locale, 'process.notRecorded')}</option>
+                        <option value={PROCESS_NONE_VALUE}>{t(locale, 'state.none')}</option>
+                        {#if current.state === 'known' && !draft.ingredientLines.some((line) => line.id === current.value)}
+                          <option value={current.value}>{t(locale, 'process.reference.unresolved')}</option>
+                        {/if}
+                        {#each draft.ingredientLines as line (line.id)}
+                          <option value={line.id}>{processReferenceLabel(line)}</option>
+                        {/each}
+                      </select>
+                    {:else}
+                      <input
+                        aria-label={processFieldLabel(field)}
+                        type="number"
+                        inputmode="decimal"
+                        min={field.min}
+                        max={field.max}
+                        step={field.integer ? '1' : '0.01'}
+                        placeholder={t(locale, 'process.notRecorded')}
+                        value={processInputValue(current)}
+                        disabled={current.state === 'none'}
+                        on:input={(event) => updateProcessInput(field.path, (event.currentTarget as HTMLInputElement).value)}
+                      />
+                      <label class="process-none-toggle">
+                        <input
+                          type="checkbox"
+                          aria-label={`${processFieldLabel(field)} ${t(locale, 'state.none')}`}
+                          checked={current.state === 'none'}
+                          on:change={(event) => updateProcessNone(field.path, (event.currentTarget as HTMLInputElement).checked)}
+                        />
+                        <span>{t(locale, 'state.none')}</span>
+                      </label>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+
+              {#if section.key === 'ingredientAddition'}
+                <div class="addition-heading">
+                  <span>{t(locale, 'section.processTimeline')}</span>
+                  <button type="button" class="small-button" on:click={addAdditionStep}>+ {t(locale, 'action.addStep')}</button>
+                </div>
+                <p class="addition-help">{t(locale, 'process.addition.help')}</p>
+                {#if processDraft.ingredientAddition.steps.length === 0}
+                  <p class="process-empty">{t(locale, 'process.addition.empty')}</p>
+                {:else}
+                  <div class="addition-list">
+                    {#each processDraft.ingredientAddition.steps as step (step.id)}
+                      <article class="addition-step">
+                        <div class="addition-step-head">
+                          <label class="meta-field sequence-field">
+                            <FieldHelp
+                              label={t(locale, 'process.addition.step')}
+                              help={t(locale, 'help.process.addition.step')}
+                              helpId={`help-addition-step-${step.id}`}
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={step.sequence}
+                              on:input={(event) => updateAdditionStep(step.id, { sequence: (event.currentTarget as HTMLInputElement).value })}
+                            />
+                          </label>
+                          <label class="meta-field addition-action">
+                            <FieldHelp
+                              label={t(locale, 'process.addition.action')}
+                              help={t(locale, 'help.process.addition.action')}
+                              helpId={`help-addition-action-${step.id}`}
+                            />
+                            <select
+                              aria-label={t(locale, 'process.addition.action')}
+                              value={step.action}
+                              on:change={(event) => updateAdditionStep(step.id, { action: (event.currentTarget as HTMLSelectElement).value })}
+                            >
+                              <option value="">{t(locale, 'process.notRecorded')}</option>
+                              {#each PROCESS_ADDITION_ACTIONS as action (action)}
+                                <option value={action}>{processOptionLabel(action)}</option>
+                              {/each}
+                            </select>
+                          </label>
+                          <label class="meta-field duration-field">
+                            <FieldHelp
+                              label={`${t(locale, 'process.addition.duration')} (${t(locale, 'process.unit.seconds')})`}
+                              help={t(locale, 'help.process.addition.duration')}
+                              helpId={`help-addition-duration-${step.id}`}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={step.durationSeconds}
+                              on:input={(event) => updateAdditionStep(step.id, { durationSeconds: (event.currentTarget as HTMLInputElement).value })}
+                            />
+                          </label>
+                          <button type="button" class="remove-button" aria-label={`${t(locale, 'action.remove')} ${t(locale, 'process.addition.step')} ${step.sequence}`} on:click={() => removeAdditionStep(step.id)}>×</button>
+                        </div>
+                        <div class="addition-lines">
+                          <FieldHelp
+                            label={t(locale, 'process.addition.lines')}
+                            help={t(locale, 'help.process.addition.lines')}
+                            helpId={`help-addition-lines-${step.id}`}
+                            wide
+                          />
+                          {#each draft.ingredientLines as line (line.id)}
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={step.lineIds.includes(line.id)}
+                                on:change={(event) => toggleStepLine(step.id, line.id, (event.currentTarget as HTMLInputElement).checked)}
+                              />
+                              <span>{ingredientDisplayName(line)}</span>
+                            </label>
+                          {/each}
+                        </div>
+                      </article>
+                    {/each}
+                  </div>
+                {/if}
+              {/if}
+            </fieldset>
+          {/each}
+        </div>
+
+        <div class="process-footer">
+          <div class="process-state-note">
+            <span>{t(locale, 'process.unknownMeaning')}</span>
+            <span>{t(locale, 'process.noneMeaning')}</span>
+          </div>
+          <button type="button" class="primary-button" on:click={runProcessNormalization}>
+            <span>{t(locale, 'action.recordProcess')}</span><span class="button-arrow">→</span>
+          </button>
+        </div>
+
+        {#if processResult}
+          <div class={`process-result ${processResult.outcome}`}>
+            <div>
+              <strong>{t(locale, 'process.recorded')} · {processStatusLabel()}</strong>
+              <span>{t(locale, 'metric.coverage')}: {formatPercent(processResult.coverage)} · {t(locale, 'metric.confidence')}: {formatPercent(processResult.confidence)}</span>
+            </div>
+          </div>
+          {#if processResult.outcome === 'partial'}
+            <div class="partial-note process-partial-note"><span>◐</span><p>{t(locale, 'process.partialBody')}</p></div>
+          {/if}
+          {#if processResult.diagnostics.length > 0}
+            <div class="diagnostic-list process-diagnostics" aria-live="polite">
+              {#each processResult.diagnostics as diagnostic (`${diagnostic.code}-${diagnostic.path}`)}
+                <div class="diagnostic">
+                  <div class="diagnostic-topline"><strong>{diagnosticMessage(diagnostic.messageKey, diagnostic.parameters)}</strong><code>{diagnostic.code}</code></div>
+                  <p>{diagnosticMessage(diagnostic.resolutionKey, diagnostic.parameters)}</p>
+                  <span class="diagnostic-path">{diagnostic.path}</span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {/if}
       </section>
 
       <section class="result-panel panel">
@@ -594,7 +1157,7 @@
                 <div class="table-row table-head"><span>{t(locale, 'field.name')}</span><span>{t(locale, 'field.role')}</span><span>{t(locale, 'field.mass')}</span><span>{t(locale, 'metric.bakers')}</span></div>
                 {#each result.data.ingredientLines as line (line.id)}
                   <div class="table-row ingredient-result-row">
-                    <span class="table-name">{resultIngredientDisplayName(line.id, line.name)}<small>{#each COMPOSITION_FIELDS as field (field)}<span class={`state-mini ${line.composition[field].state}`}>{t(locale, `field.${field}`)} · {stateLabel(line.composition[field])}</span>{/each}</small></span>
+                     <span class="table-name">{resultIngredientDisplayName(line.id, line.name)}<small><span class="state-mini">{line.definitionSource === 'catalog' ? t(locale, 'ingredient.catalog') : t(locale, 'ingredient.custom')} · {formatPercent(line.compositionConfidence)}</span><span class="state-mini">{t(locale, `participation.${line.participation.metricFamily}`)}</span>{#if line.overrides.fields.length > 0 || line.overrides.availability}<span class="state-mini unknown">{t(locale, 'ingredient.localOverride')}</span>{/if}{#each COMPOSITION_FIELDS as field (field)}<span class={`state-mini ${line.composition[field].state}`}>{t(locale, `field.${field}`)} · {stateLabel(line.composition[field])}</span>{/each}</small></span>
                     <span>{t(locale, `role.${line.role}`)}</span><span>{formatNumber(line.mass.value)} g</span><span>{formatNumber(line.bakersPercentage.value)}%</span>
                   </div>
                 {/each}
@@ -628,11 +1191,15 @@
                    <div><h5>{t(locale, 'explanation.denominator')}</h5>{#if result.explanation.denominatorBasis.length > 0}<ul>{#each result.explanation.denominatorBasis as item (item)}<li>{item}</li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
                    <div><h5>{t(locale, 'explanation.excluded')}</h5>{#if result.explanation.excludedComponents.length > 0}<ul>{#each result.explanation.excludedComponents as item (item)}<li>{item}</li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
                 </div>
-                <div class="explanation-columns">
-                   <div><h5>{t(locale, 'explanation.unknown')}</h5>{#if result.explanation.unknownFields.length > 0}<ul>{#each result.explanation.unknownFields as item (item.path)}<li><strong>{item.label}</strong><span>{item.reasonCode}</span></li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
-                   <div><h5>{t(locale, 'explanation.limitations')}</h5>{#if result.explanation.limitations.length > 0}<ul>{#each result.explanation.limitations as item (item)}<li>{item}</li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
-                </div>
-                <div class="provenance-line"><span>{t(locale, 'result.provenance')}</span><strong>{provenanceLabel(result.explanation.provenance.kind)}</strong><span>{t(locale, 'result.sourceDerived')}</span></div>
+                 <div class="explanation-columns">
+                    <div><h5>{t(locale, 'explanation.unknown')}</h5>{#if result.explanation.unknownFields.length > 0}<ul>{#each result.explanation.unknownFields as item (item.path)}<li><strong>{item.label}</strong><span>{item.reasonCode}</span></li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
+                    <div><h5>{t(locale, 'explanation.limitations')}</h5>{#if result.explanation.limitations.length > 0}<ul>{#each result.explanation.limitations as item (item)}<li>{item}</li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
+                 </div>
+                 <div class="explanation-columns">
+                    <div><h5>{t(locale, 'explanation.roles')}</h5><ul>{#each result.explanation.roleParticipation as item (item.lineId)}<li><strong>{resultIngredientDisplayName(item.lineId, item.lineName)}</strong><span>{t(locale, `role.${item.role}`)} · {t(locale, `participation.${item.participation.metricFamily}`)}</span></li>{/each}</ul></div>
+                    <div><h5>{t(locale, 'explanation.overrides')}</h5>{#if result.explanation.overrides.length > 0}<ul>{#each result.explanation.overrides as item (item.lineId)}<li><strong>{resultIngredientDisplayName(item.lineId, item.lineName)}</strong><span>{item.source === 'catalog' ? t(locale, 'ingredient.catalog') : t(locale, 'ingredient.custom')} · {item.fields.length > 0 ? item.fields.map((field) => t(locale, `field.${field}`)).join(', ') : ''}{item.availability ? ` · ${t(locale, 'ingredient.availability')}` : ''}</span></li>{/each}</ul>{:else}<p>{t(locale, 'explanation.none')}</p>{/if}</div>
+                 </div>
+                 <div class="provenance-line"><span>{t(locale, 'result.provenance')}</span><strong>{provenanceLabel(result.explanation.provenance.kind)}</strong><span>{t(locale, 'result.sourceDerived')}</span></div>
               </div>
             {/if}
           {:else}
@@ -687,6 +1254,7 @@
   .draft-meta strong { color: #334a40; font-size: 0.76rem; font-weight: 700; }
   .text-button { padding: 0 0 0.1rem; border: 0; border-bottom: 1px solid #b97558; background: transparent; color: #8f503a; font-size: 0.72rem; font-weight: 700; }
   .workspace-grid { display: grid; grid-template-columns: minmax(0, 1.03fr) minmax(0, 0.97fr); gap: 1rem; align-items: start; }
+  .editor-panel { grid-column: 1; grid-row: 1; }
   .panel { background: rgba(255, 253, 249, 0.83); border: 1px solid rgba(65, 75, 67, 0.14); box-shadow: 0 18px 50px rgba(78, 65, 51, 0.045); }
   .panel-heading { min-height: 82px; padding: 1.25rem 1.35rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(65, 75, 67, 0.11); }
   .panel-heading > div { display: flex; align-items: center; gap: 0.8rem; }
@@ -740,6 +1308,59 @@
   .composition-value { display: flex; align-items: center; position: relative; }
   .composition-value input { height: 1.75rem; padding-right: 1.1rem; font-size: 0.68rem; }
   .composition-value span { position: absolute; right: 0.35rem; color: #647067; font-size: 0.62rem; }
+  .composition-label b { margin-left: 0.2rem; color: #a24e37; font-size: 0.7rem; }
+  .ingredient-meta { margin: 0.9rem 0 0 2.6rem; padding-top: 0.75rem; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(8rem, 0.7fr) minmax(0, 1.4fr); gap: 0.65rem; border-top: 1px solid rgba(65, 75, 67, 0.1); }
+  .ingredient-source-line, .override-summary { min-width: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: baseline; color: #5f6b62; font-size: 0.62rem; line-height: 1.4; }
+  .ingredient-source-line > span, .override-summary > span { color: #68746b; font-size: 0.54rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ingredient-source-line strong, .override-summary strong { color: #45604e; font-weight: 700; }
+  .ingredient-source-line small { color: #756b62; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.55rem; }
+  .meta-field { min-width: 0; display: flex; flex-direction: column; gap: 0.28rem; }
+  .meta-field > span { color: #5d6a61; font-size: 0.55rem; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; }
+  .meta-field em { color: #5d6a61; font-style: normal; letter-spacing: 0; text-transform: none; }
+  .meta-field input, .meta-field select { width: 100%; min-width: 0; height: 1.85rem; padding: 0 0.45rem; border: 1px solid #deddd6; border-radius: 0; outline: 0; background: #fffdfa; color: #33463d; font-size: 0.68rem; }
+  .meta-field input:focus, .meta-field select:focus, .process-field input:focus, .process-field select:focus { border-color: #b87859; box-shadow: 0 0 0 2px rgba(184, 120, 89, 0.12); }
+  .availability-row { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.7fr); gap: 0.65rem; align-items: end; }
+  .process-panel { grid-column: 1 / -1; grid-row: 2; }
+  .process-intro { padding: 0.9rem 1.35rem; display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid rgba(65, 75, 67, 0.11); color: #58665d; font-size: 0.72rem; line-height: 1.5; }
+  .process-intro > div { max-width: 780px; }
+  .process-intro p { margin: 0; }
+  .process-intro .process-state-help { margin-top: 0.45rem; color: #6d7169; font-size: 0.65rem; }
+  .process-intro > span { flex: 0 0 auto; color: #6b7069; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.61rem; }
+  .process-grid { padding: 1.25rem 1.35rem 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+  .process-section { min-width: 0; margin: 0; padding: 0.85rem; border: 1px solid rgba(65, 75, 67, 0.13); background: #fbf8f3; }
+  .process-section legend { padding: 0 0.35rem; color: #2f473c; font-family: Georgia, "Times New Roman", serif; font-size: 0.98rem; }
+  .process-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+  .process-field { min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+  .process-field > label { display: flex; flex-direction: column; gap: 0.28rem; }
+  .process-field span { color: #5d6a61; font-size: 0.55rem; letter-spacing: 0.07em; font-weight: 700; text-transform: uppercase; }
+  .process-field-label { display: block; }
+  .process-field em { color: #5d6a61; font-style: normal; letter-spacing: 0; text-transform: none; }
+  .process-field input, .process-field select { width: 100%; min-width: 0; height: 1.85rem; padding: 0 0.4rem; border: 1px solid #deddd6; border-radius: 0; outline: 0; background: #fffdfa; color: #33463d; font-size: 0.66rem; }
+  .process-field input:disabled { background: #f0eee8; color: #7a817a; cursor: not-allowed; }
+  .process-field input::placeholder { color: #8b918b; }
+  .process-none-toggle { display: flex !important; flex-direction: row !important; align-items: center; gap: 0.35rem; color: #6b7069; font-size: 0.58rem; line-height: 1.25; letter-spacing: 0 !important; font-weight: 500 !important; text-transform: none !important; }
+  .process-none-toggle input { width: auto; min-width: 0; height: auto; }
+  .process-none-toggle span { color: inherit; font-size: inherit; letter-spacing: inherit; font-weight: inherit; text-transform: inherit; }
+  .addition-heading { margin-top: 1rem; padding-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(65, 75, 67, 0.15); color: #5d6a61; font-size: 0.63rem; font-weight: 750; }
+  .addition-help { margin: 0.55rem 0 0; max-width: 58rem; color: #6b7069; font-size: 0.68rem; line-height: 1.5; }
+  .process-empty { margin: 0.7rem 0 0; color: #6b7069; font-size: 0.65rem; }
+  .addition-list { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.7rem; }
+  .addition-step { padding: 0.65rem; border: 1px solid rgba(65, 75, 67, 0.12); background: #fffdfa; }
+  .addition-step-head { display: grid; grid-template-columns: 4rem minmax(0, 1fr) 5.5rem 1.25rem; gap: 0.45rem; align-items: end; }
+  .addition-lines { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.4rem 0.7rem; align-items: center; color: #5d6a61; font-size: 0.61rem; }
+  .addition-lines > span { width: 100%; color: #68746b; font-size: 0.54rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .addition-lines label { display: inline-flex; gap: 0.25rem; align-items: center; }
+  .addition-lines input { accent-color: #496b57; }
+  .process-footer { padding: 1rem 1.35rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid rgba(65, 75, 67, 0.11); }
+  .process-state-note { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; color: #5f6b62; font-size: 0.61rem; }
+  .process-result { margin: 0 1.35rem 0.85rem; padding: 0.75rem 0.85rem; display: flex; justify-content: space-between; border: 1px solid #d2dfd1; background: #f0f6ef; color: #45634d; }
+  .process-result.partial { border-color: #e1cdb9; background: #fff7ee; color: #8d5e44; }
+  .process-result.rejected { border-color: #e7c5ba; background: #fff1ec; color: #a04d3f; }
+  .process-result strong, .process-result span { display: block; }
+  .process-result strong { font-size: 0.73rem; }
+  .process-result span { margin-top: 0.25rem; font-size: 0.63rem; }
+  .process-partial-note { margin-bottom: 0.9rem; }
+  .process-diagnostics { margin-bottom: 1rem; }
   .editor-footer { padding: 1rem 1.35rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
   .unit-lock { display: flex; align-items: center; gap: 0.45rem; color: #5d6a61; font-size: 0.7rem; }
   .unit-lock strong { color: #a15c44; font-size: 0.63rem; letter-spacing: 0.1em; }
@@ -747,7 +1368,7 @@
   .primary-button { display: inline-flex; gap: 1.2rem; align-items: center; padding: 0.72rem 0.85rem 0.72rem 1rem; border: 0; background: #2f5144; color: #fffdf8; font-size: 0.72rem; font-weight: 750; }
   .primary-button:hover { background: #244338; }
   .button-arrow { color: #e3b397; font-size: 1rem; }
-  .result-panel { min-height: 600px; }
+  .result-panel { grid-column: 2; grid-row: 1; min-height: 600px; }
   .result-heading { background: rgba(249, 245, 237, 0.68); }
   .result-status.idle { color: #6f756d; }
   .empty-result { min-height: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem; text-align: center; }
@@ -827,6 +1448,6 @@
   .correction-callout p { margin: 0.4rem 0 0; color: #6f6258; font-size: 0.72rem; line-height: 1.5; }
   .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; color: #5f6860; font-size: 0.57rem; letter-spacing: 0.08em; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-  @media (max-width: 1080px) { .workspace-grid { grid-template-columns: 1fr; } .result-panel { min-height: auto; } .empty-result { min-height: 360px; } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block { margin-left: 0; } .composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 1080px) { .workspace-grid { grid-template-columns: 1fr; } .editor-panel, .result-panel, .process-panel { grid-column: 1; } .editor-panel { grid-row: 1; } .result-panel { grid-row: 2; min-height: auto; } .process-panel { grid-row: 3; } .process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .empty-result { min-height: 360px; } }
+  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block { margin-left: 0; } .composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
 </style>

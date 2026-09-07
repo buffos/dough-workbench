@@ -9,6 +9,7 @@ import {
   parsePositiveMass,
   validateFormula,
 } from './normalization';
+import { STARTER_CATALOG_VERSION } from '../../data/ingredients/starter-catalog';
 
 describe('formula normalization', () => {
   it('normalizes the starter multi-flour formula deterministically', () => {
@@ -158,5 +159,72 @@ describe('formula normalization', () => {
 
   it('keeps the canonical composition field set stable', () => {
     expect(COMPOSITION_FIELDS).toEqual(['water', 'fat', 'protein', 'sugar', 'starch']);
+  });
+
+  it('resolves catalog definitions with versioned references and role participation', () => {
+    const draft = createInitialFormulaDraft('roles');
+    draft.ingredientLines.push({
+      id: 'line-raisin',
+      ingredientId: 'raisin',
+      name: 'Raisin',
+      massGrams: '80',
+      massUnit: 'g',
+      role: 'inclusion',
+      composition: compositionFromCatalog({ sugar: 59 }, STARTER_CATALOG_VERSION, 'raisin'),
+      definitionSource: 'catalog',
+      catalogReference: { ingredientId: 'raisin', version: STARTER_CATALOG_VERSION },
+      definitionProvenance: { kind: 'catalog', sourceId: 'raisin', sourceVersion: STARTER_CATALOG_VERSION },
+      definitionConfidence: 0.8,
+    });
+
+    const result = normalizeFormula(draft);
+    const water = result.data?.ingredientLines[0];
+    const raisin = result.data?.ingredientLines[1];
+
+    expect(water?.catalogReference).toEqual({ ingredientId: 'water', version: STARTER_CATALOG_VERSION });
+    expect(water?.participation).toEqual({ metricFamily: 'continuous_phase', participatesInContinuousPhase: true });
+    expect(raisin?.participation).toEqual({ metricFamily: 'separate_role', participatesInContinuousPhase: false });
+    expect(result.explanation.roleParticipation.map((item) => item.role)).toEqual(['continuous_phase', 'inclusion']);
+  });
+
+  it('keeps custom functional data and local overrides isolated from sibling lines and catalog data', () => {
+    const draft = createInitialFormulaDraft('overrides');
+    draft.ingredientLines.push({
+      id: 'line-water-copy',
+      ingredientId: 'water',
+      name: 'Water copy',
+      massGrams: '100',
+      massUnit: 'g',
+      role: 'continuous_phase',
+      composition: compositionFromCatalog({ water: 100 }, STARTER_CATALOG_VERSION, 'water'),
+      definitionSource: 'catalog',
+      catalogReference: { ingredientId: 'water', version: STARTER_CATALOG_VERSION },
+      definitionProvenance: { kind: 'catalog', sourceId: 'water', sourceVersion: STARTER_CATALOG_VERSION },
+      definitionConfidence: 1,
+    });
+    draft.ingredientLines[0].composition.water = {
+      state: 'known',
+      value: '60',
+      provenance: { kind: 'custom', sourceId: 'local-water-override' },
+      confidence: 0.72,
+    };
+    draft.ingredientLines[0].compositionOverride = { water: draft.ingredientLines[0].composition.water };
+
+    const customLine = draft.ingredientLines[1];
+    customLine.ingredientId = 'custom';
+    customLine.definitionSource = 'custom';
+    customLine.definitionProvenance = { kind: 'custom', sourceId: 'local-custom-ingredient' };
+    customLine.definitionConfidence = 0.64;
+
+    const result = normalizeFormula(draft);
+    const overridden = result.data?.ingredientLines[0];
+    const sibling = result.data?.ingredientLines[1];
+
+    expect(overridden?.composition.water).toMatchObject({ state: 'known', value: 60, confidence: 0.72 });
+    expect(overridden?.overrides.fields).toEqual(['water']);
+    expect(sibling?.composition.water).toMatchObject({ state: 'known', value: 100 });
+    expect(sibling?.compositionConfidence).toBe(0.64);
+    expect(sibling?.definitionSource).toBe('custom');
+    expect(result.explanation.overrides.map((item) => item.lineId)).toEqual(['line-water']);
   });
 });

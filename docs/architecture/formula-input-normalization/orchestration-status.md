@@ -28,11 +28,12 @@ ingredient roles, process input capture, and preservation of missing data.
 - Readiness review: [readiness-review.md](readiness-review.md), created with
   two high-severity and three medium-severity findings. R-001 through R-004
   were resolved during the review pass, and R-005 was resolved with the
-  confirmed V1 tolerance policy. Implementation handoff is ready.
-- Delivery issue batch: Issues 001–003 are archived as completed in
-  `docs/agents/issues/done/`; Issues 004–007 remain active in
-  `docs/agents/issues/pending/` and are registered in
-  `docs/agents/issues/issues.md`.
+  confirmed V1 tolerance policy. R-006 was resolved by the
+  `process-input-v0.2` typed-vocabulary refinement. Implementation handoff is
+  ready.
+- Delivery issue batch: Issues 001–005 are archived as completed in
+  `docs/agents/issues/done/`; Issue 006 is active and ready for implementation;
+  Issue 007 remains active behind Issue 006.
 
 ## Current assessment
 
@@ -70,10 +71,21 @@ outcomes, confidence/coverage representation, and numeric tolerance. R-001
 through R-004 are now harmonized across the glossary, PRD, domain model,
 use-cases, contract, and scenarios. The user confirmed the V1
 `formula-normalization-v1` policy with an inclusive `[99.99%, 100.01%]` range;
-the readiness review is now clear and the node is `specified`.
+the later Process refinement versioned the controlled fields as
+`process-input-v0.2`. The readiness review is now clear and the node is
+`specified`.
+
+The Process editor originally exposed several advanced fields as free text.
+That was a material vocabulary gap: an arbitrary phrase could be stored but
+could not be interpreted by the algorithm. The canonical model and glossary
+now define controlled options for development, foam handling, preferments,
+expansion targets, folds, fat/dough state, surface treatment, surface/volume
+class, and containers. Lamination fat is a Formula-line reference, and
+AdditionStep actions are controlled values. The Process model does not accept
+free text as an algorithm-facing value.
 
 ## Next action
 
-Process `004-roles-and-overrides.md` or `005-process-capture.md` next. Recompute
-the dependency frontier after each issue closes; all seven issues carry the
+Process Issue 006 next. After it is implemented and explicitly approved in
+visual review, close it out and unlock Issue 007. All seven issues carry the
 mandatory `visual-review` gate because they change rendered frontend behavior.

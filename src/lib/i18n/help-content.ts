@@ -41,7 +41,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
         id: 'formula-and-process',
         eyebrow: '01 / SCOPE',
         title: 'Formula is not process',
-        intro: 'The current workspace describes what goes into the mixture. It does not yet describe how the mixture is handled.',
+        intro: 'The workspace records what goes into the mixture and, separately, how the mixture is handled.',
         entries: [
           {
             title: 'Formula',
@@ -55,6 +55,39 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
             body: 'The actions and conditions that transform the formula: mixing, kneading, fermentation, resting, lamination, and baking.',
             examples: '10 minutes of kneading, 24 °C fermentation, overnight retard.',
             note: 'Two identical formulas can behave differently when their processes differ.',
+          },
+          {
+            title: 'Ingredient addition timeline',
+            canonical: 'AdditionStep',
+            body: 'The Ingredient addition section records when each Formula line enters the process. A step is an ordered point in the method, not a new ingredient. Sequence records order, Action records what happens, Duration records optional time, and Formula lines link the existing ingredient lines handled at that step.',
+            examples: 'Step 1: add water. Step 2: mix in salt. Step 3: incorporate butter.',
+            note: 'Selecting a Formula line links it to the step; it does not add its mass a second time. An empty timeline means that no addition order has been recorded, not that nothing was added.',
+          },
+          {
+            title: 'Process input controls',
+            canonical: 'process-input-v0.2',
+            body: 'A Process field is either a controlled option, a number with a unit, or a reference to a Formula line. The normalized Process receives a canonical ID, numeric value, or stable reference—not an arbitrary sentence.',
+            examples: 'Preferment → Poolish. Bulk fermentation rise → 50% increase. Fat state → Plastic. Bulk fermentation temperature → 24 °C.',
+            note: 'Other is retained as explicitly unclassified. Leave a field at Not recorded yet when no supported value is known.',
+          },
+          {
+            title: 'Expansion targets',
+            canonical: 'BulkExpansionTarget / FinalExpansionTarget',
+            body: 'An expansion target describes how much the dough should increase relative to its starting volume. The bulk target refers to the first fermentation while the dough is still one mass; the final target refers to the final proof after shaping. The current controlled choices are 30% increase, 50% increase, and double (100% increase). It is a target rise, not a time or temperature value.',
+            examples: 'Bulk fermentation rise target → 50% increase; final proof rise target → Double.',
+          },
+          {
+            title: 'The remaining categorical values',
+            canonical: 'Controlled Process vocabulary',
+            body: 'Development target uses Minimal, Partial, or Full. Foam target uses Low, Medium, or High. Post-aeration handling uses Gentle folding, Moderate folding, or Vigorous mixing. Preferment uses Direct, Poolish, Biga, or Levain. Fat and dough state, surface/volume class, surface treatment, and container use the corresponding controlled options shown in the editor.',
+            examples: 'Fat state → Plastic. Dough state → Stiff dough. Surface / volume → High. Container → Loaf tin.',
+            note: 'If a technique is not represented, choose Other only when you want to record an explicit unclassified category; otherwise leave it Not recorded yet.',
+          },
+          {
+            title: 'Fold pattern and lamination fat',
+            canonical: 'FoldSequence / laminationFat',
+            body: 'Fold pattern is selected as Single fold or Double fold (or Other). Lamination fat is not typed as a name: it points to one of the Formula ingredient lines, so the model can resolve the exact ingredient identity.',
+            examples: 'Fold pattern → Double fold; lamination fat line → Butter · 250 g.',
           },
         ],
       },
@@ -111,10 +144,10 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
             examples: 'Water in milk, fat in butter, starch in flour.',
           },
           {
-            title: 'Known, none, and unknown',
+            title: 'Known value, not applicable, and no known value',
             canonical: 'Value state',
-            body: 'Known means a value has been supplied. None / absent means the field does not apply or is absent. Unknown means the field may apply, but the information has not been established.',
-            note: 'Unknown is deliberately not converted into numeric zero.',
+            body: 'These states describe the field, not who typed it. Known value means an accepted source provides a value. Not applicable / absent means the field does not apply or is absent. No known value means the field may apply, but no accepted value is available.',
+            note: 'No known value is deliberately not converted into numeric zero.',
           },
           {
             title: 'Named ingredient → functional composition',
@@ -125,8 +158,41 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
         ],
       },
       {
+        id: 'data-quality',
+        eyebrow: '04 / DATA QUALITY',
+        title: 'Source, confidence, and availability',
+        intro: 'These labels describe the quality and interpretation of the data. They are not predictions and they do not change the shared catalog.',
+        entries: [
+          {
+            title: 'Composition data source',
+            canonical: 'Provenance',
+            body: 'This tells you where the functional composition came from: the versioned starter catalog or a local custom definition. A catalog choice is read-only; a custom definition belongs only to this formula line.',
+            examples: 'Starter catalog · starter-catalog-v1, or Local custom definition.',
+          },
+          {
+            title: 'Composition data confidence',
+            canonical: 'Confidence',
+            body: 'A number from 0 to 1 describing how strongly the available evidence supports the composition data for this ingredient. It is not the percentage of water, fat, or protein, and it is not a similarity score.',
+            examples: '1.00 means the current source is treated as fully supported for this input; 0.60 means the source is only partly trusted.',
+          },
+          {
+            title: 'Effective contribution to the dough',
+            canonical: 'AvailabilityOverride / Functional availability',
+            body: 'A formula-line-local coefficient from 0 to 1 describing how much of an ingredient’s water, fat, or other functional component is treated as effectively participating in the dough at the relevant stage. It is not about whether you have the ingredient in the kitchen, and it is different from whether the underlying data is known.',
+            examples: 'If an ingredient contains 20 g of water but the model treats only 50% as available during mixing, its effective water contribution is 10 g.',
+            note: 'In the current input layer this records the assumption; effective-water and effective-fat calculations will use it when those model rules are enabled.',
+          },
+          {
+            title: 'Recorded, not applicable, and not recorded',
+            canonical: 'Known / None / Unknown',
+            body: 'These are information statuses, not the field values themselves. Process fields expose the actual control directly: a selected option or entered number becomes Known. Leaving it blank means Not recorded. Not applicable / absent records an explicit absence. Not recorded is never silently changed into zero.',
+            examples: 'Mixing method → Machine knead. Mixing intensity → 0.60. Bulk fermentation time → Not recorded.',
+          },
+        ],
+      },
+      {
         id: 'calculation-semantics',
-        eyebrow: '04 / EVIDENCE',
+        eyebrow: '05 / EVIDENCE',
         title: 'How the result is described',
         intro: 'The result separates direct calculations from assumptions and rules so that a useful output does not pretend to be more certain than its inputs.',
         entries: [
@@ -152,7 +218,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
       },
       {
         id: 'flour-basis',
-        eyebrow: '05 / DENOMINATOR',
+        eyebrow: '06 / DENOMINATOR',
         title: 'Flour basis and baker’s percentages',
         intro: 'Baker’s percentages need a clear denominator. In this workspace, that denominator is the mass of flour-bearing structural components.',
         entries: [
@@ -172,7 +238,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
       },
       {
         id: 'similarity-boundary',
-        eyebrow: '06 / FUTURE MODEL',
+        eyebrow: '07 / FUTURE MODEL',
         title: 'Similarity has two dimensions',
         intro: 'A formula can resemble another formula while using a different process. The product should keep those two kinds of similarity separate.',
         entries: [
@@ -205,7 +271,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
         id: 'formula-and-process',
         eyebrow: '01 / ΠΕΔΙΟ',
         title: 'Η φόρμουλα δεν είναι η διαδικασία',
-        intro: 'Ο τωρινός χώρος εργασίας περιγράφει τι μπαίνει στο μείγμα. Δεν περιγράφει ακόμη πώς δουλεύεται το μείγμα.',
+        intro: 'Ο χώρος εργασίας καταγράφει τι μπαίνει στο μείγμα και, ξεχωριστά, πώς δουλεύεται το μείγμα.',
         entries: [
           {
             title: 'Φόρμουλα',
@@ -219,6 +285,39 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
             body: 'Οι ενέργειες και οι συνθήκες που μετασχηματίζουν τη φόρμουλα: ανάμειξη, ζύμωμα, ωρίμαση, ξεκούραση, φυλλοποίηση και ψήσιμο.',
             examples: '10 λεπτά ζύμωμα, ωρίμαση στους 24 °C, ψυχρή παραμονή όλη τη νύχτα.',
             note: 'Δύο ίδιες φόρμουλες μπορούν να συμπεριφερθούν διαφορετικά όταν αλλάζει η διαδικασία.',
+          },
+          {
+            title: 'Χρονολόγιο προσθήκης υλικών',
+            canonical: 'AdditionStep / Βήμα προσθήκης',
+            body: 'Η καρτέλα «Προσθήκη υλικών» καταγράφει πότε μπαίνει κάθε γραμμή της φόρμουλας στη διαδικασία. Το βήμα είναι ένα σημείο με σειρά μέσα στη μέθοδο, όχι νέο υλικό. Η σειρά καταγράφει τη διαδοχή, η ενέργεια τι γίνεται, η διάρκεια τον προαιρετικό χρόνο και οι γραμμές φόρμουλας συνδέουν τα ήδη υπάρχοντα υλικά που δουλεύονται σε αυτό το βήμα.',
+            examples: 'Βήμα 1: προσθήκη νερού. Βήμα 2: ανάμειξη αλατιού. Βήμα 3: ενσωμάτωση βουτύρου.',
+            note: 'Η επιλογή γραμμής φόρμουλας τη συνδέει με το βήμα· δεν προσθέτει τη μάζα της δεύτερη φορά. Άδειο χρονολόγιο σημαίνει ότι δεν καταγράφηκε σειρά προσθηκών, όχι ότι δεν προστέθηκε τίποτα.',
+          },
+          {
+            title: 'Πεδία εισόδου διαδικασίας',
+            canonical: 'process-input-v0.2',
+            body: 'Κάθε πεδίο διαδικασίας είναι είτε ελεγχόμενη επιλογή, είτε αριθμός με μονάδα, είτε αναφορά σε γραμμή της φόρμουλας. Η κανονικοποιημένη διαδικασία παίρνει κωδικό, αριθμητική τιμή ή σταθερή αναφορά — όχι αυθαίρετη πρόταση.',
+            examples: 'Τύπος προζυμιού → Poolish. Αύξηση κύριας ζύμωσης → 50%. Κατάσταση λίπους → Πλαστικό. Θερμοκρασία κύριας ζύμωσης → 24 °C.',
+            note: 'Το «Άλλο» κρατιέται ως ρητά μη ταξινομημένο. Αν δεν γνωρίζεις υποστηριζόμενη τιμή, άφησε «Δεν έχει καταγραφεί ακόμη».',
+          },
+          {
+            title: 'Στόχοι αύξησης',
+            canonical: 'BulkExpansionTarget / FinalExpansionTarget',
+            body: 'Ο στόχος αύξησης περιγράφει πόσο πρέπει να αυξηθεί ο όγκος σε σχέση με την αρχική κατάσταση. Ο στόχος της κύριας ζύμωσης αφορά την πρώτη ζύμωση, όταν η ζύμη είναι ακόμη μία μάζα· ο τελικός στόχος αφορά την τελική ωρίμαση μετά το σχημάτισμα. Οι τρέχουσες επιλογές είναι αύξηση 30%, αύξηση 50% και διπλασιασμός (αύξηση 100%). Είναι στόχος όγκου, όχι χρόνος ή θερμοκρασία.',
+            examples: 'Στόχος αύξησης κύριας ζύμωσης → Αύξηση 50%· στόχος αύξησης τελικής ωρίμασης → Διπλασιασμός.',
+          },
+          {
+            title: 'Οι υπόλοιπες κατηγορικές τιμές',
+            canonical: 'Controlled Process vocabulary',
+            body: 'Ο στόχος ανάπτυξης έχει Ελάχιστη, Μερική ή Πλήρη ανάπτυξη. Ο στόχος αφρισμού έχει Χαμηλό, Μεσαίο ή Υψηλό. Ο χειρισμός μετά τον αφρισμό έχει Απαλό δίπλωμα, Μέτριο δίπλωμα ή Έντονη ανάμειξη. Ο τύπος προζυμιού έχει Άμεση ζύμη, Poolish, Biga ή Levain. Η κατάσταση λίπους/ζύμης, η επιφάνεια/όγκος, η επιφανειακή εφαρμογή και το σκεύος χρησιμοποιούν τις αντίστοιχες ελεγχόμενες επιλογές του editor.',
+            examples: 'Κατάσταση λίπους → Πλαστικό. Κατάσταση ζύμης → Σφιχτή ζύμη. Επιφάνεια / όγκος → Υψηλό. Σκεύος → Φόρμα ψωμιού.',
+            note: 'Αν μια τεχνική δεν αναπαρίσταται, διάλεξε «Άλλο» μόνο για να κρατήσεις ρητά μια μη ταξινομημένη κατηγορία· διαφορετικά άφησέ την «Δεν έχει καταγραφεί ακόμη».',
+          },
+          {
+            title: 'Μοτίβο διπλώματος και λίπος φυλλοποίησης',
+            canonical: 'FoldSequence / laminationFat',
+            body: 'Το μοτίβο διπλώματος επιλέγεται ως μονό ή διπλό δίπλωμα (ή Άλλο). Το λίπος φυλλοποίησης δεν πληκτρολογείται ως όνομα: συνδέεται με μία γραμμή υλικού της φόρμουλας, ώστε το μοντέλο να βρίσκει την ακριβή ταυτότητα του υλικού.',
+            examples: 'Μοτίβο διπλώματος → Διπλό δίπλωμα· γραμμή λίπους φυλλοποίησης → Βούτυρο · 250 g.',
           },
         ],
       },
@@ -275,10 +374,10 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
             examples: 'Νερό στο γάλα, λίπος στο βούτυρο, άμυλο στο άλευρο.',
           },
           {
-            title: 'Γνωστό, δεν εφαρμόζεται και άγνωστο',
+            title: 'Υπάρχει γνωστή τιμή, δεν εφαρμόζεται και δεν υπάρχει γνωστή τιμή',
             canonical: 'Value state',
-            body: 'Γνωστό σημαίνει ότι έχει δοθεί τιμή. Δεν εφαρμόζεται / απουσιάζει σημαίνει ότι το πεδίο δεν αφορά το υλικό ή απουσιάζει. Άγνωστο σημαίνει ότι μπορεί να αφορά το υλικό, αλλά δεν έχει τεκμηριωθεί.',
-            note: 'Το Άγνωστο σκόπιμα δεν μετατρέπεται σε αριθμητικό μηδέν.',
+            body: 'Αυτές είναι καταστάσεις της πληροφορίας, όχι το ποιος πληκτρολόγησε την τιμή. «Υπάρχει γνωστή τιμή» σημαίνει ότι αποδεκτή πηγή παρέχει τιμή. «Δεν εφαρμόζεται / Απουσιάζει» σημαίνει ότι το πεδίο δεν αφορά το υλικό ή απουσιάζει. «Δεν υπάρχει γνωστή τιμή» σημαίνει ότι μπορεί να αφορά το υλικό, αλλά δεν υπάρχει αποδεκτή τιμή.',
+            note: 'Το «Δεν υπάρχει γνωστή τιμή» σκόπιμα δεν μετατρέπεται σε αριθμητικό μηδέν.',
           },
           {
             title: 'Named ingredient → functional composition',
@@ -289,8 +388,41 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
         ],
       },
       {
+        id: 'data-quality',
+        eyebrow: '04 / ΠΟΙΟΤΗΤΑ ΔΕΔΟΜΕΝΩΝ',
+        title: 'Πηγή, βεβαιότητα και διαθεσιμότητα',
+        intro: 'Αυτές οι ενδείξεις περιγράφουν την ποιότητα και τον τρόπο ερμηνείας των δεδομένων. Δεν είναι προβλέψεις και δεν αλλάζουν τον κοινό κατάλογο.',
+        entries: [
+          {
+            title: 'Πηγή δεδομένων σύστασης',
+            canonical: 'Provenance / Προέλευση',
+            body: 'Δείχνει από πού προήλθε η λειτουργική σύσταση: από τον εκδομένο αρχικό κατάλογο ή από έναν τοπικό προσαρμοσμένο ορισμό. Η επιλογή καταλόγου είναι μόνο για ανάγνωση· ο προσαρμοσμένος ορισμός ανήκει μόνο στη συγκεκριμένη γραμμή της φόρμουλας.',
+            examples: 'Αρχικός κατάλογος · starter-catalog-v1 ή Τοπικός προσαρμοσμένος ορισμός.',
+          },
+          {
+            title: 'Βεβαιότητα σύστασης',
+            canonical: 'Confidence / Βεβαιότητα',
+            body: 'Αριθμός από 0 έως 1 που δείχνει πόσο ισχυρά υποστηρίζουν τα διαθέσιμα στοιχεία τη σύσταση του συγκεκριμένου υλικού. Δεν είναι το ποσοστό νερού, λίπους ή πρωτεΐνης και δεν είναι score ομοιότητας.',
+            examples: '1,00 σημαίνει ότι η τρέχουσα πηγή θεωρείται πλήρως υποστηριγμένη για αυτή την είσοδο· 0,60 σημαίνει μερική εμπιστοσύνη στην πηγή.',
+          },
+          {
+            title: 'Αποτελεσματική συμμετοχή στη ζύμη',
+            canonical: 'AvailabilityOverride / Λειτουργική διαθεσιμότητα',
+            body: 'Συντελεστής από 0 έως 1, τοπικός στη γραμμή της φόρμουλας, που περιγράφει πόσο από το νερό, το λίπος ή άλλο λειτουργικό μέρος ενός υλικού θεωρείται ότι συμμετέχει αποτελεσματικά στη ζύμη στο σχετικό στάδιο. Δεν αφορά το αν έχεις το υλικό στην κουζίνα και είναι διαφορετικός από το αν γνωρίζουμε τα δεδομένα.',
+            examples: 'Αν ένα υλικό περιέχει 20 g νερό αλλά το μοντέλο θεωρεί διαθέσιμο το 50% κατά την ανάμειξη, η αποτελεσματική συμβολή του σε νερό είναι 10 g.',
+            note: 'Στην τωρινή είσοδο καταγράφουμε την παραδοχή· οι υπολογισμοί αποτελεσματικού νερού και λίπους θα τη χρησιμοποιήσουν όταν ενεργοποιηθούν οι αντίστοιχοι κανόνες του μοντέλου.',
+          },
+          {
+            title: 'Καταγεγραμμένο, δεν εφαρμόζεται και δεν έχει καταγραφεί',
+            canonical: 'Known / None / Unknown',
+            body: 'Αυτές είναι καταστάσεις της πληροφορίας, όχι οι ίδιες οι τιμές των πεδίων. Στα πεδία της διαδικασίας εμφανίζεται απευθείας το πραγματικό control: μια επιλογή ή ένας αριθμός γίνεται Known. Αν μείνει κενό, σημαίνει «Δεν έχει καταγραφεί». «Δεν εφαρμόζεται / Απουσιάζει» καταγράφει ρητή απουσία. Το «Δεν έχει καταγραφεί» δεν μετατρέπεται ποτέ σιωπηρά σε μηδέν.',
+            examples: 'Μέθοδος ανάμειξης → Μηχανικό ζύμωμα. Ένταση ανάμειξης → 0,60. Χρόνος κύριας ζύμωσης → Δεν έχει καταγραφεί.',
+          },
+        ],
+      },
+      {
         id: 'calculation-semantics',
-        eyebrow: '04 / ΤΕΚΜΗΡΙΩΣΗ',
+        eyebrow: '05 / ΤΕΚΜΗΡΙΩΣΗ',
         title: 'Πώς περιγράφεται το αποτέλεσμα',
         intro: 'Το αποτέλεσμα ξεχωρίζει τους άμεσους υπολογισμούς από τις παραδοχές και τους κανόνες, ώστε να μην παρουσιάζει μεγαλύτερη βεβαιότητα από αυτή που επιτρέπουν τα δεδομένα.',
         entries: [
@@ -316,7 +448,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
       },
       {
         id: 'flour-basis',
-        eyebrow: '05 / ΠΑΡΟΝΟΜΑΣΤΗΣ',
+        eyebrow: '06 / ΠΑΡΟΝΟΜΑΣΤΗΣ',
         title: 'Βάση αλεύρου και ποσοστά αρτοποιού',
         intro: 'Τα ποσοστά αρτοποιού χρειάζονται καθαρό παρονομαστή. Εδώ ο παρονομαστής είναι η μάζα των αλευρούχων δομικών συστατικών.',
         entries: [
@@ -336,7 +468,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
       },
       {
         id: 'similarity-boundary',
-        eyebrow: '06 / ΜΕΛΛΟΝΤΙΚΟ ΜΟΝΤΕΛΟ',
+        eyebrow: '07 / ΜΕΛΛΟΝΤΙΚΟ ΜΟΝΤΕΛΟ',
         title: 'Η ομοιότητα έχει δύο διαστάσεις',
         intro: 'Μια φόρμουλα μπορεί να μοιάζει με μια άλλη, ενώ η διαδικασία της να είναι διαφορετική. Το προϊόν πρέπει να κρατά αυτές τις δύο ομοιότητες ξεχωριστές.',
         entries: [

@@ -1,7 +1,10 @@
 import { COMPOSITION_FIELDS, INGREDIENT_ROLES } from '../domain/types';
 import type { DraftValueState, FormulaDraft, MassUnit, Provenance } from '../domain/types';
+import { PROCESS_FIELD_DESCRIPTORS } from '../domain/process';
+import type { AdditionStepDraft, ProcessDraft } from '../domain/process';
 
 export const DRAFT_STORAGE_KEY = 'dough-formula-intelligence:draft:v1';
+export const PROCESS_STORAGE_KEY = 'dough-formula-intelligence:process:v2';
 
 export function persistDraft(draft: FormulaDraft): void {
   if (typeof sessionStorage === 'undefined') return;
@@ -10,6 +13,15 @@ export function persistDraft(draft: FormulaDraft): void {
   } catch {
     // Session persistence is a convenience for locale switching, not a reason
     // to make formula editing fail in restricted/private browser contexts.
+  }
+}
+
+export function persistProcess(process: ProcessDraft): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.setItem(PROCESS_STORAGE_KEY, JSON.stringify(process));
+  } catch {
+    // Process persistence is a convenience for locale switching.
   }
 }
 
@@ -46,6 +58,18 @@ function isDraftValueState(value: unknown): value is DraftValueState {
     Number.isFinite(value.confidence) &&
     value.confidence >= 0 &&
     value.confidence <= 1
+  );
+}
+
+function isAdditionStep(value: unknown): value is AdditionStepDraft {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.sequence === 'string' &&
+    Array.isArray(value.lineIds) &&
+    value.lineIds.every((lineId) => typeof lineId === 'string') &&
+    typeof value.action === 'string' &&
+    typeof value.durationSeconds === 'string'
   );
 }
 
@@ -90,6 +114,51 @@ function isFormulaDraft(value: unknown): value is FormulaDraft {
   });
 }
 
+function isProcessDraft(value: unknown): value is ProcessDraft {
+  if (!isRecord(value)) return false;
+  if (
+    typeof value.processId !== 'string' ||
+    !value.processId ||
+    typeof value.formulaId !== 'string' ||
+    !value.formulaId ||
+    typeof value.revision !== 'number' ||
+    !Number.isInteger(value.revision) ||
+    value.revision < 1
+  ) return false;
+
+  const sectionValues = ['mixing', 'aeration', 'fermentation', 'lamination', 'thermalProcess', 'geometry'];
+  if (!sectionValues.every((section) => isRecord(value[section]))) return false;
+  if (!isRecord(value.ingredientAddition)) return false;
+  if (!Array.isArray(value.ingredientAddition.steps) || !value.ingredientAddition.steps.every(isAdditionStep)) return false;
+
+  return PROCESS_FIELD_DESCRIPTORS.every((descriptor) => {
+    const [section, field] = descriptor.path.split('.');
+    const container = section === 'ingredientAddition' ? value.ingredientAddition : value[section];
+    return isRecord(container) && isDraftValueState(container[field]);
+  });
+}
+
+function repairProcessDraft(draft: ProcessDraft): ProcessDraft {
+  let repaired = draft;
+  let changed = false;
+
+  for (const descriptor of PROCESS_FIELD_DESCRIPTORS) {
+    const [section, field] = descriptor.path.split('.') as [keyof ProcessDraft, string];
+    const container = repaired[section] as unknown as Record<string, DraftValueState>;
+    const current = container[field];
+    if (!current || current.state !== 'known' || current.value.trim()) continue;
+
+    const repairedValue: DraftValueState = { state: 'unknown', reasonCode: 'not-recorded' };
+    repaired = {
+      ...repaired,
+      [section]: { ...container, [field]: repairedValue },
+    } as ProcessDraft;
+    changed = true;
+  }
+
+  return changed ? { ...repaired, revision: repaired.revision + 1 } : repaired;
+}
+
 export function loadDraft(): FormulaDraft | null {
   if (typeof sessionStorage === 'undefined') return null;
   try {
@@ -102,10 +171,32 @@ export function loadDraft(): FormulaDraft | null {
   }
 }
 
+export function loadProcess(): ProcessDraft | null {
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(PROCESS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isProcessDraft(parsed) ? repairProcessDraft(parsed) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function clearDraft(): void {
   if (typeof sessionStorage !== 'undefined') {
     try {
       sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Nothing to clear when storage is unavailable.
+    }
+  }
+}
+
+export function clearProcess(): void {
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.removeItem(PROCESS_STORAGE_KEY);
     } catch {
       // Nothing to clear when storage is unavailable.
     }

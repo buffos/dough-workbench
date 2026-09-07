@@ -3,7 +3,7 @@ type: capability
 title: Formula Input and Normalization
 description: Capture formula ingredients, flour structure, roles, units, and process inputs in a canonical form.
 tags: [formula, input, normalization, baker-percentage]
-timestamp: 2026-09-07T13:48:29Z
+timestamp: 2026-09-07T19:43:43Z
 state: specified
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
@@ -24,8 +24,8 @@ issues:
   - docs/agents/issues/done/20260907-001-basic-formula-workspace.md
   - docs/agents/issues/done/20260907-002-validation-recovery.md
   - docs/agents/issues/done/20260907-003-uncertainty-explanation.md
-  - docs/agents/issues/pending/004-roles-and-overrides.md
-  - docs/agents/issues/pending/005-process-capture.md
+  - docs/agents/issues/done/20260907-004-roles-and-overrides.md
+  - docs/agents/issues/done/20260907-005-process-capture.md
   - docs/agents/issues/pending/006-formula-process-handoff.md
   - docs/agents/issues/pending/007-bilingual-parity-verification.md
 adrs:
@@ -55,4 +55,7 @@ classification and final interpretation.
 # Notes
 
 The first vertical slice should support the ingredient and process subset named
-in the formal domain specification.
+in the formal domain specification. Issues 001–005 are implemented and
+archived; Issues 006–007 remain active for Formula/Process handoff and final
+bilingual parity verification. The capability remains `specified` until that
+frontier is complete.

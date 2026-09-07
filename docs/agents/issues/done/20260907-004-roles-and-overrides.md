@@ -3,11 +3,11 @@
 - Issue number: `004`
 - Owning capability node: `/.okf/capabilities/formula-analysis-workspace/formula-input-normalization.md`
 - Artifact root: `docs/architecture/formula-input-normalization/`
-- Issue file: `docs/agents/issues/pending/004-roles-and-overrides.md`
+- Issue file: `docs/agents/issues/done/20260907-004-roles-and-overrides.md`
 - Category: `feature`
 - Execution type: `AFK`
 - Review gate: `visual-review`
-- Suggested state: `ready-for-agent`
+- Suggested state: `done`
 
 ## Parent Artifacts
 
@@ -34,20 +34,20 @@ labels must never be rendered as product classification.
 
 ## Acceptance criteria
 
-- [ ] Ingredient lines expose all canonical roles and retain the selected role
+- [x] Ingredient lines expose all canonical roles and retain the selected role
   through normalization.
-- [ ] A named catalog Ingredient resolves through a versioned functional
+- [x] A named catalog Ingredient resolves through a versioned functional
   composition reference before downstream analysis.
-- [ ] A custom functional Ingredient can be supplied locally with provenance
+- [x] A custom functional Ingredient can be supplied locally with provenance
   and numeric confidence without being inserted into the shared catalog.
-- [ ] Composition and availability overrides apply only to their Formula line
+- [x] Composition and availability overrides apply only to their Formula line
   and do not mutate the catalog or another line using the same Ingredient.
-- [ ] `ContinuousPhase` and `Inclusion` produce visibly distinct
+- [x] `ContinuousPhase` and `Inclusion` produce visibly distinct
   participation explanations; the remaining non-phase roles stay separate.
-- [ ] Catalog definitions are read-only from this workflow.
-- [ ] The normalized explanation shows role, source, override, and confidence
+- [x] Catalog definitions are read-only from this workflow.
+- [x] The normalized explanation shows role, source, override, and confidence
   information in the Formula workspace.
-- [ ] Tests cover functional resolution, role participation, custom data, and
+- [x] Tests cover functional resolution, role participation, custom data, and
   override isolation.
 
 ## Artifact sync required
@@ -95,6 +95,28 @@ in both locales.
 
 | Scenario | Backend boundary | Frontend integration | End-to-end journey |
 |---|---|---|---|
-| `SC-006` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-007` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
-| `SC-014` | `not-applicable` | `planned` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-006` | `not-applicable` | `deferred: no frontend integration harness; runtime smoke check completed` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-007` | `not-applicable` | `deferred: no frontend integration harness; runtime smoke check completed` | `deferred: no E2E harness; catalog-only policy` |
+| `SC-014` | `not-applicable` | `deferred: no frontend integration harness; runtime smoke check completed` | `deferred: no E2E harness; catalog-only policy` |
+
+## Implementation record
+
+- Role-aware line metadata, versioned catalog references, custom functional
+  definitions, local composition/availability overrides, provenance, numeric
+  confidence, and participation metadata are implemented in
+  `src/lib/domain/types.ts` and `src/lib/domain/normalization.ts`.
+- The Formula workspace renders source/version, confidence, override markers,
+  role participation, and bilingual explanation details in
+  `src/components/FormulaWorkspace.svelte`.
+- Automated evidence: `npm test` (23 passing tests, including catalog
+  resolution, role participation, custom data, and override isolation),
+  `npm run lint`, `npm run typecheck`, `npm run build`, `npm run check:static`,
+  and `npm run verify` all pass.
+- Scenario trace: `SC-006` → normalized participation metadata and bilingual
+  role explanation; `SC-007` → line-local override/custom-source tests and
+  immutable catalog fixture behavior; `SC-014` → explanation source, override,
+  confidence, and limitation surface.
+- Frontend integration remains deferred under the root `when-supported` policy
+  because no integration harness exists; the local Greek runtime was smoke
+  checked. The user approved the grouped bilingual visual review on
+  2026-09-07.

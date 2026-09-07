@@ -1,7 +1,7 @@
 # Formula Input and Normalization — Acceptance Scenarios
 
 Status: Canonical behavior scenarios for implementation and verification
-Version: v0.1
+Version: v0.2
 Date: 2026-09-07
 
 These scenarios define externally observable behavior for the Formula Input and
@@ -298,6 +298,9 @@ Known/None/Unknown semantics.
 
 - a Formula has valid composition;
 - the Formula Explorer records a known mixing method;
+- the Formula Explorer selects a controlled preferment/expansion/fold value
+  rather than entering a free-form instruction;
+- a lamination-fat field, when used, points to an existing Formula line; and
 - fermentation is not supplied and is marked `Unknown`; and
 - lamination is explicitly absent and is marked `None`.
 
@@ -310,6 +313,8 @@ The Process is saved/normalized and its timeline is viewed.
 - the known mixing method is visible;
 - fermentation remains `Unknown` rather than zero or `None`;
 - lamination remains `None` rather than `Unknown`;
+- categorical Process values remain canonical IDs and an unresolved
+  Formula-line reference produces a referential diagnostic;
 - ordered AdditionSteps remain in their recorded order; and
 - the Process revision changes independently from Formula composition.
 

@@ -41,6 +41,23 @@ export type DraftValueState =
 export type CompositionDraft = Record<CompositionField, DraftValueState>;
 export type FunctionalComposition = Record<CompositionField, ValueState<number>>;
 
+export type IngredientDefinitionSource = 'catalog' | 'custom';
+
+export interface CatalogIngredientReference {
+  ingredientId: string;
+  version: string;
+}
+
+export interface RoleParticipation {
+  metricFamily: 'continuous_phase' | 'separate_role';
+  participatesInContinuousPhase: boolean;
+}
+
+export interface CompositionOverrideSummary {
+  fields: CompositionField[];
+  availability: boolean;
+}
+
 export interface FlourComponentDraft {
   id: string;
   ingredientId?: string;
@@ -59,6 +76,12 @@ export interface IngredientLineDraft {
   massUnit: MassUnit;
   role: IngredientRole;
   composition: CompositionDraft;
+  definitionSource?: IngredientDefinitionSource;
+  catalogReference?: CatalogIngredientReference;
+  definitionProvenance?: Provenance;
+  definitionConfidence?: number;
+  compositionOverride?: Partial<Record<CompositionField, DraftValueState>>;
+  availabilityOverride?: DraftValueState;
 }
 
 export interface FormulaDraft {
@@ -104,6 +127,13 @@ export interface NormalizedIngredientLine {
   composition: FunctionalComposition;
   bakersPercentage: DerivedValue;
   provenance: Provenance;
+  definitionSource: IngredientDefinitionSource;
+  catalogReference?: CatalogIngredientReference;
+  compositionProvenance: Provenance;
+  compositionConfidence: number;
+  availabilityOverride?: ValueState<number>;
+  overrides: CompositionOverrideSummary;
+  participation: RoleParticipation;
 }
 
 export interface CompositionMetric {
@@ -122,10 +152,27 @@ export interface UnknownFieldExplanation {
   reasonCode: string;
 }
 
+export interface RoleParticipationExplanation {
+  lineId: string;
+  lineName: string;
+  role: IngredientRole;
+  participation: RoleParticipation;
+}
+
+export interface OverrideExplanation {
+  lineId: string;
+  lineName: string;
+  source: IngredientDefinitionSource;
+  fields: CompositionField[];
+  availability: boolean;
+}
+
 export interface NormalizationExplanation {
   denominatorBasis: string[];
   excludedComponents: string[];
   unknownFields: UnknownFieldExplanation[];
+  roleParticipation: RoleParticipationExplanation[];
+  overrides: OverrideExplanation[];
   provenance: Provenance;
   limitations: string[];
 }

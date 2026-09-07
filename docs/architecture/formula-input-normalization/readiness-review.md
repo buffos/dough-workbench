@@ -2,7 +2,7 @@
 
 Review date: 2026-09-07
 Review scope: own-state capability node `Formula Input and Normalization`
-Review status: `ready-for-implementation-handoff`; R-001 through R-005
+Review status: `ready-for-implementation-handoff`; R-001 through R-006
 resolved
 
 This is a findings-first review of the complete node artifact set:
@@ -27,7 +27,8 @@ end-to-end `catalog-only`.
 R-001 through R-004 below were found during the first cross-document pass and
 resolved in the first remediation pass using already accepted ADRs and the
 formal domain specification. R-005 was resolved after the user confirmed the
-recommended V1 policy.
+recommended V1 policy. R-006 was resolved during the Process visual-review
+refinement by versioning the typed Process vocabulary.
 
 ### R-001 — RESOLVED — Formula/Process ownership is still contradictory
 
@@ -149,13 +150,31 @@ recommended V1 policy.
   inclusive `[99.99%, 100.01%]` flour-blend sum range. The policy ID travels
   with normalized results, and SC-016 covers the boundary.
 
+### R-006 — RESOLVED — Advanced Process fields were exposed as free text
+
+- **Severity:** High
+- **Affected artifacts:** `canonical-domain-model.md`, `domain-glossary.md`,
+  node PRD FR-06, Process editor, and Issue 005
+- **Issue:** Several canonical Process paths were named but had no stable
+  option vocabulary, so the editor exposed arbitrary text that a downstream
+  algorithm could not interpret consistently.
+- **Impact:** Users could enter plausible prose while the normalized Process
+  carried no reliable categorical meaning. This was especially misleading for
+  preferment type, expansion targets, fold pattern, lamination fat, and
+  geometry.
+- **Resolution:** `process-input-v0.2` defines the controlled options and
+  Formula-line reference. The editor uses dropdowns for categorical values,
+  numeric inputs for measured fields, and an explicit Unknown state when the
+  user cannot choose a supported value. `Other` is retained as unclassified,
+  not parsed as a hidden free-text instruction.
+
 ## Cross-document checks
 
 ### Vocabulary
 
 Most terms are stable and match across the glossary, PRD, model, use cases,
-contract, and scenarios. R-001 and R-003 were the material vocabulary/status
-exceptions and are now resolved. Status spelling is consistent semantically
+contract, and scenarios. R-001, R-003, and R-006 were the material
+vocabulary/status exceptions and are now resolved. Status spelling is consistent semantically
 (`StructurallyValid`/`structurally_valid`, etc.).
 
 ### Rules and invariants
@@ -224,7 +243,7 @@ and CLI are explicitly future mappings, not V1 deployment requirements.
 The capability is well-bounded and its domain behavior, application surface,
 external contract, and acceptance scenarios are synchronized. It is **ready
 for architecture-specific implementation and issue slicing** under the root
-verification policy. R-001–R-005 are resolved and should be retained as part
+verification policy. R-001–R-006 are resolved and should be retained as part
 of the synchronized artifact set.
 
 The node can move from `bounded` to `specified` and enter delivery issue

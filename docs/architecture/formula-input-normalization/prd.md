@@ -210,7 +210,10 @@ formal process sections `Mixing`, `IngredientAddition`, `Aeration`,
 `Fermentation`, `Lamination`, `ThermalProcess`, and `Geometry`; durations are
 seconds, temperatures are degrees Celsius, normalized intensities/levels are
 in `[0,1]`, and enum values are the canonical lower-case IDs listed in the
-domain model.
+domain model. Process controls must not accept arbitrary text as an
+algorithm-facing value: categorical fields use controlled options, numeric
+fields use their declared units/ranges, lamination fat selects a Formula line,
+and AdditionStep actions use the controlled action vocabulary.
 
 ### FR-07 — Validation
 

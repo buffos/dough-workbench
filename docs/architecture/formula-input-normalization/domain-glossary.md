@@ -68,9 +68,20 @@ Process snapshot without merging their ownership or edit lifecycles.
 
 ### AdditionStep
 
-An ordered Process entry describing which ingredients are added, what action is
-taken, and for how long. Addition order is part of Process, not an implicit
-property of the final ingredient set.
+An ordered Process entry describing which ingredients are added, which
+controlled action is taken, and for how long. Addition order is part of Process,
+not an implicit property of the final ingredient set. The action is not a free
+text instruction; it is one of `add`, `mix`, `knead`, `fold`, `rest`,
+`incorporate_fat`, or `other`.
+
+### Bulk fermentation
+
+The first or main fermentation phase while the dough remains as one mass,
+before dividing or shaping. `bulkTimeSeconds` records the duration of this
+phase, `bulkTemperatureCelsius` records the dough or environment temperature
+maintained during it, and `bulkExpansionTarget` records the intended relative
+volume increase. Bulk temperature is not a special threshold at which dough
+starts to rise, and the expansion target is neither a time nor a temperature.
 
 ### CompositionOverride
 
@@ -101,6 +112,20 @@ mass and role data.
 
 Create or edit the separate Process aggregate, preserving ordered additions and
 distinguishing known values, explicit absence, and unknown values.
+
+### Controlled Process value
+
+A Process value that the domain can interpret because it is either a declared
+number with a unit, a canonical enum option, or a reference to a Formula line.
+The V1 Process editor does not accept arbitrary text for algorithm-facing
+fields. `Other` is an explicit unclassified category; it is retained, but it
+does not let downstream analysis infer a more specific technique.
+
+### Formula-line reference
+
+A stable reference to a Formula ingredient line, used where naming an
+ingredient in free text would be ambiguous. In V1, `laminationFat` selects the
+Formula line that supplies the lamination fat.
 
 ### Validate Formula
 
@@ -220,9 +245,10 @@ classifier-facing representation of an Ingredient after normalization.
 | FlourSystem vs FlourComponent | FlourSystem is the aggregate; FlourComponent is one blend member. |
 | Structural flour component vs Structural role | A structural flour component must be flour-bearing and positive-mass. The broader `Structural` role alone does not make a non-flour ingredient part of the flour denominator. |
 | Unknown vs None vs zero | Unknown is missing knowledge, None is explicit absence/non-applicability, and zero is a known numeric quantity. |
-| Data availability vs water availability | Data availability describes whether a value is known; water availability is a model coefficient describing functional availability. |
+| Data availability vs functional availability | Data availability describes whether a value is known; functional availability describes how much of a component is treated as effectively contributing to the dough at a relevant stage. |
 | Override vs catalog definition | An override is local to one Formula line; the catalog remains unchanged. |
 | Formula vs Process | Formula describes what is present; Process describes how it is handled. A FormulaProcessReference pairs snapshots for analysis without nesting ownership. |
+| Process value vs Process note | A Process value is typed and algorithm-readable. A future note may be free text, but it is not a model input unless it receives a versioned vocabulary. |
 
 ## Recommended bilingual display labels
 
@@ -234,10 +260,13 @@ classifier-facing representation of an Ingredient after normalization.
 | Baker's Percentage | Baker's percentage | Ποσοστό αρτοποιού |
 | Functional Composition | Functional composition | Λειτουργική σύσταση |
 | Partial Analysis | Partial analysis | Μερική ανάλυση |
-| Known | Known | Γνωστό |
-| None | None | Δεν εφαρμόζεται / Απουσιάζει |
-| Unknown | Unknown | Άγνωστο |
-| Confidence | Confidence | Βαθμός εμπιστοσύνης |
+| Known | Known value (Composition) / selected or entered value (Process) | Υπάρχει γνωστή τιμή (Σύσταση) / επιλεγμένη ή συμπληρωμένη τιμή (Διαδικασία) |
+| None | Not applicable / absent | Δεν εφαρμόζεται / Απουσιάζει |
+| Unknown | No known value (Composition) / not recorded (Process) | Δεν υπάρχει γνωστή τιμή (Σύσταση) / δεν έχει καταγραφεί (Διαδικασία) |
+| Confidence | Composition data confidence | Βεβαιότητα σύστασης |
+| AvailabilityOverride | Effective contribution to the dough | Αποτελεσματική συμμετοχή στη ζύμη |
+| Controlled Process value | Controlled option or typed numeric input | Ελεγχόμενη επιλογή ή αριθμητική τιμή διαδικασίας |
+| Formula-line reference | Formula ingredient line selected by identity | Αναφορά σε γραμμή υλικού της φόρμουλας |
 
 ## Open terminology issues
 

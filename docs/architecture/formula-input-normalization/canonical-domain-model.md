@@ -1,7 +1,7 @@
 # Formula Input and Normalization — Canonical Domain Model
 
 Status: Canonical model for downstream exact artifacts
-Version: v0.1
+Version: v0.2
 Date: 2026-09-07
 
 This model defines the business concepts and behavior owned by the Formula
@@ -189,7 +189,21 @@ unavailable value remains `Unknown` rather than receiving a default.
 | `thermalProcess` | `method`, `temperatureCelsius`, `durationSeconds`, `preheated`, `steamLevel`, `surfaceTreatment` | duration is non-negative seconds; temperature is degrees Celsius; `steamLevel` is `[0,1]` |
 | `geometry` | `shapeClass`, `characteristicThicknessMillimeters`, `surfaceVolumeClass`, `containerType` | thickness is positive millimeters when known |
 
-Initial enum identifiers are the lower-case forms of the formal specification:
+Within `fermentation`, the `bulk*` fields refer to the first or main
+fermentation while the dough remains as one mass, before dividing or shaping.
+`bulkTemperatureCelsius` is the temperature maintained during that phase, not
+a threshold at which dough begins to rise. `bulkExpansionTarget` is the
+intended relative volume increase and is neither a time nor a temperature.
+
+`process-input-v0.2` is the current Process vocabulary version. Process fields
+are typed inputs, not free-form algorithm instructions. A field is one of:
+
+- `enum`: a controlled categorical value;
+- `number`: a numeric value with the unit/range shown above; or
+- `reference`: a stable reference to another Formula object.
+
+The initial enum identifiers are the lower-case forms of the formal
+specification:
 `mixing.method` (`minimal_combine`, `hand_knead`, `machine_knead`,
 `spiral_mix`, `planetary_hook`, `paddle`, `whisk`, `stretch_and_fold`,
 `coil_fold`, `gentle_fold`, `other`), `restType` (`autolyse`,
@@ -205,8 +219,37 @@ Initial enum identifiers are the lower-case forms of the formal specification:
 `cake`, `muffin`, `pancake`, `crepe`, `ring`, `laminated_piece`,
 `choux_piece`, `other`).
 
-More advanced process fields may be added only by versioning this vocabulary;
-they must not change the meaning of existing fields.
+The v0.2 controlled vocabulary also defines:
+
+- `mixing.targetDevelopment`: `minimal`, `partial`, `full`;
+- `aeration.targetFoam`: `low`, `medium`, `high`;
+- `aeration.postAerationHandling`: `gentle_fold`, `moderate_fold`,
+  `vigorous_mix`;
+- `fermentation.prefermentType`: `direct`, `poolish`, `biga`, `levain`,
+  `other`;
+- `fermentation.bulkExpansionTarget` and `finalExpansionTarget`:
+  `thirty_percent_increase`, `fifty_percent_increase`, `double`;
+- `lamination.foldSequence`: `single_fold`, `double_fold`, `other`;
+- `lamination.fatState`: `liquid`, `plastic`, `firm`, `hard`, `variable`,
+  `other`;
+- `lamination.doughState`: `rigid_mass`, `stiff_dough`, `soft_wet_dough`,
+  `thick_batter`, `thin_pourable_batter`;
+- `thermalProcess.surfaceTreatment`: `none`, `water`, `egg_wash`, `glaze`,
+  `oil_or_fat`, `seeds_or_flour`, `alkaline`, `other`;
+- `geometry.surfaceVolumeClass`: `very_high`, `high`, `medium`, `low`; and
+- `geometry.containerType`: `freestanding`, `baking_sheet`, `loaf_tin`,
+  `cake_pan`, `muffin_cup`, `cast_iron`, `baking_stone`, `other`.
+
+`lamination.laminationFat` is a `formula-line` reference, not a free-text
+ingredient name. Addition-step `action` is also controlled by the values
+`add`, `mix`, `knead`, `fold`, `rest`, `incorporate_fat`, and `other`.
+
+`other` preserves an explicit but unclassified category; downstream analysis
+must not infer a more specific technique from it. If the user does not know
+which controlled value applies, the field remains `Unknown`.
+
+More advanced process fields or options may be added only by versioning this
+vocabulary; they must not change the meaning of existing fields.
 
 ### Ingredient catalog reference
 

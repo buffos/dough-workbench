@@ -1,6 +1,6 @@
 # Formula Input and Normalization — Requirements Gap Analysis
 
-Status: `bounded`, gap pass resolved by user confirmation
+Status: `specified`, Process vocabulary refinement resolved in v0.2
 Date: 2026-09-07
 
 ## Resolution status
@@ -107,6 +107,26 @@ enough about the user-facing input workflow and partial-analysis outcomes.
 - Resolution: confirmed. `Known`, explicit `None`, and `Unknown` remain
   distinct, and incomplete Process does not block composition-only analysis.
 
+### G6 — Algorithm-facing Process fields were still free-form
+
+- Category: underspecified vocabulary and input control.
+- Impact: High. A text field such as `prefermentType` or `foldSequence` can
+  retain words that the normalization and future analysis layers cannot
+  interpret consistently.
+- Evidence: The first canonical field list named the paths and units but only
+  froze enum values for the initial core fields. The exploratory Process model
+  supplied examples for preferments, expansion targets, folds, fat state,
+  geometry, and handling, but the UI exposed several of them as arbitrary
+  text.
+- Required decision: make every algorithm-facing Process value either a
+  controlled enum, a typed number, or a stable Formula-line reference. Keep
+  unknown values blank and make `Other` explicit rather than parsing prose.
+- Resolution: confirmed and implemented as `process-input-v0.2`. The expanded
+  vocabulary is recorded in the canonical domain model and glossary. The UI
+  now uses dropdowns for categorical fields, a Formula-line selector for
+  `laminationFat`, and numeric controls for measured quantities. Addition-step
+  actions use a controlled vocabulary as well.
+
 ## Deferrable gaps
 
 ### D1 — Draft persistence and import/export
@@ -170,5 +190,6 @@ them:
 - Delivery truth: no impact; no issue or registry row is created during gap
   analysis.
 
-The report is complete for this round. The next artifact is the canonical
-domain glossary, followed by the node PRD and canonical domain model.
+The report is complete for this refinement round. The capability remains
+specified; the next delivery gate is grouped bilingual visual review of the
+updated Process controls.

@@ -16,6 +16,6 @@ Behavior, and Classification, Similarity, and Explanation are still bounded.
 The next planning action is to clear fog and tighten the least-mature child
 or slice the ready Formula Input reference set into delivery issues.
 The application PRD and architecture summary are current for the initial
-topology. The current delivery batch has Issues 001–003 completed after visual
-review; Issues 004–007 remain active in the Formula Input and Normalization
-frontier.
+topology. The current delivery batch has Issues 001–005 completed after visual
+review; Issue 006 is the active ready-for-agent frontier and Issue 007 remains
+blocked behind it in the Formula Input and Normalization frontier.

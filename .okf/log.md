@@ -172,3 +172,43 @@ canonical domain modeling. No new topology or delivery work was created.
 - Refreshed the Formula Input and Normalization node's issue references. The
   node remains `specified` and the Formula Analysis Workspace roll-up remains
   `bounded` because its other structural children are still active.
+
+## 2026-09-07
+
+- Implemented Issues 004–005 through the canonical reference workflow. Added
+  versioned catalog references, local composition/availability overrides,
+  custom functional ingredient provenance/confidence, role participation
+  explanations, and the independent V1 Process editor with tri-state fields,
+  ordered AdditionSteps, Formula line references, persistence, and timeline.
+- Added domain/application tests for role resolution, override isolation,
+  Process ordering, tri-state preservation, ranges, units, references, and
+  independent Process revisions. `npm run verify` passes with 21 tests.
+- Issues 004–005 are now `awaiting-human-review` because both change rendered
+  UI and declare the mandatory visual-review gate. Issues 006–007 remain
+  blocked; the Formula Input node remains `specified` and the Formula Analysis
+  Workspace roll-up remains `bounded`.
+
+## 2026-09-07
+
+- During grouped visual review, the user identified a material Process
+  vocabulary gap: several algorithm-facing fields were exposed as arbitrary
+  text even though no downstream rule could interpret the prose.
+- Versioned the Process contract as `process-input-v0.2`. Categorical fields
+  now use controlled bilingual dropdowns, measured values remain numeric and
+  unit-bound, lamination fat resolves to a Formula-line reference, and
+  AdditionStep actions use controlled IDs. `Unknown` remains the honest state
+  when no supported value is known; `Other` is explicit but unclassified.
+- Synchronized the canonical domain model, glossary, PRD, contract, acceptance
+  scenario, gap analysis, readiness review, and Issue 005. The node remains
+  `specified`; Issues 004–005 remain `awaiting-human-review` pending the next
+  grouped visual review.
+
+## 2026-09-07
+
+- The user approved the grouped bilingual visual review for Issues 004–005.
+- Closed and archived Issues 004–005 after verifying all acceptance criteria,
+  issue-specific artifact sync, `npm run verify`, `git diff --check`, and OKF
+  validation.
+- The Formula Input and Normalization capability remains `specified`; its
+  remaining active frontier is Issue 006 followed by Issue 007. The Formula
+  Analysis Workspace roll-up remains `bounded`.

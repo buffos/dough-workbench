@@ -1,7 +1,7 @@
 # Formula Input and Normalization — Canonical API/CLI Contract
 
 Status: Canonical external contract for downstream acceptance work
-Version: v0.1
+Version: v0.2
 Date: 2026-09-07
 
 This document defines the externally observable contract for the Formula Input
@@ -468,8 +468,10 @@ The V1 sections and field paths are `mixing`, `ingredientAddition`,
 `aeration`, `fermentation`, `lamination`, `thermalProcess`, and `geometry`.
 Durations use seconds, temperatures use degrees Celsius, normalized intensity/
 level values use `[0,1]`, and enum IDs are the canonical lower-case values in
-the domain model. Each section uses the tri-state value shape for optional
-fields.
+the `process-input-v0.2` vocabulary. Categorical fields do not accept
+arbitrary text. `lamination.laminationFat` is a Formula-line reference and
+AdditionStep `action` uses its controlled action vocabulary. Each section uses
+the tri-state value shape for optional fields.
 
 ### Analysis input snapshot
 
