@@ -115,11 +115,13 @@ guidance in both locales.
   Flour-component, AdditionStep, and handoff commands idempotent within the
   active browser session; stale or payload-changing command identities return
   conflict without applying a mutation.
-- `src/components/FormulaWorkspace.svelte` now shows the bilingual Analysis
-  Input handoff panel, separate Formula/Process revisions, coverage and
-  confidence, limitation paths, conflict diagnostics, and recovery guidance
-  for the last valid pair. Formula and Process drafts remain independently
-  editable and rejected handoffs do not overwrite either draft.
+- `src/components/FormulaWorkspace.svelte` now shows a bilingual analysis
+  readiness panel. Formula and Process remain separate internally while the
+  user sees plain-language availability, confidence, limitation explanations,
+  conflict guidance, and recovery guidance for the last valid pair. Technical
+  revisions, model versions, diagnostic codes, and internal paths are not part
+  of the primary user-facing view. Formula and Process drafts remain
+  independently editable and rejected handoffs do not overwrite either draft.
 - Automated evidence: `npm run verify` passes with 36 tests, lint,
   typecheck, static build, and route checks. `git diff --check` and OKF
   validation also pass.

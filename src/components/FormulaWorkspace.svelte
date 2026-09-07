@@ -953,7 +953,6 @@
             <p>{t(locale, 'section.processHelp')}</p>
             <p class="process-state-help">{t(locale, 'process.valueHelp')}</p>
           </div>
-          <span>{t(locale, 'process.revision')}: {processDraft.revision}</span>
         </div>
 
         <div class="process-grid">
@@ -1197,24 +1196,21 @@
                     <span>{handoffReadinessLabel(handoffResult.data.readiness)}</span>
                   {/if}
                 </div>
-                <span class="handoff-revisions">{t(locale, 'analysis.handoff.revisions', { formula: handoffResult.formulaRevision, process: handoffResult.processRevision })}</span>
               </div>
 
               {#if handoffResult.data}
                 <div class="handoff-metrics">
-                  <div><span>{t(locale, 'analysis.handoff.composition')}</span><strong>{formatPercent(handoffResult.coverage.composition)}</strong><small>{formatPercent(handoffResult.confidence.composition)} {t(locale, 'metric.confidence').toLowerCase()}</small></div>
-                  <div><span>{t(locale, 'analysis.handoff.process')}</span><strong>{formatPercent(handoffResult.coverage.process)}</strong><small>{formatPercent(handoffResult.confidence.process)} {t(locale, 'metric.confidence').toLowerCase()}</small></div>
+                  <div><span>{t(locale, 'analysis.handoff.composition')}</span><strong>{formatPercent(handoffResult.coverage.composition)}</strong><small>{t(locale, 'analysis.handoff.available')} · {formatPercent(handoffResult.confidence.composition)} {t(locale, 'metric.confidence').toLowerCase()}</small></div>
+                  <div><span>{t(locale, 'analysis.handoff.process')}</span><strong>{formatPercent(handoffResult.coverage.process)}</strong><small>{t(locale, 'analysis.handoff.available')} · {formatPercent(handoffResult.confidence.process)} {t(locale, 'metric.confidence').toLowerCase()}</small></div>
                 </div>
-                <div class="handoff-meta"><span>{t(locale, 'analysis.handoff.referenceVersion')}: <code>{handoffResult.data.referenceVersion}</code></span><span>{t(locale, 'analysis.handoff.modelVersion')}: <code>{handoffResult.data.modelVersion}</code></span></div>
               {/if}
 
               {#if handoffResult.diagnostics.length > 0}
                 <div class="diagnostic-list handoff-diagnostics" aria-live="polite">
                   {#each handoffResult.diagnostics as handoffDiagnostic (`${handoffDiagnostic.code}-${handoffDiagnostic.path}`)}
                     <div class="diagnostic">
-                      <div class="diagnostic-topline"><strong>{t(locale, handoffDiagnostic.messageKey, handoffDiagnostic.parameters)}</strong><code>{handoffDiagnostic.code}</code></div>
+                      <div class="diagnostic-topline"><strong>{t(locale, handoffDiagnostic.messageKey, handoffDiagnostic.parameters)}</strong></div>
                       <p>{t(locale, handoffDiagnostic.resolutionKey, handoffDiagnostic.parameters)}</p>
-                      <span class="diagnostic-path">{handoffDiagnostic.path}</span>
                     </div>
                   {/each}
                 </div>
@@ -1225,7 +1221,7 @@
                   <h5>{t(locale, 'analysis.handoff.limitations')}</h5>
                   <ul>
                     {#each handoffResult.limitations as item (`${item.code}-${item.path}`)}
-                      <li>{t(locale, item.messageKey, item.parameters)} <code>{item.path}</code></li>
+                      <li>{t(locale, item.messageKey, item.parameters)}</li>
                     {/each}
                   </ul>
                 </div>
@@ -1543,21 +1539,17 @@
   .handoff-outcome-heading { display: flex; justify-content: space-between; gap: 0.7rem; align-items: baseline; }
   .handoff-outcome-heading strong, .handoff-outcome-heading span { display: block; }
   .handoff-outcome-heading strong { color: inherit; font-size: 0.72rem; }
-  .handoff-outcome-heading span:not(.handoff-revisions) { margin-top: 0.2rem; color: #5d6b61; font-size: 0.62rem; line-height: 1.4; }
-  .handoff-revisions { flex: 0 0 auto; color: #6b7069; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.56rem; }
+  .handoff-outcome-heading > div > span { margin-top: 0.2rem; color: #5d6b61; font-size: 0.62rem; line-height: 1.4; }
   .handoff-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; margin-top: 0.65rem; }
   .handoff-metrics > div { padding: 0.55rem; border: 1px solid rgba(65, 75, 67, 0.13); background: rgba(255, 253, 249, 0.68); }
   .handoff-metrics span, .handoff-metrics strong, .handoff-metrics small { display: block; }
   .handoff-metrics span { color: #5e6d62; font-size: 0.54rem; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase; }
   .handoff-metrics strong { margin-top: 0.25rem; color: #345b43; font-family: Georgia, "Times New Roman", serif; font-size: 1.1rem; font-weight: 400; }
   .handoff-metrics small { margin-top: 0.15rem; color: #68746b; font-size: 0.55rem; }
-  .handoff-meta { display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem; margin-top: 0.6rem; color: #68746b; font-size: 0.55rem; }
-  .handoff-meta code { color: #526b59; font-size: 0.55rem; }
   .handoff-diagnostics { margin: 0.75rem 0 0; }
   .handoff-limitations { margin-top: 0.7rem; padding-top: 0.65rem; border-top: 1px solid rgba(65, 75, 67, 0.13); }
   .handoff-limitations h5 { margin: 0 0 0.35rem; color: #6f5b4d; font-size: 0.6rem; }
   .handoff-limitations ul { margin: 0; padding-left: 1rem; color: #5d665e; font-size: 0.62rem; line-height: 1.45; }
-  .handoff-limitations code { display: block; margin-top: 0.15rem; color: #806f65; font-size: 0.53rem; }
   .handoff-no-limitations { margin: 0.7rem 0 0; color: #5d6b61; font-size: 0.62rem; }
   .handoff-recovery { margin: 0.7rem 0 0; padding-top: 0.65rem; border-top: 1px dashed rgba(160, 77, 63, 0.25); color: #7b5847; font-size: 0.62rem; line-height: 1.45; }
   .empty-result { min-height: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem; text-align: center; }
