@@ -834,7 +834,7 @@ const messages: Record<Locale, Record<string, string>> = {
 };
 
 export function t(locale: Locale, key: string, parameters: Record<string, string | number> = {}): string {
-  const template = messages[locale][key] ?? messages.en[key] ?? key;
+  const template = messages[locale][key] ?? `[missing-translation:${locale}:${key}]`;
   return Object.entries(parameters).reduce(
     (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
     template,

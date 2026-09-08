@@ -3,8 +3,9 @@ type: capability
 title: Bilingual Content and Localization
 description: Keep the public product, educational content, explanations, and navigation usable in Greek and English.
 tags: [bilingual, greek, english, i18n, content]
-timestamp: 2026-09-07T08:06:37Z
-state: bounded
+timestamp: 2026-09-08T12:00:00Z
+state: specified
+state_changed: 2026-09-08T12:00:00Z
 project: /project.md
 parent: /project.md
 shared_with:
@@ -14,6 +15,14 @@ shared_with:
   - /capabilities/validation-calibration.md
 artifact_root: docs/architecture/bilingual-content
 orchestration_status: docs/architecture/bilingual-content/orchestration-status.md
+gap_analysis: docs/architecture/bilingual-content/requirements-gap-analysis.md
+glossary: docs/architecture/bilingual-content/domain-glossary.md
+prd: docs/architecture/bilingual-content/prd.md
+domain_model: docs/architecture/bilingual-content/canonical-domain-model.md
+use_cases: docs/architecture/bilingual-content/canonical-use-cases.md
+contract: docs/architecture/bilingual-content/canonical-api-cli-contract.md
+scenarios: docs/architecture/bilingual-content/acceptance-scenarios.md
+readiness_review: docs/architecture/bilingual-content/readiness-review.md
 adrs:
   - docs/agents/adr/0006-static-frontend-platform.md
 ---

@@ -583,4 +583,3 @@ future extension, not a V1 requirement.
 - Neutrality quality: passed; no HTTP, CLI, framework, or package assumptions.
 - Downstream usefulness: passed; a later contract model can map the command and
   query shapes, and acceptance tests can target each use-case outcome.
-\n\n

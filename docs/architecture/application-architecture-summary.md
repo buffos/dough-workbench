@@ -4,7 +4,7 @@ Status: Initial application synthesis
 Date: 2026-09-07
 
 This summary consolidates the initial architecture direction and links back to
-the durable planning graph. Capability-specific exact contracts are created
+the durable planning graph. Capability-specific exact contracts are maintained
 under their owning folders after bounded-node refinement.
 
 ## System constraints
@@ -129,8 +129,11 @@ switcher uses route metadata rather than string replacement. Canonical IDs,
 metric names, model versions, and dataset identifiers are language-neutral;
 Greek and English labels/explanations are presentation data.
 
-Fallback behavior and parity verification are owned by [Bilingual Content and
-Localization](../../.okf/capabilities/shared/bilingual-content.md).
+The site root is a static default entry to `/en/`; unsupported locale paths
+resolve to the public 404 page, and V1 does not use browser-language guessing.
+Required UI, help, metadata, accessibility, and explanation keys must exist in
+both locale catalogs. Fallback behavior and parity verification are owned by
+[Bilingual Content and Localization](../../.okf/capabilities/shared/bilingual-content.md).
 
 ## Trust and uncertainty boundary
 
@@ -139,6 +142,8 @@ version where applicable. The UI must distinguish calculated facts from
 estimates and heuristic scores, must preserve unknown values, and must never
 render similarity as probability. These rules are owned by [Trust, Provenance,
 and Uncertainty](../../.okf/capabilities/shared/trust-and-provenance.md).
+The shared contract also fixes numeric confidence/coverage in `[0,1]`, explicit
+model maturity, evidence references, and a precision policy.
 
 ## Cross-capability sequencing
 
@@ -155,6 +160,19 @@ prototype definitions across this path. Validation and Calibration supplies
 model maturity and regression evidence. Application-level changes must refresh
 this summary when boundaries, dependencies, verification, or sequencing
 change.
+
+## Node specification sources
+
+The exact capability contracts are maintained next to their owning nodes:
+
+- [Formula Input and Normalization](formula-input-normalization/prd.md)
+- [Composition and Intrinsic Metrics](composition-intrinsic-metrics/prd.md)
+- [Process and Effective Behavior](process-effective-behavior/prd.md)
+- [Classification, Similarity, and Explanation](classification-similarity-explanation/prd.md)
+- [Interactive Formula Exploration](interactive-exploration/prd.md)
+- [Ingredient and Prototype Knowledge](ingredient-prototype-knowledge/prd.md)
+- [Bilingual Content and Localization](bilingual-content/prd.md)
+- [Trust, Provenance, and Uncertainty](trust-and-provenance/prd.md)
 
 ## Verification strategy
 
@@ -179,7 +197,7 @@ exists.
 
 - Refine the first vertical-slice catalog and decide how seed data is stored.
 - Clear the fog around dataset ownership, sources, curation, and collection.
-- Confirm the final locale fallback and default-entry behavior after the first
-  bilingual page prototype.
+- Define the first calibrated parameter/data release for the Validation and
+  Calibration capability.
 
 These are intentionally tracked as planning frontiers, not hidden assumptions.

@@ -4,7 +4,7 @@ Status: Initial application synthesis
 Date: 2026-09-07
 
 This document is the product-level synthesis for the initial confirmed OKF
-topology. Detailed capability truth will be authored under the linked
+topology. Detailed capability truth is maintained under the linked
 `docs/architecture/<capability>/` folders as bounded capabilities are tightened.
 
 ## Product goal
@@ -96,6 +96,10 @@ The user can move between equivalent `/en/` and `/el/` routes without losing
 the current public content context. Canonical model identifiers remain stable;
 display labels and explanatory prose are localized.
 
+The site root has a static default entry to `/en/`. Unsupported locale paths
+resolve to the public 404 page; V1 does not guess a locale from browser
+settings. Required public translation keys must exist in both locales.
+
 ## Capability map
 
 The durable planning owners are:
@@ -113,6 +117,16 @@ and Effective Behavior, and Classification, Similarity, and Explanation.
 The current node-level source for the first frontier is the [Formula Input and
 Normalization PRD](architecture/formula-input-normalization/prd.md), supported
 by its [domain glossary](architecture/formula-input-normalization/domain-glossary.md).
+
+The exact node-level reference set now also includes:
+
+- [Composition and Intrinsic Metrics](architecture/composition-intrinsic-metrics/prd.md)
+- [Process and Effective Behavior](architecture/process-effective-behavior/prd.md)
+- [Classification, Similarity, and Explanation](architecture/classification-similarity-explanation/prd.md)
+- [Interactive Formula Exploration](architecture/interactive-exploration/prd.md)
+- [Ingredient and Prototype Knowledge](architecture/ingredient-prototype-knowledge/prd.md)
+- [Bilingual Content and Localization](architecture/bilingual-content/prd.md)
+- [Trust, Provenance, and Uncertainty](architecture/trust-and-provenance/prd.md)
 
 ## Cross-capability dependencies
 
@@ -141,6 +155,8 @@ regression evidence but does not block the first deterministic vertical slice.
   probabilities.
 - Confidence is independent from similarity.
 - No-match and hybrid outputs are valid first-class outcomes.
+- Required bilingual keys are checked for Greek/English parity; missing
+  translations are diagnostics rather than silent fallback text.
 - Internal canonical units are grams, degrees Celsius, and seconds.
 - V1 input is grams-only, including eggs entered by mass.
 - Process fields distinguish `Known`, explicit `None`, and `Unknown`.

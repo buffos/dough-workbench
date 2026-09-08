@@ -3,14 +3,23 @@ type: capability
 title: Composition and Intrinsic Metrics
 description: Derive functional composition and pre-process structural metrics from normalized ingredient data.
 tags: [composition, metrics, deterministic, estimated]
-timestamp: 2026-09-07T08:06:37Z
-state: bounded
+timestamp: 2026-09-08T12:00:00Z
+state: specified
+state_changed: 2026-09-08T12:00:00Z
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
 shared_with:
   - /capabilities/shared/trust-and-provenance.md
 artifact_root: docs/architecture/composition-intrinsic-metrics
 orchestration_status: docs/architecture/composition-intrinsic-metrics/orchestration-status.md
+gap_analysis: docs/architecture/composition-intrinsic-metrics/requirements-gap-analysis.md
+glossary: docs/architecture/composition-intrinsic-metrics/domain-glossary.md
+prd: docs/architecture/composition-intrinsic-metrics/prd.md
+domain_model: docs/architecture/composition-intrinsic-metrics/canonical-domain-model.md
+use_cases: docs/architecture/composition-intrinsic-metrics/canonical-use-cases.md
+contract: docs/architecture/composition-intrinsic-metrics/canonical-api-cli-contract.md
+scenarios: docs/architecture/composition-intrinsic-metrics/acceptance-scenarios.md
+readiness_review: docs/architecture/composition-intrinsic-metrics/readiness-review.md
 adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0004-unknown-is-not-zero.md

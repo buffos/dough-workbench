@@ -232,9 +232,11 @@ and CLI are explicitly future mappings, not V1 deployment requirements.
 
 - Dataset ownership, source collection, curation, and calibration remain a
   separate foggy capability and are intentionally outside this node.
-- Locale fallback/default-entry behavior remains an application-level open
-  decision; SC-015 currently requires only equivalent `/en/` and `/el/`
-  product surfaces and canonical payload parity.
+- Locale fallback/default-entry behavior is now specified by the Bilingual
+  Content and Localization capability: the root has a static primary link to
+  `/en/`, supported counterparts are explicit, and unsupported locale paths
+  use the public 404 page. SC-015 remains covered by the bilingual parity
+  artifact set.
 - Persistence/import/export are intentionally deferred; V1 command semantics
   operate on an in-memory/static frontend draft.
 
@@ -246,8 +248,6 @@ for architecture-specific implementation and issue slicing** under the root
 verification policy. R-001–R-006 are resolved and should be retained as part
 of the synchronized artifact set.
 
-The node can move from `bounded` to `specified` and enter delivery issue
-slicing. The remaining product-level open decisions (dataset ownership and
-locale fallback/default-entry behavior) belong to other frontiers and do not
-block this capability.
-\n\n
+The node is implemented for its scoped first vertical slice. Dataset
+ownership, source collection, curation, and calibration remain separate
+planning frontiers; the locale route policy is no longer open.

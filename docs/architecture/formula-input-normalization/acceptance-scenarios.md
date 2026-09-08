@@ -566,4 +566,3 @@ owners and are outside the current frontend-only scope.
   assumptions.
 - Efficiency quality: passed; scenarios are distinct and each protects a
   comparison-critical rule or product behavior.
-\n\n

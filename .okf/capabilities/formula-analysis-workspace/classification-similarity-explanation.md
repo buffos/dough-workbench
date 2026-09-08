@@ -3,8 +3,9 @@ type: capability
 title: Classification, Similarity, and Explanation
 description: Map effective metrics and process features to structural families and explainable prototype similarities.
 tags: [classification, similarity, prototypes, explanation]
-timestamp: 2026-09-07T08:06:37Z
-state: bounded
+timestamp: 2026-09-08T12:00:00Z
+state: specified
+state_changed: 2026-09-08T12:00:00Z
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
 shared_with:
@@ -12,6 +13,14 @@ shared_with:
   - /capabilities/shared/trust-and-provenance.md
 artifact_root: docs/architecture/classification-similarity-explanation
 orchestration_status: docs/architecture/classification-similarity-explanation/orchestration-status.md
+gap_analysis: docs/architecture/classification-similarity-explanation/requirements-gap-analysis.md
+glossary: docs/architecture/classification-similarity-explanation/domain-glossary.md
+prd: docs/architecture/classification-similarity-explanation/prd.md
+domain_model: docs/architecture/classification-similarity-explanation/canonical-domain-model.md
+use_cases: docs/architecture/classification-similarity-explanation/canonical-use-cases.md
+contract: docs/architecture/classification-similarity-explanation/canonical-api-cli-contract.md
+scenarios: docs/architecture/classification-similarity-explanation/acceptance-scenarios.md
+readiness_review: docs/architecture/classification-similarity-explanation/readiness-review.md
 adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0003-composition-process-similarity.md

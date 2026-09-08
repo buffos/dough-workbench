@@ -15,5 +15,6 @@ describe('bilingual presentation contract', () => {
     expect(localeHref('/doughs/', 'el')).toBe('/doughs/el/');
     expect(t('el', 'state.unknown')).toBe('Δεν υπάρχει γνωστή τιμή');
     expect(t('en', 'state.unknown')).toBe('No known value');
+    expect(t('el', 'missing.key')).toBe('[missing-translation:el:missing.key]');
   });
 });

@@ -605,4 +605,3 @@ These are read/use-case projections, not persistence requirements.
   is required.
 - Downstream usefulness: passed; the model supports use cases, contracts, and
   acceptance scenarios while preserving stable business behavior.
-\n\n

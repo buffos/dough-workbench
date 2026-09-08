@@ -257,3 +257,38 @@ canonical domain modeling. No new topology or delivery work was created.
 - Current capability totals are `foggy: 1`, `bounded: 8`, `specified: 0`,
   `implemented: 1`. No product or cross-capability architecture truth changed;
   the application PRD and architecture summary remain current.
+
+## 2026-09-08
+
+**Architecture specification**: Advanced all seven own-state bounded
+capabilities through the bounded-capability exact-specification workflow:
+Composition and Intrinsic Metrics, Process and Effective Behavior,
+Classification, Similarity, and Explanation, Interactive Formula Exploration,
+Ingredient and Prototype Knowledge, Bilingual Content and Localization, and
+Trust, Provenance, and Uncertainty.
+
+- State transitions: Composition and Intrinsic Metrics, Process and Effective
+  Behavior, Classification, Similarity, and Explanation, Interactive Formula
+  Exploration, Ingredient and Prototype Knowledge, Bilingual Content and
+  Localization, and Trust, Provenance, and Uncertainty each moved from
+  `bounded` to `specified`. The Formula Analysis Workspace roll-up moved from
+  `bounded` to `specified` as the derived minimum of its children.
+- Created the complete node-scoped artifact set for each capability:
+  requirements gap analysis, glossary, PRD, canonical domain model, canonical
+  use cases, canonical API/CLI contract, acceptance scenarios, and readiness
+  review.
+- Readiness reviews found no unresolved High or Medium blockers. Dataset
+  ownership and calibration remain explicitly foggy rather than being
+  fabricated.
+- Resolved the bilingual default-entry policy as static `/` -> `/en/`, with
+  explicit `/en/` and `/el/` counterparts, unsupported-locale 404, and
+  required-key parity.
+- Fixed the shared acid-neutralization canonical unit for interoperability
+  while preserving unknown values when evidence is unavailable.
+- Refreshed `docs/prd.md` and
+  `docs/architecture/application-architecture-summary.md` with source links,
+  the bilingual route policy, and the shared trust metadata contract.
+- Recomputed the Formula Analysis Workspace roll-up from `bounded` to
+  `specified` after its three remaining children advanced.
+- Current capability totals are `foggy: 1`, `bounded: 0`, `specified: 8`,
+  `implemented: 1`. No delivery issue was created.

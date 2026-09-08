@@ -171,7 +171,7 @@ export const PROCESS_FIELD_DESCRIPTORS: readonly ProcessFieldDescriptor[] = [
   { path: 'aeration.postAerationHandling', key: 'postAerationHandling', kind: 'enum', options: POST_AERATION_HANDLING },
   { path: 'fermentation.agent', key: 'agent', kind: 'enum', options: FERMENTATION_AGENTS },
   { path: 'fermentation.prefermentType', key: 'prefermentType', kind: 'enum', options: PREFERMENT_TYPES },
-  { path: 'fermentation.prefermentPercentage', key: 'prefermentPercentage', kind: 'number', unit: 'ratio', min: 0 },
+  { path: 'fermentation.prefermentPercentage', key: 'prefermentPercentage', kind: 'number', unit: 'ratio', min: 0, max: 1 },
   { path: 'fermentation.bulkTimeSeconds', key: 'bulkTimeSeconds', kind: 'number', unit: 'seconds', min: 0 },
   { path: 'fermentation.bulkTemperatureCelsius', key: 'bulkTemperatureCelsius', kind: 'number', unit: 'celsius' },
   { path: 'fermentation.bulkExpansionTarget', key: 'bulkExpansionTarget', kind: 'enum', options: EXPANSION_TARGETS },
@@ -181,7 +181,7 @@ export const PROCESS_FIELD_DESCRIPTORS: readonly ProcessFieldDescriptor[] = [
   { path: 'fermentation.coldFermentation', key: 'coldFermentation', kind: 'boolean', options: ['true', 'false'] },
   { path: 'lamination.enabled', key: 'enabled', kind: 'boolean', options: ['true', 'false'] },
   { path: 'lamination.laminationFat', key: 'laminationFat', kind: 'reference', reference: 'formula-line' },
-  { path: 'lamination.layerFatPercentage', key: 'layerFatPercentage', kind: 'number', unit: 'ratio', min: 0 },
+  { path: 'lamination.layerFatPercentage', key: 'layerFatPercentage', kind: 'number', unit: 'ratio', min: 0, max: 1 },
   { path: 'lamination.foldSequence', key: 'foldSequence', kind: 'enum', options: FOLD_SEQUENCES },
   { path: 'lamination.fatState', key: 'fatState', kind: 'enum', options: FAT_STATES },
   { path: 'lamination.doughState', key: 'doughState', kind: 'enum', options: DOUGH_STATES },
@@ -290,21 +290,25 @@ function normalizeValue(value: DraftValueState, descriptor: ProcessFieldDescript
     if (parsed === null || (descriptor.min !== undefined && parsed < descriptor.min) || (descriptor.max !== undefined && parsed > descriptor.max) || (descriptor.integer && !Number.isInteger(parsed))) {
       return { state: 'unknown', reasonCode: 'invalid-process-value' };
     }
-    return { state: 'known', value: parsed, provenance: value.provenance, confidence: value.confidence };
+    return { state: 'known', value: parsed, provenance: value.provenance, confidence: normalizedConfidence(value.confidence) };
   }
 
   if (!value.value.trim()) return { state: 'unknown', reasonCode: 'empty-process-value' };
   if (descriptor.kind === 'boolean') {
     if (value.value !== 'true' && value.value !== 'false') return { state: 'unknown', reasonCode: 'invalid-process-value' };
-    return { state: 'known', value: value.value === 'true', provenance: value.provenance, confidence: value.confidence };
+    return { state: 'known', value: value.value === 'true', provenance: value.provenance, confidence: normalizedConfidence(value.confidence) };
   }
   if (descriptor.kind === 'reference') {
-    return { state: 'known', value: value.value, provenance: value.provenance, confidence: value.confidence };
+    return { state: 'known', value: value.value, provenance: value.provenance, confidence: normalizedConfidence(value.confidence) };
   }
   if (descriptor.options && !descriptor.options.includes(value.value)) {
     return { state: 'unknown', reasonCode: 'invalid-process-option' };
   }
-  return { state: 'known', value: value.value, provenance: value.provenance, confidence: value.confidence };
+  return { state: 'known', value: value.value, provenance: value.provenance, confidence: normalizedConfidence(value.confidence) };
+}
+
+function normalizedConfidence(value: number): number {
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
 }
 
 function getDraftValue(draft: ProcessDraft, path: ProcessValuePath): DraftValueState {

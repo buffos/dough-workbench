@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const dist = resolve('dist');
-const requiredFiles = ['en/index.html', 'el/index.html', 'en/help/index.html', 'el/help/index.html', '404.html'];
+const requiredFiles = ['index.html', 'en/index.html', 'el/index.html', 'en/help/index.html', 'el/help/index.html', '404.html'];
 const missing = requiredFiles.filter((file) => !existsSync(resolve(dist, file)));
 
 if (missing.length > 0) {
@@ -15,6 +15,7 @@ const greek = readFileSync(resolve(dist, 'el/index.html'), 'utf8');
 const englishHelp = readFileSync(resolve(dist, 'en/help/index.html'), 'utf8');
 const greekHelp = readFileSync(resolve(dist, 'el/help/index.html'), 'utf8');
 const notFound = readFileSync(resolve(dist, '404.html'), 'utf8');
+const root = readFileSync(resolve(dist, 'index.html'), 'utf8');
 
 const configuredBase = process.env.BASE_PATH || '/';
 const basePrefix = configuredBase === '/' ? '' : configuredBase.replace(/\/$/, '');
@@ -46,9 +47,14 @@ if (configuredBase !== '/') {
   }
 }
 
+if (!root.includes('http-equiv="refresh"') || !root.includes(`href="${routeHref('en')}"`)) {
+  console.error('The generated root entry is missing its English workspace redirect.');
+  process.exit(1);
+}
+
 if (!notFound.includes('lang="en"') || !notFound.includes(`href="${routeHref('en')}"`)) {
   console.error('The generated public 404.html is missing its locale or workspace route.');
   process.exit(1);
 }
 
-console.log('Static route check passed: /en/, /el/, /en/help/, /el/help/, and /404.html are present.');
+console.log('Static route check passed: /, /en/, /el/, /en/help/, /el/help/, and /404.html are present.');

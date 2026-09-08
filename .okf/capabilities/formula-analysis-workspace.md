@@ -3,8 +3,9 @@ type: capability
 title: Formula Analysis Workspace
 description: The main user journey for entering a formula and receiving a structured, process-aware analysis.
 tags: [formula, analysis, workspace, rollup]
-timestamp: 2026-09-07T08:06:37Z
-state: bounded
+timestamp: 2026-09-08T12:00:00Z
+state: specified
+state_changed: 2026-09-08T12:00:00Z
 state_policy:
   mode: rollup
   source: structural_children

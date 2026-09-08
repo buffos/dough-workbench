@@ -44,7 +44,7 @@ boundaries, explicit invariants, and honest partial-data behavior.
 Artifact impact assessment for the domain model:
 
 - planning topology: the owning node is now `implemented`; its parent roll-up
-  remains `bounded` because three sibling children are still bounded;
+  is now `specified` because the three sibling children are specified;
 - capability truth: updated with the canonical model reference;
 - application PRD: no scope change; its product rules already cover the model;
 - application architecture summary: no boundary or sequencing change;
@@ -89,5 +89,5 @@ free text as an algorithm-facing value.
 
 No active delivery issue remains under this capability. Future work should be
 routed to the remaining Formula Analysis Workspace children or to the separate
-Validation and Calibration frontier; the roll-up remains `bounded` until those
-areas mature.
+Validation and Calibration frontier; the roll-up remains `specified` until a
+future capability change requires a different derived state.

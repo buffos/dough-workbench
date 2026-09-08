@@ -732,4 +732,3 @@ Implementations should be able to assert:
   exposed.
 - Downstream usefulness: passed; client, HTTP, CLI, bilingual, and acceptance
   tests can target the same stable surface.
-\n\n

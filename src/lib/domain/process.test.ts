@@ -95,4 +95,30 @@ describe('process capture and normalization', () => {
       'REFERENCE_MISMATCH',
     ]));
   });
+
+  it('enforces ratio bounds and normalizes process confidence', () => {
+    const draft = createInitialProcessDraft('formula-ratio-bounds');
+    const invalidPreferment = knownDraftValue('1.1', catalogProvenance);
+    invalidPreferment.confidence = 2;
+    const invalidLayerFat = knownDraftValue('1.1', catalogProvenance);
+    invalidLayerFat.confidence = -1;
+    draft.fermentation.prefermentPercentage = invalidPreferment;
+    draft.lamination.layerFatPercentage = invalidLayerFat;
+
+    const rejected = normalizeProcess(draft);
+    expect(rejected.outcome).toBe('rejected');
+    expect(rejected.diagnostics.filter((diagnostic) => diagnostic.code === 'INVALID_PROCESS_VALUE')).toHaveLength(2);
+
+    const validPreferment = knownDraftValue('0.4', catalogProvenance);
+    validPreferment.confidence = 2;
+    const validLayerFat = knownDraftValue('0.6', catalogProvenance);
+    validLayerFat.confidence = -1;
+    draft.fermentation.prefermentPercentage = validPreferment;
+    draft.lamination.layerFatPercentage = validLayerFat;
+    const normalized = normalizeProcess(draft);
+
+    expect(normalized.outcome).toBe('partial');
+    expect(normalized.data?.fermentation.prefermentPercentage).toMatchObject({ state: 'known', value: 0.4, confidence: 1 });
+    expect(normalized.data?.lamination.layerFatPercentage).toMatchObject({ state: 'known', value: 0.6, confidence: 0 });
+  });
 });

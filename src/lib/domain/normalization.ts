@@ -32,7 +32,7 @@ const DERIVED_PROVENANCE: Provenance = {
 
 const USER_PROVENANCE: Provenance = { kind: 'user-entered', sourceId: 'formula-workspace' };
 
-export function knownDraftValue(value: number | string, provenance: Provenance = USER_PROVENANCE): DraftValueState {
+export function knownDraftValue(value: number | string, provenance: Provenance = USER_PROVENANCE): Extract<DraftValueState, { state: 'known' }> {
   return { state: 'known', value: String(value), provenance, confidence: 1 };
 }
 

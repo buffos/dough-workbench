@@ -3,8 +3,9 @@ type: capability
 title: Ingredient and Prototype Knowledge
 description: Maintain the versioned functional ingredient catalog and the structural and named prototype catalog used by the analyzer.
 tags: [ingredients, prototypes, taxonomy, knowledge]
-timestamp: 2026-09-07T08:06:37Z
-state: bounded
+timestamp: 2026-09-08T12:00:00Z
+state: specified
+state_changed: 2026-09-08T12:00:00Z
 project: /project.md
 parent: /project.md
 shared_with:
@@ -12,6 +13,14 @@ shared_with:
   - /capabilities/shared/trust-and-provenance.md
 artifact_root: docs/architecture/ingredient-prototype-knowledge
 orchestration_status: docs/architecture/ingredient-prototype-knowledge/orchestration-status.md
+gap_analysis: docs/architecture/ingredient-prototype-knowledge/requirements-gap-analysis.md
+glossary: docs/architecture/ingredient-prototype-knowledge/domain-glossary.md
+prd: docs/architecture/ingredient-prototype-knowledge/prd.md
+domain_model: docs/architecture/ingredient-prototype-knowledge/canonical-domain-model.md
+use_cases: docs/architecture/ingredient-prototype-knowledge/canonical-use-cases.md
+contract: docs/architecture/ingredient-prototype-knowledge/canonical-api-cli-contract.md
+scenarios: docs/architecture/ingredient-prototype-knowledge/acceptance-scenarios.md
+readiness_review: docs/architecture/ingredient-prototype-knowledge/readiness-review.md
 adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0005-functional-composition-boundary.md

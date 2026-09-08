@@ -3,8 +3,9 @@ type: capability
 title: Trust, Provenance, and Uncertainty
 description: Make data quality, metric semantics, missing values, confidence, and model provenance visible and reliable.
 tags: [trust, provenance, uncertainty, confidence, data-quality]
-timestamp: 2026-09-07T08:06:37Z
-state: bounded
+timestamp: 2026-09-08T12:00:00Z
+state: specified
+state_changed: 2026-09-08T12:00:00Z
 project: /project.md
 parent: /project.md
 shared_with:
@@ -14,6 +15,14 @@ shared_with:
   - /capabilities/validation-calibration.md
 artifact_root: docs/architecture/trust-and-provenance
 orchestration_status: docs/architecture/trust-and-provenance/orchestration-status.md
+gap_analysis: docs/architecture/trust-and-provenance/requirements-gap-analysis.md
+glossary: docs/architecture/trust-and-provenance/domain-glossary.md
+prd: docs/architecture/trust-and-provenance/prd.md
+domain_model: docs/architecture/trust-and-provenance/canonical-domain-model.md
+use_cases: docs/architecture/trust-and-provenance/canonical-use-cases.md
+contract: docs/architecture/trust-and-provenance/canonical-api-cli-contract.md
+scenarios: docs/architecture/trust-and-provenance/acceptance-scenarios.md
+readiness_review: docs/architecture/trust-and-provenance/readiness-review.md
 adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0003-composition-process-similarity.md
