@@ -3,9 +3,9 @@ type: capability
 title: Ingredient and Prototype Knowledge
 description: Maintain the versioned functional ingredient catalog and the structural and named prototype catalog used by the analyzer.
 tags: [ingredients, prototypes, taxonomy, knowledge]
-timestamp: 2026-09-08T12:00:00Z
-state: specified
-state_changed: 2026-09-08T12:00:00Z
+timestamp: 2026-09-09T13:47:34Z
+state: implemented
+state_changed: 2026-09-09T13:47:34Z
 project: /project.md
 parent: /project.md
 shared_with:
@@ -25,6 +25,8 @@ adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0005-functional-composition-boundary.md
   - docs/agents/adr/0007-staged-calibration-dataset.md
+issues:
+  - docs/agents/issues/done/20260909-022-bilingual-prototype-catalog-inspection.md
 ---
 
 # Intent

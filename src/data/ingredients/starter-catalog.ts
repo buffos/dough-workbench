@@ -14,12 +14,15 @@ export interface StarterIngredient {
   name: string;
   label: LocalizedLabel;
   composition: Partial<Record<CompositionField, number>>;
+  acidNeutralization?: number;
 }
 
 export interface StarterFlour {
   id: string;
   name: string;
   label: LocalizedLabel;
+  composition: Partial<Record<CompositionField, number>>;
+  absorptionPercentage?: number;
 }
 
 export const STARTER_FLOUR_CATALOG: StarterFlour[] = [
@@ -27,21 +30,29 @@ export const STARTER_FLOUR_CATALOG: StarterFlour[] = [
     id: 'wheat-flour-strong',
     name: 'Strong wheat flour',
     label: { en: 'Strong wheat flour', el: 'Δυνατό άλευρο σίτου' },
+    composition: { water: 14, protein: 13, starch: 70, fiber: 2 },
+    absorptionPercentage: 75,
   },
   {
     id: 'wheat-flour-whole',
     name: 'Whole wheat flour',
     label: { en: 'Whole wheat flour', el: 'Άλευρο ολικής άλεσης' },
+    composition: { water: 14, protein: 14, starch: 60, fiber: 10 },
+    absorptionPercentage: 80,
   },
   {
     id: 'wheat-flour-white',
     name: 'White wheat flour',
     label: { en: 'White wheat flour', el: 'Λευκό άλευρο σίτου' },
+    composition: { water: 14, protein: 11, starch: 72, fiber: 1 },
+    absorptionPercentage: 70,
   },
   {
     id: 'rye-flour',
     name: 'Rye flour',
     label: { en: 'Rye flour', el: 'Άλευρο σίκαλης' },
+    composition: { water: 14, protein: 9, starch: 65, fiber: 12 },
+    absorptionPercentage: 75,
   },
 ];
 
@@ -63,6 +74,42 @@ export const STARTER_CATALOG: Record<string, StarterIngredient> = {
     name: 'Butter',
     label: { en: 'Butter', el: 'Βούτυρο' },
     composition: { water: 16, fat: 82, protein: 1, sugar: 0 },
+  },
+  sugar: {
+    id: 'sugar',
+    name: 'Sugar',
+    label: { en: 'Sugar', el: 'Ζάχαρη' },
+    composition: { sugar: 100 },
+  },
+  egg: {
+    id: 'egg',
+    name: 'Whole egg',
+    label: { en: 'Whole egg', el: 'Ολόκληρο αυγό' },
+    composition: { water: 75, fat: 10.5, protein: 12.5, sugar: 1, eggSolids: 25 },
+  },
+  milk: {
+    id: 'milk',
+    name: 'Milk',
+    label: { en: 'Milk', el: 'Γάλα' },
+    composition: { water: 87, fat: 3.5, protein: 3.3, sugar: 5, dairySolids: 13 },
+  },
+  oliveOil: {
+    id: 'olive-oil',
+    name: 'Olive oil',
+    label: { en: 'Olive oil', el: 'Ελαιόλαδο' },
+    composition: { fat: 100 },
+  },
+  honey: {
+    id: 'honey',
+    name: 'Honey',
+    label: { en: 'Honey', el: 'Μέλι' },
+    composition: { water: 17, sugar: 82 },
+  },
+  raisin: {
+    id: 'raisin',
+    name: 'Raisin',
+    label: { en: 'Raisin', el: 'Σταφίδα' },
+    composition: { water: 16, sugar: 59, fiber: 4 },
   },
 };
 

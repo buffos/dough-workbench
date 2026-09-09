@@ -141,7 +141,7 @@ describe('formula normalization', () => {
 
     const result = normalizeFormula(draft);
     expect(result.coverage).toBe(1);
-    expect(result.confidence).toBe(0.88);
+    expect(result.confidence).toBe(0.978);
   });
 
   it('enforces grams-only input and rejects non-finite or blank masses', () => {
@@ -158,7 +158,17 @@ describe('formula normalization', () => {
   });
 
   it('keeps the canonical composition field set stable', () => {
-    expect(COMPOSITION_FIELDS).toEqual(['water', 'fat', 'protein', 'sugar', 'starch']);
+    expect(COMPOSITION_FIELDS).toEqual([
+      'water',
+      'fat',
+      'protein',
+      'sugar',
+      'starch',
+      'fiber',
+      'salt',
+      'eggSolids',
+      'dairySolids',
+    ]);
   });
 
   it('resolves catalog definitions with versioned references and role participation', () => {

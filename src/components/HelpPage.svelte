@@ -1,6 +1,6 @@
 <script lang="ts">
   import { HELP_CONTENT } from '../lib/i18n/help-content';
-  import { localeHref, type Locale } from '../lib/i18n/messages';
+  import { localeHref, t, type Locale } from '../lib/i18n/messages';
 
   export let locale: Locale;
   export let basePath = '/';
@@ -31,6 +31,7 @@
     </a>
     <nav class="topnav" aria-label={locale === 'el' ? 'Πλοήγηση' : 'Site navigation'}>
       <a class="workspace-link" href={workspaceHref}>{content.backToWorkspace}</a>
+      <a class="catalog-link" href={`${workspaceHref}catalog/`}>{t(locale, 'nav.catalog')}</a>
       <span class="nav-current">{content.eyebrow.split(' & ')[0]}</span>
       <span class="nav-divider" aria-hidden="true"></span>
       <a class="language-link" href={languageHref}>
@@ -116,8 +117,8 @@
   .brand-eyebrow { color: #7b4f3f; font-weight: 760; }
   .brand-name { font-size: 0.86rem; line-height: 0.92; font-weight: 740; letter-spacing: -0.03em; }
   .topnav { display: flex; gap: 0.9rem; align-items: center; font-size: 0.78rem; }
-  .workspace-link, .language-link { color: #34483e; font-weight: 700; text-decoration: none; }
-  .workspace-link:hover, .language-link:hover { color: #a24e37; }
+  .workspace-link, .catalog-link, .language-link { color: #34483e; font-weight: 700; text-decoration: none; }
+  .workspace-link:hover, .catalog-link:hover, .language-link:hover { color: #a24e37; }
   .nav-current { color: #5f6c64; }
   .nav-divider { width: 1px; height: 16px; background: rgba(42, 50, 45, 0.18); }
   .language-link { display: inline-flex; gap: 0.45rem; align-items: center; }

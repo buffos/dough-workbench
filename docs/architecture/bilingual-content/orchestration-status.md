@@ -30,3 +30,7 @@ root documents. No delivery issue was created.
 
 Next action: keep the synchronized root application documents linked when this
 capability changes; no delivery issue is inferred from the architecture pass.
+
+The catalog explorer keeps the same `/en/catalog/` and `/el/catalog/`
+counterpart policy while adding search, hierarchy, result-count, and
+pagination copy with required key parity.

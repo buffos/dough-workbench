@@ -3,9 +3,9 @@ type: capability
 title: Classification, Similarity, and Explanation
 description: Map effective metrics and process features to structural families and explainable prototype similarities.
 tags: [classification, similarity, prototypes, explanation]
-timestamp: 2026-09-08T12:00:00Z
-state: specified
-state_changed: 2026-09-08T12:00:00Z
+timestamp: 2026-09-09T21:24:12Z
+state: implemented
+state_changed: 2026-09-09T21:24:12Z
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
 shared_with:
@@ -21,6 +21,12 @@ use_cases: docs/architecture/classification-similarity-explanation/canonical-use
 contract: docs/architecture/classification-similarity-explanation/canonical-api-cli-contract.md
 scenarios: docs/architecture/classification-similarity-explanation/acceptance-scenarios.md
 readiness_review: docs/architecture/classification-similarity-explanation/readiness-review.md
+issues:
+  - docs/agents/issues/done/20260909-023-classification-feature-snapshot-and-family-gates.md
+  - docs/agents/issues/done/20260909-024-prototype-similarity-vectors.md
+  - docs/agents/issues/done/20260909-025-classification-outcomes-and-recovery.md
+  - docs/agents/issues/done/20260909-026-classification-explanation-fidelity.md
+  - docs/agents/issues/done/20260910-027-bilingual-classification-workspace.md
 adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0003-composition-process-similarity.md
@@ -51,4 +57,6 @@ constraint conflicts, and faithful feature contributions.
 
 The classifier consumes effective metrics and process features, never raw
 ingredient names. Similarity is not probability and named similarities are not
-mutually exclusive.
+mutually exclusive. The workspace presents at most the eight most relevant
+family memberships and prototype candidates while retaining the full
+language-neutral result for calculation and explanation purposes.

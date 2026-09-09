@@ -24,9 +24,16 @@ dimensions, prototype inheritance, structural constraints, no-match/hybrid
 outcomes, and explanation evidence. No unresolved High or Medium findings
 remain.
 
-Artifact impact: capability truth changed; product and cross-capability
-architecture truth have no semantic change, and the root source link is
-refreshed. No delivery issue was created.
+Delivery batch: issues 023–027 are being processed in dependency order. Issues
+023–026 are implemented and archived. Issues 023–026 are AFK domain/result
+slices with no individual human-review gate. Issue 027 is implemented and is
+awaiting the final AFK bilingual workspace slice's single grouped visual-review
+gate for the complete batch.
 
-Next action: if delivery is requested, slice this capability from the exact
-artifact set under the root verification policy.
+Artifact impact: capability truth and delivery truth changed; product and
+cross-capability architecture truth have no semantic change. The application
+PRD and architecture summary remain current, and the owning node links the
+remaining active review file and the archived 023–026 implementation records.
+
+Next action: collect the single grouped visual review for issue 027, then close
+the issue and update the capability to `implemented` if the review is accepted.

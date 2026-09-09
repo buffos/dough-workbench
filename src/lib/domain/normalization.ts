@@ -20,7 +20,7 @@ import {
   type ValueState,
 } from './types';
 
-import { STARTER_CATALOG, STARTER_CATALOG_VERSION } from '../../data/ingredients/starter-catalog';
+import { STARTER_CATALOG, STARTER_CATALOG_VERSION, STARTER_FLOUR_CATALOG } from '../../data/ingredients/starter-catalog';
 
 export { COMPOSITION_FIELDS, INGREDIENT_ROLES } from './types';
 
@@ -62,6 +62,16 @@ export function compositionFromCatalog(
   return composition;
 }
 
+function flourCompositionFromCatalog(ingredientId: string): CompositionDraft {
+  const flour = STARTER_FLOUR_CATALOG.find((candidate) => candidate.id === ingredientId);
+  return compositionFromCatalog(flour?.composition ?? {}, STARTER_CATALOG_VERSION, ingredientId);
+}
+
+function flourAbsorptionFromCatalog(ingredientId: string): string {
+  const flour = STARTER_FLOUR_CATALOG.find((candidate) => candidate.id === ingredientId);
+  return flour?.absorptionPercentage === undefined ? '' : String(flour.absorptionPercentage);
+}
+
 export function createInitialFormulaDraft(formulaId = 'formula_local'): FormulaDraft {
   return {
     formulaId,
@@ -75,6 +85,8 @@ export function createInitialFormulaDraft(formulaId = 'formula_local'): FormulaD
         massUnit: 'g',
         flourBearing: true,
         declaredBlendPercentage: '',
+        composition: flourCompositionFromCatalog('wheat-flour-strong'),
+        absorptionPercentage: flourAbsorptionFromCatalog('wheat-flour-strong'),
       },
       {
         id: 'flour-whole-wheat',
@@ -84,6 +96,8 @@ export function createInitialFormulaDraft(formulaId = 'formula_local'): FormulaD
         massUnit: 'g',
         flourBearing: true,
         declaredBlendPercentage: '',
+        composition: flourCompositionFromCatalog('wheat-flour-whole'),
+        absorptionPercentage: flourAbsorptionFromCatalog('wheat-flour-whole'),
       },
     ],
     ingredientLines: [
@@ -107,6 +121,7 @@ export function createInitialFormulaDraft(formulaId = 'formula_local'): FormulaD
           sourceVersion: STARTER_CATALOG_VERSION,
         },
         definitionConfidence: 1,
+        acidNeutralization: unknownDraftValue('not-supplied'),
       },
     ],
   };
@@ -249,6 +264,22 @@ function normalizeValueState(input: DraftValueState): ValueState<number> {
     value: parsed,
     provenance: input.provenance,
     confidence: Math.min(1, Math.max(0, input.confidence)),
+  };
+}
+
+function normalizeOptionalValueState(input: DraftValueState | undefined): ValueState<number> {
+  return input ? normalizeValueState(input) : { state: 'unknown', reasonCode: 'not-supplied' };
+}
+
+function normalizeOptionalPercentage(raw: string | undefined): ValueState<number> {
+  if (raw === undefined || !raw.trim()) return { state: 'unknown', reasonCode: 'not-supplied' };
+  const parsed = parseOptionalNumber(raw);
+  if (parsed === null || parsed < 0) return { state: 'unknown', reasonCode: 'invalid-value' };
+  return {
+    state: 'known',
+    value: parsed,
+    provenance: { kind: 'user-entered', sourceId: 'formula-workspace' },
+    confidence: 1,
   };
 }
 
@@ -460,14 +491,25 @@ export function normalizeFormula(draft: FormulaDraft): NormalizationOutcome {
     .filter(({ component }) => component.flourBearing)
     .reduce((sum, item) => sum + item.mass, 0);
 
-  const flourComponents: NormalizedFlourComponent[] = flourWithMass.map(({ component, mass }) => ({
-    id: component.id,
-    ingredientId: component.ingredientId,
-    name: component.name,
-    mass: { value: mass, unit: 'g' },
-    flourBearing: component.flourBearing,
-    blendFraction: calculated((mass / denominator) * 100, '%'),
-  }));
+  const flourComponents: NormalizedFlourComponent[] = flourWithMass.map(({ component, mass }) => {
+    const composition = normalizeComposition(component.composition ?? emptyComposition());
+    const firstKnown = COMPOSITION_FIELDS
+      .map((field) => composition[field])
+      .find((value): value is Extract<ValueState<number>, { state: 'known' }> => value.state === 'known');
+    return {
+      id: component.id,
+      ingredientId: component.ingredientId,
+      name: component.name,
+      mass: { value: mass, unit: 'g' },
+      flourBearing: component.flourBearing,
+      blendFraction: calculated((mass / denominator) * 100, '%'),
+      composition,
+      absorption: normalizeOptionalPercentage(component.absorptionPercentage),
+      acidNeutralization: normalizeOptionalValueState(component.acidNeutralization),
+      compositionProvenance: firstKnown?.provenance ?? { kind: 'custom', sourceId: component.id },
+      compositionConfidence: firstKnown?.confidence ?? 0,
+    };
+  });
 
   const normalizedLines = draft.ingredientLines.map((line) => ({
     source: line,
@@ -478,22 +520,36 @@ export function normalizeFormula(draft: FormulaDraft): NormalizationOutcome {
     compositionProvenance: compositionProvenance(line),
     compositionConfidence: compositionConfidence(line),
     availabilityOverride: normalizeAvailabilityOverride(line.availabilityOverride),
+    acidNeutralization: normalizeOptionalValueState(line.acidNeutralization),
     overrides: overrideSummary(line),
     participation: roleParticipation(line.role),
   }));
 
-  const unknownFields = normalizedLines.flatMap(({ source, composition }) =>
-    COMPOSITION_FIELDS.flatMap((field) => {
-      const state = composition[field];
-      return state.state === 'unknown'
-        ? [{ path: `ingredientLines.${source.id}.composition.${field}`, label: `${source.name} · ${field}`, reasonCode: state.reasonCode }]
-        : [];
-    }),
-  );
+  const unknownFields = [
+    ...flourComponents.flatMap((component) =>
+      COMPOSITION_FIELDS.flatMap((field) => {
+        const state = component.composition[field];
+        return state.state === 'unknown'
+          ? [{ path: 'flourComponents.' + component.id + '.composition.' + field, label: component.name + ' · ' + field, reasonCode: state.reasonCode }]
+          : [];
+      }),
+    ),
+    ...normalizedLines.flatMap(({ source, composition }) =>
+      COMPOSITION_FIELDS.flatMap((field) => {
+        const state = composition[field];
+        return state.state === 'unknown'
+          ? [{ path: 'ingredientLines.' + source.id + '.composition.' + field, label: source.name + ' · ' + field, reasonCode: state.reasonCode }]
+          : [];
+      }),
+    ),
+  ];
   const compositionMetrics = buildCompositionMetrics(
-    normalizedLines.map(({ mass, composition }) => ({ mass, composition })),
+    [
+      ...flourComponents.map(({ mass, composition }) => ({ mass: mass.value, composition })),
+      ...normalizedLines.map(({ mass, composition }) => ({ mass, composition })),
+    ],
   );
-  const normalizedIngredientLines: NormalizedIngredientLine[] = normalizedLines.map(({ source, mass, composition, definitionSource: sourceType, catalogReference: reference, compositionProvenance: sourceProvenance, compositionConfidence: sourceConfidence, availabilityOverride, overrides, participation }) => ({
+  const normalizedIngredientLines: NormalizedIngredientLine[] = normalizedLines.map(({ source, mass, composition, definitionSource: sourceType, catalogReference: reference, compositionProvenance: sourceProvenance, compositionConfidence: sourceConfidence, availabilityOverride, acidNeutralization, overrides, participation }) => ({
     id: source.id,
     ingredientId: source.ingredientId,
     name: source.name,
@@ -507,13 +563,17 @@ export function normalizeFormula(draft: FormulaDraft): NormalizationOutcome {
     compositionProvenance: sourceProvenance,
     compositionConfidence: sourceConfidence,
     availabilityOverride,
+    acidNeutralization,
     overrides,
     participation,
   }));
-  const totalFields = draft.ingredientLines.length * COMPOSITION_FIELDS.length;
+  const totalFields = (draft.flourComponents.length + draft.ingredientLines.length) * COMPOSITION_FIELDS.length;
   const supportedFields = totalFields - unknownFields.length;
   const coverage = totalFields === 0 ? 1 : round(supportedFields / totalFields);
-  const confidence = calculateConfidence(normalizedLines.map(({ composition }) => ({ composition })));
+  const confidence = calculateConfidence([
+    ...flourComponents.map(({ composition }) => ({ composition })),
+    ...normalizedLines.map(({ composition }) => ({ composition })),
+  ]);
   const partial = unknownFields.length > 0;
   const explanation = buildExplanation(draft, unknownFields, normalizedIngredientLines);
 

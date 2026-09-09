@@ -11,7 +11,10 @@
     noneDraftValue,
     unknownDraftValue,
   } from '../lib/domain/normalization';
-  import { normalizeFormulaDraft, normalizeProcessDraft, prepareAnalysisInputDraft } from '../lib/application/formula-workspace';
+  import { calculateIntrinsicMetricsDraft, classifyFormulaDraft, evaluateEffectiveBehaviorDraft, normalizeFormulaDraft, normalizeProcessDraft, prepareAnalysisInputDraft } from '../lib/application/formula-workspace';
+  import IntrinsicMetricsPanel from './IntrinsicMetricsPanel.svelte';
+  import EffectiveBehaviorPanel from './EffectiveBehaviorPanel.svelte';
+  import ClassificationPanel from './ClassificationPanel.svelte';
   import {
     PROCESS_ADDITION_ACTIONS,
     PROCESS_FIELD_DESCRIPTORS,
@@ -34,9 +37,12 @@
     FormulaDraft,
     IngredientLineDraft,
     IngredientRole,
+    IntrinsicAnalysisResult,
     NormalizationOutcome,
   } from '../lib/domain/types';
   import type { AnalysisInputOutcome, AnalysisPath, FormulaProcessReference } from '../lib/domain/handoff';
+  import type { EffectiveAnalysisResult } from '../lib/domain/effective';
+  import type { ClassificationResult } from '../lib/domain/classification';
   import { localeHref, t, type Locale } from '../lib/i18n/messages';
   import {
     clearDraft,
@@ -66,8 +72,11 @@
   let draft: FormulaDraft = createInitialFormulaDraft();
   let processDraft: ProcessDraft = createInitialProcessDraft(draft.formulaId);
   let result: NormalizationOutcome | null = null;
+  let intrinsicResult: IntrinsicAnalysisResult | null = null;
   let processResult: ProcessNormalizationOutcome | null = null;
   let handoffResult: AnalysisInputOutcome | null = null;
+  let effectiveResult: EffectiveAnalysisResult | null = null;
+  let classificationResult: ClassificationResult | null = null;
   let lastValidHandoff: FormulaProcessReference | null = null;
   let requestedAnalysisPath: AnalysisPath = 'full';
   let hydrated = false;
@@ -83,6 +92,7 @@
     if (savedDraft) {
       draft = savedDraft;
       result = normalizeFormulaDraft(savedDraft);
+      intrinsicResult = calculateIntrinsicMetricsDraft(savedDraft);
     }
     const savedProcess = loadProcess();
     if (savedProcess && savedProcess.formulaId === draft.formulaId) {
@@ -97,8 +107,11 @@
   function touch(next: FormulaDraft): void {
     draft = { ...next, revision: next.revision + 1 };
     result = null;
+    intrinsicResult = null;
     processResult = null;
     handoffResult = null;
+    effectiveResult = null;
+    classificationResult = null;
     explanationOpen = false;
   }
 
@@ -106,6 +119,8 @@
     processDraft = { ...next, revision: next.revision + 1 };
     processResult = null;
     handoffResult = null;
+    effectiveResult = null;
+    classificationResult = null;
   }
 
   function createId(prefix: string): string {
@@ -142,6 +157,10 @@
     )?.id ?? 'custom';
   }
 
+  function flourComposition(flour: FormulaDraft['flourComponents'][number]): ReturnType<typeof emptyComposition> {
+    return flour.composition ?? emptyComposition();
+  }
+
   function flourDisplayName(flour: FormulaDraft['flourComponents'][number]): string {
     const selected = STARTER_FLOUR_CATALOG.find((candidate) => candidate.id === selectedFlourId(flour));
     return selected ? catalogLabel(selected.label, locale) : flour.name;
@@ -174,6 +193,11 @@
         : wasCustom
           ? flour.name
           : locale === 'el' ? 'Προσαρμοσμένο άλευρο' : 'Custom flour',
+      composition: selected
+        ? compositionFromCatalog(selected.composition, STARTER_CATALOG_VERSION, selected.id)
+        : emptyComposition(),
+      absorptionPercentage: selected?.absorptionPercentage === undefined ? '' : String(selected.absorptionPercentage),
+      acidNeutralization: undefined,
     });
   }
 
@@ -200,7 +224,33 @@
       definitionConfidence: 1,
       compositionOverride: undefined,
       availabilityOverride: undefined,
+      acidNeutralization: selected?.acidNeutralization === undefined
+        ? unknownDraftValue('not-supplied')
+        : knownDraftValue(selected.acidNeutralization, {
+            kind: 'catalog',
+            sourceId: selected.id,
+            sourceVersion: STARTER_CATALOG_VERSION,
+          }),
     });
+  }
+
+  function updateFlourCompositionState(id: string, field: CompositionField, nextState: string): void {
+    const flour = draft.flourComponents.find((candidate) => candidate.id === id);
+    if (!flour) return;
+    const composition = flourComposition(flour);
+    const current = composition[field];
+    const nextValue = nextState === 'known'
+      ? current.state === 'known' ? current : knownDraftValue(0)
+      : nextState === 'none' ? noneDraftValue() : unknownDraftValue();
+    updateFlour(id, { composition: { ...composition, [field]: nextValue } });
+  }
+
+  function updateFlourCompositionValue(id: string, field: CompositionField, value: string): void {
+    const flour = draft.flourComponents.find((candidate) => candidate.id === id);
+    if (!flour) return;
+    const composition = flourComposition(flour);
+    if (composition[field].state !== 'known') return;
+    updateFlour(id, { composition: { ...composition, [field]: { ...composition[field], value } } });
   }
 
   function updateCompositionState(lineId: string, field: CompositionField, nextState: string): void {
@@ -294,6 +344,8 @@
             massUnit: 'g',
             flourBearing: true,
             declaredBlendPercentage: '',
+            composition: emptyComposition(),
+            absorptionPercentage: '',
           },
         ],
       });
@@ -341,6 +393,7 @@
 
   function runNormalization(): void {
     result = normalizeFormulaDraft(draft);
+    intrinsicResult = calculateIntrinsicMetricsDraft(draft);
     explanationOpen = result.outcome !== 'rejected';
   }
 
@@ -490,6 +543,15 @@
     }));
     if (!command.value) return;
     handoffResult = command.value;
+    effectiveResult = handoffResult.data && requestedAnalysisPath === 'full'
+      ? evaluateEffectiveBehaviorDraft(handoffResult.data)
+      : null;
+    classificationResult = handoffResult.data && effectiveResult && requestedAnalysisPath === 'full'
+      ? (() => {
+          const intrinsic = calculateIntrinsicMetricsDraft(draft);
+          return intrinsic ? classifyFormulaDraft(handoffResult.data, intrinsic, effectiveResult) : null;
+        })()
+      : null;
     if (handoffResult.data) lastValidHandoff = handoffResult.data;
   }
 
@@ -500,8 +562,11 @@
     draft = createInitialFormulaDraft();
     processDraft = createInitialProcessDraft(draft.formulaId);
     result = null;
+    intrinsicResult = null;
     processResult = null;
     handoffResult = null;
+    effectiveResult = null;
+    classificationResult = null;
     lastValidHandoff = null;
     requestedAnalysisPath = 'full';
     explanationOpen = false;
@@ -603,6 +668,7 @@
     <nav class="topnav" aria-label={t(locale, 'nav.languageLabel')}>
       <span class="nav-current">{t(locale, 'nav.workspace')}</span>
       <a class="help-link" href={`${localeHref(basePath, locale)}help/`}>{t(locale, 'nav.help')}</a>
+      <a class="help-link" href={`${localeHref(basePath, locale)}catalog/`}>{t(locale, 'nav.catalog')}</a>
       <span class="nav-divider" aria-hidden="true"></span>
       <a class="language-link" href={localeHref(basePath, locale === 'en' ? 'el' : 'en')}>
         <span class="language-dot" aria-hidden="true"></span>
@@ -720,6 +786,56 @@
                   on:click={() => removeFlour(flour.id)}
                 >×</button>
               </div>
+              <details class="flour-composition-details">
+                <summary>{t(locale, 'section.flourComposition')}</summary>
+                <div class="flour-composition-grid">
+                  {#each COMPOSITION_FIELDS as field (field)}
+                    {@const flourValue = flourComposition(flour)[field]}
+                    <div class="composition-field">
+                      <FieldHelp
+                        label={t(locale, 'field.' + field)}
+                        help={t(locale, 'help.field.' + field)}
+                        helpId={'help-flour-composition-' + flour.id + '-' + field}
+                      />
+                      <select
+                        aria-label={t(locale, 'field.flour') + ' ' + t(locale, 'field.' + field) + ' ' + t(locale, 'field.state')}
+                        value={flourValue.state}
+                        on:change={(event) => updateFlourCompositionState(flour.id, field, (event.currentTarget as HTMLSelectElement).value)}
+                      >
+                        <option value="unknown">{t(locale, 'state.unknown')}</option>
+                        <option value="none">{t(locale, 'state.none')}</option>
+                        <option value="known">{t(locale, 'state.known')}</option>
+                      </select>
+                      {#if flourValue.state === 'known'}
+                        <label class="composition-value">
+                          <span class="sr-only">{t(locale, 'field.value')}</span>
+                          <input
+                            aria-label={t(locale, 'field.' + field) + ' ' + t(locale, 'field.value')}
+                            inputmode="decimal"
+                            value={flourValue.value}
+                            on:input={(event) => updateFlourCompositionValue(flour.id, field, (event.currentTarget as HTMLInputElement).value)}
+                          />
+                          <span>%</span>
+                        </label>
+                      {/if}
+                    </div>
+                  {/each}
+                  <label class="field flour-absorption-field">
+                    <FieldHelp
+                      label={t(locale, 'field.absorption') + ' (%)'}
+                      help={t(locale, 'help.field.absorption')}
+                      helpId={'help-flour-absorption-' + flour.id}
+                    />
+                    <input
+                      aria-label={t(locale, 'field.absorption') + ' ' + flourDisplayName(flour)}
+                      inputmode="decimal"
+                      placeholder="—"
+                      value={flour.absorptionPercentage ?? ''}
+                      on:input={(event) => updateFlour(flour.id, { absorptionPercentage: (event.currentTarget as HTMLInputElement).value })}
+                    />
+                  </label>
+                </div>
+              </details>
             {/each}
           </div>
           <p class="micro-note"><span class="micro-icon">i</span>{t(locale, 'result.policyBody')}</p>
@@ -1175,6 +1291,8 @@
               on:change={(event) => {
                 requestedAnalysisPath = (event.currentTarget as HTMLSelectElement).value as AnalysisPath;
                 handoffResult = null;
+                effectiveResult = null;
+                classificationResult = null;
               }}
             >
               <option value="full">{t(locale, 'analysis.handoff.path.full')}</option>
@@ -1326,6 +1444,10 @@
               </div>
             </div>
 
+            {#if intrinsicResult}
+              <IntrinsicMetricsPanel locale={locale} analysis={intrinsicResult} />
+            {/if}
+
             <div class="policy-strip"><span>{t(locale, 'result.policy')}</span><strong>{t(locale, 'result.policyBody')}</strong></div>
 
             <button type="button" class="explanation-toggle" on:click={() => (explanationOpen = !explanationOpen)}>
@@ -1353,6 +1475,14 @@
           {:else}
             <div class="correction-callout"><strong>{t(locale, 'action.tryAgain')}</strong><p>{t(locale, 'formula.validation.correctMass')}</p></div>
           {/if}
+        {/if}
+
+        {#if effectiveResult}
+          <EffectiveBehaviorPanel locale={locale} analysis={effectiveResult} />
+        {/if}
+
+        {#if classificationResult}
+          <ClassificationPanel locale={locale} classification={classificationResult} />
         {/if}
       </section>
     </div>
@@ -1450,6 +1580,10 @@
   .composition-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: 0.55rem; color: #657168; font-size: 0.68rem; font-weight: 750; }
   .composition-note { color: #6f6258; font-size: 0.6rem; font-weight: 500; }
   .composition-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.45rem; }
+  .flour-composition-details { margin: -0.2rem 0 0 2.6rem; padding: 0.65rem 0.75rem; border: 1px solid rgba(65, 75, 67, 0.11); background: #fbf8f3; }
+  .flour-composition-details summary { color: #52695a; cursor: pointer; font-size: 0.64rem; font-weight: 750; }
+  .flour-composition-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.45rem; margin-top: 0.65rem; }
+  .flour-absorption-field { grid-column: span 2; }
   .composition-field { min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
   .composition-label { color: #5d6a61; font-size: 0.55rem; letter-spacing: 0.08em; font-weight: 700; }
   .composition-field select { height: 1.9rem; padding: 0 0.35rem; font-size: 0.67rem; }
@@ -1630,5 +1764,5 @@
   .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; color: #5f6860; font-size: 0.57rem; letter-spacing: 0.08em; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   @media (max-width: 1080px) { .workspace-grid { grid-template-columns: 1fr; } .editor-panel, .result-panel, .process-panel { grid-column: 1; } .editor-panel { grid-row: 1; } .result-panel { grid-row: 2; min-height: auto; } .process-panel { grid-row: 3; } .process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .empty-result { min-height: 360px; } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block { margin-left: 0; } .composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block, .flour-composition-details { margin-left: 0; } .composition-grid, .flour-composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
 </style>

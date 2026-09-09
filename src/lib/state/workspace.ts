@@ -86,6 +86,14 @@ function isFormulaDraft(value: unknown): value is FormulaDraft {
 
   const validFlours = value.flourComponents.every((component) => {
     if (!isRecord(component)) return false;
+    const flourComposition = component.composition;
+    const compositionValid = flourComposition === undefined
+      || (
+        isRecord(flourComposition)
+        && COMPOSITION_FIELDS.every((field) => isDraftValueState((flourComposition as Record<string, unknown>)[field]))
+      );
+    const absorptionValid = component.absorptionPercentage === undefined || typeof component.absorptionPercentage === 'string';
+    const acidValid = component.acidNeutralization === undefined || isDraftValueState(component.acidNeutralization);
     return (
       typeof component.id === 'string' &&
       (component.ingredientId === undefined || typeof component.ingredientId === 'string') &&
@@ -93,7 +101,10 @@ function isFormulaDraft(value: unknown): value is FormulaDraft {
       typeof component.massGrams === 'string' &&
       isMassUnit(component.massUnit) &&
       typeof component.flourBearing === 'boolean' &&
-      typeof component.declaredBlendPercentage === 'string'
+      typeof component.declaredBlendPercentage === 'string' &&
+      compositionValid &&
+      absorptionValid &&
+      acidValid
     );
   });
   if (!validFlours) return false;
@@ -110,7 +121,8 @@ function isFormulaDraft(value: unknown): value is FormulaDraft {
       !INGREDIENT_ROLES.includes(line.role as (typeof INGREDIENT_ROLES)[number])
     ) return false;
     const composition = line.composition as Record<string, unknown>;
-    return COMPOSITION_FIELDS.every((field) => isDraftValueState(composition[field]));
+    return COMPOSITION_FIELDS.every((field) => isDraftValueState(composition[field]))
+      && (line.acidNeutralization === undefined || isDraftValueState(line.acidNeutralization));
   });
 }
 

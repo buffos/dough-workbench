@@ -3,9 +3,9 @@ type: capability
 title: Process and Effective Behavior
 description: Apply mixing, aeration, fermentation, lamination, thermal, and geometry inputs to intrinsic metrics.
 tags: [process, effective-metrics, fermentation, lamination]
-timestamp: 2026-09-08T12:00:00Z
-state: specified
-state_changed: 2026-09-08T12:00:00Z
+timestamp: 2026-09-09T04:33:10Z
+state: implemented
+state_changed: 2026-09-09T04:33:10Z
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
 shared_with:
@@ -23,6 +23,13 @@ readiness_review: docs/architecture/process-effective-behavior/readiness-review.
 adrs:
   - docs/agents/adr/0002-formula-process-separation.md
   - docs/agents/adr/0004-unknown-is-not-zero.md
+issues:
+  - docs/agents/issues/done/20260909-013-process-effective-analysis-boundary.md
+  - docs/agents/issues/done/20260909-014-mixing-and-aeration-effects.md
+  - docs/agents/issues/done/20260909-015-fermentation-and-proof-behavior.md
+  - docs/agents/issues/done/20260909-016-addition-order-and-lamination-effects.md
+  - docs/agents/issues/done/20260909-017-thermal-and-geometry-behavior.md
+  - docs/agents/issues/done/20260909-018-effective-behavior-workspace-integration.md
 ---
 
 # Intent
@@ -47,3 +54,10 @@ ingredient classification rules.
 
 Process-sensitive behavior must remain separate from composition similarity so
 counterfactual process changes are explainable.
+
+# Delivery note
+
+The versioned effective-behavior engine and bilingual workspace integration are
+implemented and delivered through issues 013–018. The completed delivery
+records are linked above; future calibration remains owned by Validation and
+Calibration.

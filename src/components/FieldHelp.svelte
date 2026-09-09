@@ -27,7 +27,6 @@
     aria-label={`${label}: ${help}`}
     aria-expanded={open}
     aria-controls={helpId}
-    title={help}
     on:click={toggle}
   >?</button>
   <span id={helpId} class:field-help-visible={open} class="field-help-popover" role="tooltip">{help}</span>

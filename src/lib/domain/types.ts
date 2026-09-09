@@ -1,7 +1,17 @@
 export const FORMULA_NORMALIZATION_POLICY = 'formula-normalization-v1';
 export const MODEL_VERSION = 'formula-input-v0.1';
 
-export const COMPOSITION_FIELDS = ['water', 'fat', 'protein', 'sugar', 'starch'] as const;
+export const COMPOSITION_FIELDS = [
+  'water',
+  'fat',
+  'protein',
+  'sugar',
+  'starch',
+  'fiber',
+  'salt',
+  'eggSolids',
+  'dairySolids',
+] as const;
 export type CompositionField = (typeof COMPOSITION_FIELDS)[number];
 
 export const INGREDIENT_ROLES = [
@@ -32,6 +42,79 @@ export type ValueState<T> =
   | { state: 'known'; value: T; provenance: Provenance; confidence: number }
   | { state: 'none' }
   | { state: 'unknown'; reasonCode: string };
+
+export type IntrinsicMetricStatus = 'complete' | 'partial' | 'unavailable' | 'not_applicable';
+export type IntrinsicMetricKey =
+  | CompositionField
+  | 'flourDenominator'
+  | 'acidNeutralization'
+  | 'effectiveWater'
+  | 'effectiveHydration'
+  | 'flourAbsorption'
+  | 'gpi'
+  | 'egi'
+  | 'enrichment'
+  | 'tenderness'
+  | 'fluidity';
+
+export interface IntrinsicContribution {
+  sourceId: string;
+  sourceName: string;
+  sourceType: 'flour' | 'ingredient';
+  sourceField: string;
+  rawMass: number;
+  role: IngredientRole;
+  participation: RoleParticipation;
+  availabilityFactor?: number;
+  evidenceState: 'known' | 'none' | 'unknown';
+  contribution?: number;
+  provenance?: Provenance;
+}
+
+export interface IntrinsicExclusion {
+  sourceId: string;
+  sourceName: string;
+  reasonCode: string;
+}
+
+export interface IntrinsicMetricExplanation {
+  contributors: IntrinsicContribution[];
+  exclusions: IntrinsicExclusion[];
+  missingEvidence: string[];
+  parameters: Record<string, string | number>;
+}
+
+export interface IntrinsicMetric {
+  key: IntrinsicMetricKey;
+  value?: number;
+  unit: string;
+  semanticClass: SemanticClass;
+  status: IntrinsicMetricStatus;
+  coverage: number;
+  confidence: number;
+  provenance: Provenance[];
+  contributors: IntrinsicContribution[];
+  limitationCodes: string[];
+  explanation: IntrinsicMetricExplanation;
+  relativeValue?: number;
+  relativeUnit?: '%';
+}
+
+export interface IntrinsicDiagnostic {
+  code: string;
+  severity: 'warning' | 'info';
+  metricKey?: IntrinsicMetricKey;
+  messageKey: string;
+  parameters: Record<string, string | number>;
+}
+
+export interface IntrinsicAnalysisResult {
+  outcome: 'completed' | 'partial' | 'rejected';
+  formulaRevision: number;
+  modelVersion: string;
+  metrics: IntrinsicMetric[];
+  diagnostics: IntrinsicDiagnostic[];
+}
 
 export type DraftValueState =
   | { state: 'known'; value: string; provenance: Provenance; confidence: number }
@@ -66,6 +149,9 @@ export interface FlourComponentDraft {
   massUnit: MassUnit;
   flourBearing: boolean;
   declaredBlendPercentage: string;
+  composition?: CompositionDraft;
+  absorptionPercentage?: string;
+  acidNeutralization?: DraftValueState;
 }
 
 export interface IngredientLineDraft {
@@ -82,6 +168,7 @@ export interface IngredientLineDraft {
   definitionConfidence?: number;
   compositionOverride?: Partial<Record<CompositionField, DraftValueState>>;
   availabilityOverride?: DraftValueState;
+  acidNeutralization?: DraftValueState;
 }
 
 export interface FormulaDraft {
@@ -116,6 +203,11 @@ export interface NormalizedFlourComponent {
   mass: { value: number; unit: 'g' };
   blendFraction: DerivedValue;
   flourBearing: boolean;
+  composition: FunctionalComposition;
+  compositionProvenance: Provenance;
+  compositionConfidence: number;
+  absorption: ValueState<number>;
+  acidNeutralization: ValueState<number>;
 }
 
 export interface NormalizedIngredientLine {
@@ -132,6 +224,7 @@ export interface NormalizedIngredientLine {
   compositionProvenance: Provenance;
   compositionConfidence: number;
   availabilityOverride?: ValueState<number>;
+  acidNeutralization: ValueState<number>;
   overrides: CompositionOverrideSummary;
   participation: RoleParticipation;
 }

@@ -4,8 +4,8 @@ title: Composition and Intrinsic Metrics
 description: Derive functional composition and pre-process structural metrics from normalized ingredient data.
 tags: [composition, metrics, deterministic, estimated]
 timestamp: 2026-09-08T12:00:00Z
-state: specified
-state_changed: 2026-09-08T12:00:00Z
+state: implemented
+state_changed: 2026-09-08T12:30:00Z
 project: /project.md
 parent: /capabilities/formula-analysis-workspace.md
 shared_with:
@@ -20,6 +20,12 @@ use_cases: docs/architecture/composition-intrinsic-metrics/canonical-use-cases.m
 contract: docs/architecture/composition-intrinsic-metrics/canonical-api-cli-contract.md
 scenarios: docs/architecture/composition-intrinsic-metrics/acceptance-scenarios.md
 readiness_review: docs/architecture/composition-intrinsic-metrics/readiness-review.md
+issues:
+  - docs/agents/issues/done/20260908-008-deterministic-composition-baseline.md
+  - docs/agents/issues/done/20260908-009-composition-evidence-and-partial-results.md
+  - docs/agents/issues/done/20260908-010-effective-hydration-and-absorption.md
+  - docs/agents/issues/done/20260908-011-intrinsic-heuristic-metrics.md
+  - docs/agents/issues/done/20260908-012-composition-workspace-integration.md
 adrs:
   - docs/agents/adr/0001-calculated-estimated-heuristic.md
   - docs/agents/adr/0004-unknown-is-not-zero.md
@@ -47,4 +53,5 @@ enrichment. It excludes process modifiers and named-product classification.
 # Notes
 
 Calculated, estimated, and heuristic outputs must remain distinguishable in
-the domain model and in the user-facing explanation.
+the domain model and in the user-facing explanation. The scoped delivery is
+implemented and accepted after the grouped visual review on 2026-09-08.

@@ -292,3 +292,328 @@ Trust, Provenance, and Uncertainty.
   `specified` after its three remaining children advanced.
 - Current capability totals are `foggy: 1`, `bounded: 0`, `specified: 8`,
   `implemented: 1`. No delivery issue was created.
+
+## 2026-09-08
+
+**Delivery slicing**: The user approved the next delivery frontier,
+Composition and Intrinsic Metrics.
+
+- Created pending issues 008–012 in dependency order: deterministic
+  composition baseline, composition evidence and partial results, effective
+  hydration and absorption, intrinsic heuristic metrics, and composition
+  workspace integration.
+- Grouped visual human review after issues 008–011 and before issue 012 closeout,
+  as requested.
+- Marked the issue batch ready for agent work, updated the issue registry to
+  max ID 012, and linked all issue paths from the Composition capability node.
+- Artifact impact is capability-local; no root PRD or application architecture
+  update was required.
+- Graph totals remain `foggy: 1`, `bounded: 0`, `specified: 8`,
+  `implemented: 1`. The Validation and Calibration node remains the only foggy
+  planning node.
+
+## 2026-09-08
+
+**Composition delivery**: Implemented issues 008–012 through the
+process-reference-issue lifecycle.
+
+- Added the framework-independent Composition and Intrinsic Metrics engine,
+  catalog-backed flour profiles, custom flour composition editing, partial
+  evidence states, effective hydration/absorption estimates, acid-unit
+  preservation, and versioned heuristic model data.
+- Added the bilingual composition summary panel with Calculated, Estimated, and
+  Heuristic distinction, evidence explanations, responsive layout, and no
+  Process dependency.
+- npm run verify passed: 11 test files, 50 tests, lint, typecheck, static build,
+  and route checks.
+- Issues 008–012 remain in pending/ with state awaiting-human-review. One
+  grouped visual review is intentionally deferred until all five are complete.
+- No product or cross-capability architecture truth changed. The Composition
+  node and Formula Analysis Workspace roll-up remain specified pending review
+  and closeout.
+
+## 2026-09-08
+
+**Composition closeout**: The user approved the grouped human review for
+issues 008–012 after reviewing the complete bilingual composition workspace,
+including desktop/mobile layout, calculated/estimated/heuristic states,
+partial evidence, provenance, and help tooltips.
+
+- Archived issues 008–012 under `docs/agents/issues/done/` and removed their
+  rows from the active issue registry; the maximum issue ID remains 012.
+- Advanced Composition and Intrinsic Metrics from `specified` to
+  `implemented`; its Formula Analysis Workspace roll-up remains `specified`
+  because Process and Classification children are still specified.
+- Updated capability issue references to the dated done paths and refreshed
+  orchestration status, index totals, and delivery audit trail.
+- No product or cross-capability architecture truth changed; the application
+  PRD and architecture summary remain current.
+
+## 2026-09-08
+
+**Delivery slicing**: The user approved the next working frontier, Process and
+Effective Behavior.
+
+- Created pending issues 013–018 in dependency order: the effective-analysis
+  boundary, mixing/aeration, fermentation/proof, addition order/lamination,
+  thermal/geometry, and workspace integration.
+- Grouped visual human review after the complete Process batch, as requested.
+- Marked the issue batch ready for agent work, updated the issue registry to
+  max ID 018, and linked all issue paths from the Process capability node.
+- Existing Process input normalization and Formula/Process handoff are
+  observed in the codebase; the new batch targets the missing effective engine
+  and user-facing Process analysis.
+- Artifact impact is capability-local; the root PRD and application
+  architecture summary remain current.
+- Graph totals remain `foggy: 1`, `bounded: 0`, `specified: 7`,
+  `implemented: 2`. Validation and Calibration remains the only foggy
+  planning node.
+
+## 2026-09-08
+
+**Process delivery implementation**: Implemented issues 013–018 through the
+process-reference-issue lifecycle.
+
+- Added the versioned effective-behavior engine, Formula/Process pairing and
+  conflict handling, partial process coverage, and explainable seed rules for
+  mixing, aeration, fermentation, proof, addition order, lamination, thermal
+  process, and geometry.
+- Added the bilingual Effective Behavior workspace panel with outcome states,
+  coverage, confidence, intrinsic baselines, contributors, missing inputs,
+  limitations, and intentional analysis-basis details.
+- `npm run verify` passed: 12 test files, 59 tests, lint, typecheck, Astro
+  build, and static route checks.
+- Issues 013–018 remain in pending/ with state `awaiting-human-review`; one
+  grouped visual review is intentionally gathered at the end of the batch.
+- Artifact impact is capability-local. The root PRD and application
+  architecture summary remain current; graph totals remain `foggy: 1`,
+  `bounded: 0`, `specified: 7`, `implemented: 2` until review and closeout.
+
+## 2026-09-09
+
+**Process closeout**: The user approved the grouped human review for issues
+013–018.
+
+- Archived issues 013–018 under `docs/agents/issues/done/20260909-*` and
+  removed their active registry rows; the maximum issue ID remains 018.
+- Advanced Process and Effective Behavior from `specified` to `implemented`.
+  The Formula Analysis Workspace roll-up remains `specified` because
+  Classification, Similarity, and Explanation is still specified.
+- Refreshed the process capability references, orchestration status, planning
+  index, and delivery audit trail. No product PRD or application architecture
+  update was required.
+- Current capability totals are `foggy: 1`, `bounded: 0`, `specified: 6`,
+  `implemented: 3`. Validation and Calibration remains the only foggy node.
+
+## 2026-09-09
+
+**Frontier planning**: After Process and Effective Behavior closeout, the
+code-grounded next prerequisite was identified as the prototype side of
+Ingredient and Prototype Knowledge.
+
+- The graph has no foggy or bounded child inside the Formula Analysis Workspace;
+  Process is implemented and Classification remains specified.
+- Brownfield inspection found the functional ingredient catalog in
+  `src/data/ingredients/starter-catalog.ts`, but no versioned
+  `src/data/prototypes/` catalog. Classification therefore should not be
+  sliced as a reachable vertical path before this provider exists.
+- Updated the planning index and affected orchestration records. This is a
+  capability-local frontier refinement with no product or application
+  architecture change.
+- Proposed prototype-knowledge issue breakdown is presented for approval; no
+  new issue files or registry rows have been created yet.
+
+## 2026-09-09
+
+**Delivery slicing**: The user approved the next frontier, the prototype side
+of Ingredient and Prototype Knowledge.
+
+- Created active issues 019–022 in dependency order: versioned prototype
+  catalog boundary, inheritance/family hierarchy, high-confidence seed data,
+  and bilingual catalog inspection.
+- Added the four issue references to the owning capability node, updated the
+  active registry and max issue ID to 022, and recorded the application
+  synthesis gate as current.
+- Issue 022 carries the mandatory `visual-review` gate; issues 019–021 are
+  domain/data-only AFK slices with no additional human gate.
+- Artifact impact is capability-local. The application PRD and architecture
+  summary remain current; Classification remains the downstream frontier and
+  Validation and Calibration remains foggy.
+
+**Issue 019 completion**: The versioned prototype catalog boundary was
+implemented and verified without a human-review gate.
+
+- Immutable versioned snapshots, deterministic content identity, integrity
+  diagnostics, and explicit catalog/model availability failures are now in the
+  domain/data boundary.
+- The issue was archived after 7 focused domain tests passed; application PRD
+  and architecture summary remain current because the change is capability-local.
+- Issue 019 is removed from the active registry and no longer blocks 020 or 021.
+
+**Issue 020 completion**: Deterministic prototype inheritance and family
+hierarchy resolution was implemented and verified without a human-review gate.
+
+- Resolved definitions preserve stable identity, inherited source paths,
+  family ancestry, separate structural/identity groups, and matcher policy
+  provenance; cycles and dangling references fail explicitly.
+- The issue was archived after the focused prototype domain suite passed; the
+  application PRD and architecture summary remain current because the change
+  is capability-local.
+- Issue 020 is removed from the active registry and no longer blocks 021.
+
+**Issue 021 completion**: The high-confidence expert seed catalog was added
+and verified without a human-review gate.
+
+- The catalog now covers eight structural families and eight named prototypes
+  with stable localized labels, inherited family references, qualitative
+  matcher metadata, confidence/maturity, and explicit provenance.
+- Numeric boundaries remain intentionally uncalibrated; dataset collection and
+  calibration remain owned by Validation and Calibration.
+- Issue 021 is removed from the active registry and no longer blocks 022.
+
+**Prototype batch implementation**: Issues 019–022 are implemented in code in
+dependency order. Issue 022 remains active as `awaiting-human-review` so the
+grouped visual review is performed only after the complete batch is available.
+
+- The catalog provider, inheritance resolver, expert seed data, bilingual
+  routes, navigation, unavailable-version state, and static route checks are in
+  place.
+- The application PRD and architecture summary remain current; the shared
+  bilingual artifact records the new equivalent catalog route surface without
+  changing shared policy.
+
+**Issue 022 completion and graph transition**: The user approved the grouped
+visual review for the bilingual catalog explorer after the scalable family tree,
+search/filter flow, compact paginated results, selected type detail view,
+responsive layout, and bilingual presentation were reviewed.
+
+- Issue 022 was moved to
+  `docs/agents/issues/done/20260909-022-bilingual-prototype-catalog-inspection.md`
+  and removed from the active registry.
+- Ingredient and Prototype Knowledge moved from `specified` to `implemented`
+  because its scoped delivery issues 019–022 are exhausted.
+- Current capability totals are `foggy: 1`, `bounded: 0`, `specified: 5`,
+  `implemented: 4`. Formula Analysis Workspace remains `specified` because
+  Classification, Similarity, and Explanation is still specified.
+- Product and application architecture documents require no semantic update:
+  this remains capability-local frontend presentation with no new actor,
+  backend, persistence, or cross-capability boundary.
+
+**Planning maintenance**: The Formula Analysis Workspace orchestration note was
+reconciled with the accepted Issue 022 closeout. No topology, capability
+scope, product, architecture, or delivery-state change was introduced. The
+next specified frontier remains Classification, Similarity, and Explanation;
+Validation and Calibration remains the only foggy capability.
+
+**Classification delivery slicing**: The user approved the proposed next
+frontier and issues 023–027 were created in dependency order for the specified
+Classification, Similarity, and Explanation capability.
+
+- The batch covers the feature snapshot/family gates, prototype similarity
+  vectors, classification outcomes/recovery diagnostics, explanation fidelity,
+  and the bilingual workspace surface.
+- Issues 023–026 have no human gate. Issue 027 carries one grouped visual
+  review after the complete batch is implemented, as explicitly requested.
+- The owning capability node and orchestration status now reference the five
+  active issues; the registry max ID is 027.
+- Artifact impact is capability and delivery only. The application PRD and
+  architecture summary remain current; no topology, product-scope, backend,
+  persistence, or cross-capability boundary change was introduced.
+- Current capability totals remain `foggy: 1`, `bounded: 0`, `specified: 5`,
+  `implemented: 4`.
+
+**Issue 023 completion**: The classification feature snapshot and family-gate
+boundary was implemented and verified.
+
+- The domain/application boundary now assembles language-neutral effective and
+  Process features, preserves known/none/unknown evidence, evaluates
+  hierarchical multi-label family gates, and returns explicit unavailable
+  model diagnostics.
+- Issue 023 was archived at
+  `docs/agents/issues/done/20260909-023-classification-feature-snapshot-and-family-gates.md`
+  and removed from the active registry; issue 024 is now unblocked.
+- The classification capability remains `specified` because issues 024–027
+  still cover its remaining scoped delivery. Product and application
+  architecture documents require no semantic update; this is capability-local
+  work.
+
+**Issue 024 completion**: Prototype similarity vectors were implemented and
+verified.
+
+- Resolved prototypes now produce deterministic composition, Process, and
+  overall identity similarity fields with independent confidence and coverage.
+- The expert-seed score policy is versioned and explicitly calibration-limited;
+  unknown evidence is omitted/limited and similarity is never treated as
+  probability.
+- Issue 024 was archived at
+  `docs/agents/issues/done/20260909-024-prototype-similarity-vectors.md` and
+  removed from the active registry; issue 025 is now unblocked.
+- The classification capability remains `specified` because issues 025–027
+  still cover its remaining scoped delivery. Product and application
+  architecture documents require no semantic update; this is capability-local
+  work.
+
+**Issue 025 completion**: Classification outcomes and recovery diagnostics were
+implemented and verified.
+
+- The result policy now preserves strong, structural, hybrid, no-strong-match,
+  and partial outcomes, while independently reporting confidence and coverage.
+- Structural conflicts, insufficient evidence, invalid snapshots, unavailable
+  models, and stale analysis references produce explicit recovery diagnostics
+  without silent fallback.
+- Issue 025 was archived at
+  `docs/agents/issues/done/20260909-025-classification-outcomes-and-recovery.md`
+  and removed from the active registry; issue 026 is now unblocked.
+- The classification capability remains `specified` because issues 026–027
+  still cover its remaining scoped delivery. Product and application
+  architecture documents require no semantic update; this is capability-local
+  work.
+
+**Issue 026 completion**: Classification explanation fidelity was implemented
+and verified.
+
+- The domain now emits deterministic explanation evidence from the same
+  feature snapshot, resolved prototype, evaluated vector, and score policy as
+  the classification result, including matched/limiting/conflicting/missing
+  evidence, inheritance, identity modifiers, and provenance.
+- A conflicted candidate remains explainable when no supported or partial
+  candidate exists; no silent empty fallback hides the reason for the result.
+- Issue 026 was archived at
+  `docs/agents/issues/done/20260909-026-classification-explanation-fidelity.md`
+  and removed from the active registry; issue 027 is now unblocked.
+- Verification: the focused classification suite passed with 9 tests and
+  `npm run typecheck` passed. The classification capability remains
+  `specified` until the final bilingual workspace issue and grouped human
+  review are complete.
+
+**Issue 027 implementation**: The bilingual classification workspace was
+implemented and is awaiting its one grouped human-review gate.
+
+- The full analysis path now renders the classification result in both
+  localized workspaces, with families first, candidate comparisons second,
+  separate composition/process/overall similarity, confidence, coverage,
+  maturity, diagnostics, recovery guidance, and expandable explanation
+  evidence.
+- Editing the Formula or Process clears the prior classification result, and
+  composition-only analysis does not silently claim a process/type result.
+- `npm test` (75 tests), `npm run lint`, and `npm run typecheck` passed. Astro
+  build/static-route verification remains deferred because the user manages
+  the local Astro preview; existing `dist/` output is intentionally stale.
+- The active registry now marks issue 027 `awaiting-human-review`. No separate
+  human reviews are requested for issues 023–026.
+
+**2026-09-09 — Issue 027 closeout**: The user approved the grouped visual
+review for the bilingual classification workspace. Issue 027 was archived at
+`docs/agents/issues/done/20260910-027-bilingual-classification-workspace.md`
+and removed from the active registry. The classification capability moved from
+`specified` to `implemented`. Its presentation now limits family memberships
+and prototype candidates to the eight most relevant entries while retaining
+the full result for calculation and explanation. The user-managed Astro
+static-route verification remains explicitly deferred against the stale
+`dist/` output under the project's `when-supported` policy.
+
+The Formula Analysis Workspace roll-up moved from `specified` to `implemented`
+because all four structural children are now implemented. Current effective
+capability totals are `foggy: 1`, `bounded: 0`, `specified: 3`, and
+`implemented: 6`. Validation and Calibration is the only remaining foggy
+frontier.

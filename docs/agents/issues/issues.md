@@ -5,4 +5,9 @@
 
 # Current Max Issue ID
 
-007
+027
+
+## Active Issues
+
+| # | Title | Category | Owning Capability | Artifact Root | Issue File | State | Blocked by |
+|---|---|---|---|---|---|---|---|
