@@ -617,3 +617,15 @@ because all four structural children are now implemented. Current effective
 capability totals are `foggy: 1`, `bounded: 0`, `specified: 3`, and
 `implemented: 6`. Validation and Calibration is the only remaining foggy
 frontier.
+
+**2026-09-10 — Next implementation frontier**: Following the approved closeout
+of issue 027 and the commit `ea242ed`, the existing OKF map was refreshed for
+implementation-target selection. State-based routing keeps the foggy
+Validation and Calibration capability on a separate clarification track; its
+dataset scope, source tiers, collection ownership, storage, curation, and
+acceptance evidence are not delivery-specified. The next implementation-ready
+node is the specified Interactive Formula Exploration capability. Its exact
+artifact set and readiness review are clean, and the application synthesis
+gate passes with no product or application-architecture change. A proposed
+issue breakdown is being presented for approval; no issue files or `issues:`
+write-back are created before approval.

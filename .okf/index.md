@@ -47,3 +47,9 @@ eight-item presentation limit for classification lists is implemented as a UI
 policy while the full classifier result remains available to the calculation
 layer. Validation and Calibration remains foggy and requires a separate
 planning pass before it can enter delivery slicing.
+
+The next implementation-ready frontier is Interactive Formula Exploration. Its
+exact artifact set is complete and clean, and it can extend the implemented
+formula-analysis journey with browser-side counterfactual comparisons without
+adding a backend or persistence boundary. A delivery slice is being presented
+for user approval; no issue references are written until that approval.

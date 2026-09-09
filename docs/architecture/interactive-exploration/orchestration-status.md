@@ -27,5 +27,13 @@ Artifact impact: capability truth changed; product and cross-capability
 architecture truth have no semantic change, and the root source link is
 refreshed. No delivery issue was created.
 
-Next action: if delivery is requested, slice this capability from the exact
-artifact set under the root verification policy.
+Next implementation frontier: this specified capability is ready for delivery
+slicing. The application synthesis gate is current; the existing static
+Astro/Svelte browser boundary, bilingual route policy, and in-memory state
+policy remain unchanged. A proposed issue breakdown is being presented for
+user approval before issue files and node `issues:` references are written.
+
+Validation and Calibration remains foggy because its dataset scope, source
+tiers, collection ownership, storage, curation, and acceptance evidence are
+still open. That separate planning frontier does not block this deterministic
+counterfactual UI slice.
