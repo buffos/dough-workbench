@@ -37,7 +37,7 @@
     position: relative;
     display: inline-flex;
     max-width: 100%;
-    align-items: baseline;
+    align-items: flex-end;
     gap: 0.28rem;
     color: inherit;
     font: inherit;
@@ -61,7 +61,6 @@
   .field-help-trigger {
     display: inline-grid;
     flex: 0 0 auto;
-    align-self: flex-end;
     width: 1rem;
     height: 1rem;
     padding: 0;

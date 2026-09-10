@@ -11,10 +11,24 @@
     noneDraftValue,
     unknownDraftValue,
   } from '../lib/domain/normalization';
-  import { calculateIntrinsicMetricsDraft, classifyFormulaDraft, evaluateEffectiveBehaviorDraft, normalizeFormulaDraft, normalizeProcessDraft, prepareAnalysisInputDraft } from '../lib/application/formula-workspace';
+  import {
+    applyExplorationPatchDraft,
+    calculateIntrinsicMetricsDraft,
+    captureExplorationBaselineDraft,
+    classifyFormulaDraft,
+    createExplorationPatchDraft,
+    createExplorationScenarioDraft,
+    evaluateEffectiveBehaviorDraft,
+    evaluateExplorationScenarioDraft,
+    normalizeFormulaDraft,
+    normalizeProcessDraft,
+    prepareAnalysisInputDraft,
+    resetExplorationDraft,
+  } from '../lib/application/formula-workspace';
   import IntrinsicMetricsPanel from './IntrinsicMetricsPanel.svelte';
   import EffectiveBehaviorPanel from './EffectiveBehaviorPanel.svelte';
   import ClassificationPanel from './ClassificationPanel.svelte';
+  import ExplorationPanel from './ExplorationPanel.svelte';
   import {
     PROCESS_ADDITION_ACTIONS,
     PROCESS_FIELD_DESCRIPTORS,
@@ -43,6 +57,11 @@
   import type { AnalysisInputOutcome, AnalysisPath, FormulaProcessReference } from '../lib/domain/handoff';
   import type { EffectiveAnalysisResult } from '../lib/domain/effective';
   import type { ClassificationResult } from '../lib/domain/classification';
+  import type {
+    ComparisonResult,
+    CounterfactualScenario,
+    ExplorationDiagnostic,
+  } from '../lib/domain/exploration';
   import { localeHref, t, type Locale } from '../lib/i18n/messages';
   import {
     clearDraft,
@@ -81,6 +100,10 @@
   let requestedAnalysisPath: AnalysisPath = 'full';
   let hydrated = false;
   let explanationOpen = false;
+  let explorationScenario: CounterfactualScenario | null = null;
+  let explorationComparison: ComparisonResult | null = null;
+  let explorationPatchError: ExplorationDiagnostic | null = null;
+  let explorationBaselineError: ExplorationDiagnostic | null = null;
 
   $: if (hydrated) {
     persistDraft(draft);
@@ -113,6 +136,7 @@
     effectiveResult = null;
     classificationResult = null;
     explanationOpen = false;
+    clearExplorationState();
   }
 
   function touchProcess(next: ProcessDraft): void {
@@ -121,6 +145,14 @@
     handoffResult = null;
     effectiveResult = null;
     classificationResult = null;
+    clearExplorationState();
+  }
+
+  function clearExplorationState(): void {
+    explorationScenario = null;
+    explorationComparison = null;
+    explorationPatchError = null;
+    explorationBaselineError = null;
   }
 
   function createId(prefix: string): string {
@@ -553,6 +585,71 @@
         })()
       : null;
     if (handoffResult.data) lastValidHandoff = handoffResult.data;
+    clearExplorationState();
+  }
+
+  function startExploration(): void {
+    const capture = captureExplorationBaselineDraft(draft, processDraft, {
+      requestedPath: 'full',
+      expectedFormulaRevision: draft.revision,
+      expectedProcessRevision: processDraft.revision,
+    });
+    if (!capture.baseline) {
+      explorationBaselineError = {
+        code: 'baseline_unavailable',
+        severity: 'error',
+        path: 'analysis',
+        messageKey: 'exploration.diagnostic.baselineUnavailable',
+        resolutionKey: 'exploration.recovery.baselineUnavailable',
+        parameters: {},
+      };
+      return;
+    }
+    explorationScenario = createExplorationScenarioDraft(capture.baseline);
+    explorationComparison = null;
+    explorationPatchError = null;
+    explorationBaselineError = null;
+  }
+
+  function addExplorationPatch(input: import('../lib/domain/exploration').PatchInput): void {
+    if (!explorationScenario) return;
+    const built = createExplorationPatchDraft(explorationScenario, input);
+    if (!built.patch) {
+      explorationPatchError = built.diagnostic;
+      return;
+    }
+    const applied = applyExplorationPatchDraft(explorationScenario, built.patch);
+    if (applied.diagnostic) {
+      explorationPatchError = applied.diagnostic;
+      return;
+    }
+    explorationScenario = applied.scenario;
+    explorationComparison = null;
+    explorationPatchError = null;
+  }
+
+  function evaluateExploration(): void {
+    if (!explorationScenario) return;
+    explorationComparison = evaluateExplorationScenarioDraft(explorationScenario);
+    explorationScenario = {
+      ...explorationScenario,
+      status: explorationComparison.outcome === 'rejected' || explorationComparison.outcome === 'conflict' ? 'rejected' : 'evaluated',
+    };
+  }
+
+  function resetExploration(): void {
+    if (!explorationScenario) return;
+    explorationScenario = resetExplorationDraft(explorationScenario);
+    explorationComparison = null;
+    explorationPatchError = null;
+  }
+
+  function formulaFlourLabelById(id: string): string {
+    return resultFlourDisplayName(id, id);
+  }
+
+  function formulaIngredientLabelById(id: string): string {
+    return resultIngredientDisplayName(id, id);
   }
 
   function resetDraft(): void {
@@ -570,6 +667,7 @@
     lastValidHandoff = null;
     requestedAnalysisPath = 'full';
     explanationOpen = false;
+    clearExplorationState();
     hydrated = true;
   }
 
@@ -1484,6 +1582,23 @@
         {#if classificationResult}
           <ClassificationPanel locale={locale} classification={classificationResult} />
         {/if}
+
+        <ExplorationPanel
+          locale={locale}
+          formula={draft}
+          process={processDraft}
+          analysis={handoffResult ? { handoff: handoffResult, intrinsic: intrinsicResult, effective: effectiveResult, classification: classificationResult } : null}
+          scenario={explorationScenario}
+          comparison={explorationComparison}
+          patchError={explorationPatchError}
+          baselineError={explorationBaselineError}
+          formulaFlourLabel={formulaFlourLabelById}
+          formulaIngredientLabel={formulaIngredientLabelById}
+          onStart={startExploration}
+          onAddPatch={addExplorationPatch}
+          onEvaluate={evaluateExploration}
+          onReset={resetExploration}
+        />
       </section>
     </div>
   </main>

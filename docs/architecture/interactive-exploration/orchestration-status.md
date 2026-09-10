@@ -1,6 +1,6 @@
 # Interactive Formula Exploration — Orchestration Status
 
-State: `specified`
+State: `implemented`
 
 The capability owns the browser-side counterfactual engine and UI that
 recomputes deterministic analysis when Formula or Process values change.
@@ -27,11 +27,15 @@ Artifact impact: capability truth changed; product and cross-capability
 architecture truth have no semantic change, and the root source link is
 refreshed. No delivery issue was created.
 
-Next implementation frontier: this specified capability is ready for delivery
-slicing. The application synthesis gate is current; the existing static
-Astro/Svelte browser boundary, bilingual route policy, and in-memory state
-policy remain unchanged. A proposed issue breakdown is being presented for
-user approval before issue files and node `issues:` references are written.
+Delivery result: the application synthesis gate remains current; the existing
+static Astro/Svelte browser boundary, bilingual route policy, and in-memory
+state policy remain unchanged. Issues 028–032 are implemented and archived in
+dependency order after the grouped English/Greek visual review was approved on
+2026-09-10. The capability is now `implemented` with no active delivery issue.
+
+The next planning frontier is Validation and Calibration. It remains foggy
+because its dataset scope, source tiers, collection ownership, storage,
+curation, and acceptance evidence are still open.
 
 Validation and Calibration remains foggy because its dataset scope, source
 tiers, collection ownership, storage, curation, and acceptance evidence are

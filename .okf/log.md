@@ -629,3 +629,70 @@ artifact set and readiness review are clean, and the application synthesis
 gate passes with no product or application-architecture change. A proposed
 issue breakdown is being presented for approval; no issue files or `issues:`
 write-back are created before approval.
+
+**2026-09-10 — Interactive Formula Exploration issue slicing**: The user
+approved the five-issue delivery breakdown. Issues 028–032 were created in
+dependency order under docs/agents/issues/pending/ and registered on the
+Interactive Formula Exploration capability node. The batch keeps all human
+visual review at the end: issue 032 carries the grouped review gate after the
+complete English and Greek journey is implemented. The node remains
+specified; capability totals are unchanged at foggy: 1, bounded: 0,
+specified: 3, and implemented: 6. Application PRD and architecture summary
+have no semantic impact because this is delivery within an existing
+specified browser-only capability.
+
+**2026-09-10 — Issue 028 completion**: The immutable exploration baseline,
+copy-on-write scenario shell, typed Formula/Process patch contract, canonical
+path validation, revision checks, and rejected-patch recovery were implemented
+and verified by the exploration unit suite, lint, typecheck, and diff checks.
+Issue 028 was archived at
+`docs/agents/issues/done/20260910-028-counterfactual-baseline-and-patch-contract.md`
+and removed from the active registry; issues 029 and 032 were unblocked. The
+Interactive Formula Exploration capability remains `specified` with issues
+029–032 active. No product or application-architecture synchronization was
+required, and no individual human review was performed.
+
+**2026-09-10 — Issue 029 completion**: Formula-owned counterfactual paths for
+mass, role, composition state/value, and availability now recompute through
+the existing deterministic analysis boundary on an isolated copy. Process
+snapshots and Unknown evidence remain unchanged unless explicitly patched.
+Issue 029 was archived at
+`docs/agents/issues/done/20260910-029-formula-counterfactual-recomputation.md`
+and removed from the active registry; issues 030–032 were unblocked. The
+Interactive Formula Exploration capability remains `specified`. Verification
+passed with `npm test`, `npm run lint`, `npm run typecheck`, and
+`git diff --check`; no individual human review was performed.
+
+**2026-09-10 — Issue 032 closeout**: The bilingual counterfactual workspace,
+target-selector explanation hint, isolated Formula/Process scenario editing,
+comparison, recovery, and reset flow completed the Interactive Formula
+Exploration delivery slice. The grouped English/Greek visual review was
+approved by the user, including responsive, keyboard, focus, accessible-label,
+and contrast checks. Issue 032 was archived at
+`docs/agents/issues/done/20260910-032-bilingual-exploration-workspace-and-reset.md`
+and removed from the active registry. The capability moved from `specified` to
+`implemented`; no product or application-architecture synchronization was
+required. Verification passed with `npm test`, `npm run lint`,
+`npm run typecheck`, `git diff --check`, and strict OKF validation.
+
+**2026-09-10 — Issue 031 completion**: Counterfactual comparisons now expose
+semantic changed/unchanged/unavailable metrics, availability changes, paired
+Formula/Process evidence, limitations, and explicit rejected/conflict recovery
+for stale, foreign, invalid, partial, and model-version-mismatch results.
+Issue 031 was archived at
+`docs/agents/issues/done/20260910-031-counterfactual-comparison-and-recovery.md`
+and removed from the active registry; issue 032 was unblocked. The
+Interactive Formula Exploration capability remains `specified` because issue
+032 owns the final bilingual UI and grouped human review. Verification passed
+with `npm test`, `npm run lint`, `npm run typecheck`, and `git diff --check`;
+no individual human review was performed.
+
+**2026-09-10 — Issue 030 completion**: Process-owned counterfactuals now cover
+descriptor-backed mixing, aeration, addition, fermentation, lamination,
+thermal, and geometry values, with Formula/Process owner preservation and
+intrinsic invariance for Process-only comparisons. Issue 030 was archived at
+`docs/agents/issues/done/20260910-030-process-and-paired-counterfactuals.md`
+and removed from the active registry; issues 031–032 were unblocked. The
+Interactive Formula Exploration capability remains `specified`. Verification
+passed with `npm test`, `npm run lint`, `npm run typecheck`, and
+`git diff --check`; no individual human review was performed.

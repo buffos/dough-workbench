@@ -30,8 +30,8 @@ sets and moved to `specified`; the Formula Analysis Workspace roll-up is now
 `implemented` because all four structural children are implemented.
 Validation and Calibration remains the only foggy capability.
 
-Current capability totals: `foggy: 1`, `bounded: 0`, `specified: 3`,
-`implemented: 6`. Validation and Calibration remains the only foggy planning
+Current capability totals: `foggy: 1`, `bounded: 0`, `specified: 2`,
+`implemented: 7`. Validation and Calibration remains the only foggy planning
 capability. The Composition and Intrinsic Metrics delivery frontier is
 implemented; issues 008–012 are archived after grouped human review and no
 active delivery issue remains under that capability.
@@ -48,8 +48,10 @@ policy while the full classifier result remains available to the calculation
 layer. Validation and Calibration remains foggy and requires a separate
 planning pass before it can enter delivery slicing.
 
-The next implementation-ready frontier is Interactive Formula Exploration. Its
-exact artifact set is complete and clean, and it can extend the implemented
-formula-analysis journey with browser-side counterfactual comparisons without
-adding a backend or persistence boundary. A delivery slice is being presented
-for user approval; no issue references are written until that approval.
+Interactive Formula Exploration is implemented. Its exact artifact set extends
+the formula-analysis journey with browser-side counterfactual comparisons
+without adding a backend or persistence boundary. Issues 028–032 are archived
+in dependency order after the grouped bilingual visual review was approved on
+2026-09-10. The next planning frontier is Validation and Calibration, which
+remains foggy and requires a separate clarification pass before delivery
+slicing.
