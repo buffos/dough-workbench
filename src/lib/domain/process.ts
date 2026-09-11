@@ -1,4 +1,4 @@
-import type { DraftValueState, ValueState } from './types';
+import type { DraftValueState, ReferenceDraftProvenance, ValueState } from './types';
 
 export const PROCESS_NORMALIZATION_POLICY = 'process-normalization-v1';
 export const PROCESS_MODEL_VERSION = 'process-input-v0.2';
@@ -22,6 +22,7 @@ export interface ProcessDraft {
   processId: string;
   formulaId: string;
   revision: number;
+  sourceReference?: ReferenceDraftProvenance;
   mixing: {
     method: DraftValueState;
     intensity: DraftValueState;

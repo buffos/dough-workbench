@@ -5,7 +5,7 @@ import type { PrototypeImportance, PrototypeQualitativeBand } from '../../lib/do
  * vocabulary for the initial matcher, not calibrated physical thresholds.
  */
 export const CLASSIFICATION_FEATURE_SET_VERSION = 'classification-feature-set-v1';
-export const CLASSIFICATION_SEED_MODEL_VERSION = 'classification-seed-v1';
+export const CLASSIFICATION_SEED_MODEL_VERSION = 'classification-seed-v2';
 export const CLASSIFICATION_BAND_POLICY_VERSION = 'classification-band-policy-v1';
 export const CLASSIFICATION_SCORE_POLICY_VERSION = 'classification-score-policy-v1';
 

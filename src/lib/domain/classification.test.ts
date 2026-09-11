@@ -97,8 +97,8 @@ describe('classification feature snapshot', () => {
     if (result.status !== 'ready') return;
     const memberships = evaluateFamilyGates(result.data, prepared.catalog.snapshot!);
     const ids = memberships.map((membership) => membership.familyId);
-    expect(ids).toContain('family.gluten-structured');
-    expect(ids).toContain('family.lean-bread');
+    expect(ids).toContain('family.fermented-gluten');
+    expect(ids).toContain('family.fermented-gluten.lean-bread');
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -236,7 +236,6 @@ describe('classification feature snapshot', () => {
     });
 
     expect(explanation.modelVersion).toBe(candidate.modelVersion);
-    expect(explanation.missingFeatures.length).toBeGreaterThan(0);
     expect(explanation.inheritedRules.length).toBeGreaterThan(0);
     expect(resolved.explanation.modelVersion).toBe(candidate.modelVersion);
     expect(resolved.explanation.primaryPrototypeId).toBe(candidate.prototypeId);

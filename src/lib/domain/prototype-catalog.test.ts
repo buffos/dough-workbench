@@ -157,14 +157,20 @@ describe('high-confidence prototype seed catalog', () => {
     const familyIds = resolved.snapshot.definitions.filter((definition) => definition.kind === 'family').map((definition) => definition.id);
     const prototypeIds = resolved.snapshot.definitions.filter((definition) => definition.kind === 'prototype').map((definition) => definition.id);
     expect(familyIds).toEqual(expect.arrayContaining([
-      'family.gluten-structured',
-      'family.lean-bread',
-      'family.enriched-yeast-dough',
-      'family.laminated-yeast-dough',
-      'family.fat-shortened',
-      'family.batter-systems',
-      'family.foam-structured-batters',
-      'family.steam-dominant',
+      'family.fermented-gluten',
+      'family.fermented-gluten.lean-bread',
+      'family.unleavened-gluten',
+      'family.laminated-gluten',
+      'family.short-fat-shortened',
+      'family.cookie-biscuit',
+      'family.chemical-cake',
+      'family.foam-cake',
+      'family.quick-bread',
+      'family.chemical-pourable',
+      'family.unleavened-pourable',
+      'family.fermented-batter',
+      'family.steam-paste',
+      'family.starch-dominant',
     ]));
     expect(prototypeIds).toEqual(expect.arrayContaining([
       'prototype.lean-bread',
@@ -177,6 +183,8 @@ describe('high-confidence prototype seed catalog', () => {
       'prototype.croissant',
     ]));
     expect(resolved.snapshot.definitions.every((definition) => definition.confidenceTier === 'high')).toBe(true);
+    expect(resolved.snapshot.byId['family.fermented-gluten'].provenance.sourceId)
+      .toBe('user-provided canonical structural taxonomy');
     expect(resolved.snapshot.byId['prototype.choux'].structuralConstraints.some((item) => item.id === 'pre_cooked_starch')).toBe(true);
     expect(resolved.snapshot.byId['prototype.croissant'].structuralConstraints.some((item) => item.id === 'lamination')).toBe(true);
   });
@@ -184,15 +192,15 @@ describe('high-confidence prototype seed catalog', () => {
   it('keeps later catalog loading independent from an existing resolved snapshot', () => {
     const loader = createPrototypeCatalogLoader([
       PROTOTYPE_CATALOG_INPUT,
-      { ...PROTOTYPE_CATALOG_INPUT, version: 'prototype-catalog-v2' },
+      { ...PROTOTYPE_CATALOG_INPUT, version: 'prototype-catalog-v3' },
     ]);
     const first = loader(PROTOTYPE_CATALOG_VERSION);
-    const second = loader('prototype-catalog-v2');
+    const second = loader('prototype-catalog-v3');
     expect(first.status).toBe('available');
     expect(second.status).toBe('available');
     if (first.status !== 'available' || second.status !== 'available') return;
     expect(first.snapshot.reference.version).toBe(PROTOTYPE_CATALOG_VERSION);
-    expect(second.snapshot.reference.version).toBe('prototype-catalog-v2');
+    expect(second.snapshot.reference.version).toBe('prototype-catalog-v3');
     expect(first.snapshot.definitions).toEqual(second.snapshot.definitions);
     expect(first.snapshot).not.toBe(second.snapshot);
   });

@@ -32,6 +32,7 @@
     <nav class="topnav" aria-label={locale === 'el' ? 'Πλοήγηση' : 'Site navigation'}>
       <a class="workspace-link" href={workspaceHref}>{content.backToWorkspace}</a>
       <a class="catalog-link" href={`${workspaceHref}catalog/`}>{t(locale, 'nav.catalog')}</a>
+      <a class="catalog-link" href={`${workspaceHref}theory/`}>{t(locale, 'nav.theory')}</a>
       <span class="nav-current">{content.eyebrow.split(' & ')[0]}</span>
       <span class="nav-divider" aria-hidden="true"></span>
       <a class="language-link" href={languageHref}>

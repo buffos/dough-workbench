@@ -9,6 +9,22 @@ import type { IntrinsicAnalysisResult } from '../domain/types';
 import { evaluateEffectiveBehavior } from '../domain/effective';
 import type { EffectiveAnalysisResult } from '../domain/effective';
 import type { FormulaProcessReference } from '../domain/handoff';
+import {
+  browseReferenceFormulas,
+  resolveReferenceFormula,
+  resolveDatasetRelease,
+  type DatasetReleaseRegistry,
+  type ReferenceBrowseQuery,
+  type ReferenceBrowseResult,
+  type ReferenceResolutionResult,
+  type DatasetReleaseResolution,
+} from '../domain/dataset';
+import {
+  createLocalDraftFromBlank,
+  createLocalDraftFromReference,
+  type WorkspaceStartResult,
+} from '../domain/reference-start';
+import { REFERENCE_DATASET_REGISTRY } from '../../data/reference/release';
 import { buildClassificationFeatureSet, classifyFormula } from '../domain/classification';
 import type { ClassificationFeatureSetResult, ClassificationResult } from '../domain/classification';
 import { loadPrototypeCatalog } from '../../data/prototypes/catalog';
@@ -87,6 +103,45 @@ export function classifyFormulaDraft(
   catalog: PrototypeCatalogLoadResult = loadPrototypeCatalog(),
 ): ClassificationResult {
   return classifyFormula({ reference, intrinsic, effective, catalog });
+}
+
+export function resolveReferenceRelease(
+  releaseId?: string,
+  registry: DatasetReleaseRegistry = REFERENCE_DATASET_REGISTRY,
+): DatasetReleaseResolution {
+  return resolveDatasetRelease(registry, releaseId);
+}
+
+export function browseReferenceFormulaDrafts(
+  query: ReferenceBrowseQuery,
+  registry: DatasetReleaseRegistry = REFERENCE_DATASET_REGISTRY,
+): ReferenceBrowseResult {
+  return browseReferenceFormulas(registry, query);
+}
+
+export function resolveReferenceFormulaDraft(
+  releaseId: string,
+  recordId: string,
+  registry: DatasetReleaseRegistry = REFERENCE_DATASET_REGISTRY,
+): ReferenceResolutionResult {
+  return resolveReferenceFormula(registry, releaseId, recordId);
+}
+
+export function startFormulaWorkspaceFromReference(
+  record: Parameters<typeof createLocalDraftFromReference>[0],
+  currentFormula?: FormulaDraft,
+  currentProcess?: ProcessDraft,
+  confirmReplacement = false,
+): WorkspaceStartResult {
+  return createLocalDraftFromReference(record, currentFormula, currentProcess, confirmReplacement);
+}
+
+export function startFormulaWorkspaceFromBlank(
+  currentFormula?: FormulaDraft,
+  currentProcess?: ProcessDraft,
+  confirmReplacement = false,
+): WorkspaceStartResult {
+  return createLocalDraftFromBlank(currentFormula, currentProcess, confirmReplacement);
 }
 
 export interface ExplorationBaselineCapture {

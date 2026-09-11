@@ -14,6 +14,7 @@ import {
   type PrototypePresenceTarget,
   type PrototypeQualitativeBand,
 } from '../../lib/domain/prototype-catalog';
+import { STRUCTURAL_FAMILY_NODES } from '../../lib/domain/structural-taxonomy';
 
 const label = (en: string, el: string): PrototypeLocalizedLabel => ({ en, el });
 const band = (value: PrototypeQualitativeBand): PrototypeFeatureTarget => ({ kind: 'band', value });
@@ -41,10 +42,15 @@ function policy(id: string): PrototypeMatcherPolicy {
   };
 }
 
-function provenance(en: string, el: string): PrototypeProvenance {
+function provenance(
+  en: string,
+  el: string,
+  sourceId = 'exploration/Initial prototype catalog.md',
+  sourceVersion = 'v0.1',
+): PrototypeProvenance {
   return {
-    sourceId: 'exploration/Initial prototype catalog.md',
-    sourceVersion: 'v0.1',
+    sourceId,
+    sourceVersion,
     method: 'expert-seed',
     note: label(en, el),
   };
@@ -63,6 +69,8 @@ interface DefinitionOptions {
   matcherPolicyId?: string;
   noteEn?: string;
   noteEl?: string;
+  provenanceSourceId?: string;
+  provenanceSourceVersion?: string;
 }
 
 function definition(options: DefinitionOptions): PrototypeDefinition {
@@ -81,128 +89,261 @@ function definition(options: DefinitionOptions): PrototypeDefinition {
     provenance: provenance(
       options.noteEn ?? 'Initial expert estimate based on the initial dough-type catalog.',
       options.noteEl ?? 'Αρχική εκτίμηση ειδικών, βασισμένη στον αρχικό κατάλογο τύπων ζύμης.',
+      options.provenanceSourceId,
+      options.provenanceSourceVersion,
     ),
   };
 }
 
-const DEFINITIONS: readonly PrototypeDefinition[] = [
-  definition({
-    id: 'family.gluten-structured',
-    kind: 'family',
-    en: 'Gluten-structured dough',
-    el: 'Ζύμη με δομή γλουτένης',
+interface FamilyRule {
+  structuralFeatures?: readonly PrototypeFeature[];
+  structuralConstraints?: readonly PrototypeFeature[];
+}
+
+const FAMILY_RULES: Readonly<Record<string, FamilyRule>> = {
+  'family.fermented-gluten': {
     structuralFeatures: [
       feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', band('high'), 'critical'),
-      feature('fluidity', 'Fluidity', 'Ρευστότητα', bandRange('low', 'medium'), 'medium'),
+      feature('enrichment', 'Enrichment', 'Εμπλουτισμός', bandRange('very_low', 'high'), 'medium'),
     ],
     structuralConstraints: [
-      feature('gluten_network', 'Gluten network', 'Δίκτυο γλουτένης', presence('required'), 'critical'),
+      feature('gluten_structure', 'Gluten structure', 'Δομή γλουτένης', presence('required'), 'critical'),
+      feature('fermentation', 'Fermentation', 'Ζύμωση', presence('present'), 'critical'),
     ],
-  }),
-  definition({
-    id: 'family.lean-bread',
-    kind: 'family',
-    en: 'Lean bread',
-    el: 'Λιτή ζύμη ψωμιού',
-    parentIds: ['family.gluten-structured'],
+  },
+  'family.fermented-gluten.stiff': {
+    structuralFeatures: [feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('very_low', 'low'), 'high')],
+  },
+  'family.fermented-gluten.lean-bread': {
     structuralFeatures: [
       feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('medium', 'high'), 'high'),
       feature('enrichment', 'Enrichment', 'Εμπλουτισμός', band('very_low'), 'critical'),
     ],
+  },
+  'family.fermented-gluten.high-hydration': {
+    structuralFeatures: [feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('high', 'very_high'), 'critical')],
+  },
+  'family.fermented-gluten.flat': {
+    structuralFeatures: [feature('thermal_geometry', 'Flat geometry', 'Επίπεδη γεωμετρία', compatibility('flatbread'), 'high')],
+  },
+  'family.fermented-gluten.soft-enriched': {
+    structuralFeatures: [feature('enrichment', 'Enrichment', 'Εμπλουτισμός', bandRange('low', 'medium'), 'critical')],
+  },
+  'family.fermented-gluten.rich-enriched': {
+    structuralFeatures: [feature('enrichment', 'Enrichment', 'Εμπλουτισμός', bandRange('high', 'very_high'), 'critical')],
+  },
+  'family.unleavened-gluten': {
+    structuralFeatures: [feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('medium', 'high'), 'critical')],
     structuralConstraints: [
-      feature('fermentation', 'Fermentation', 'Ζύμωση', presence('present'), 'critical'),
-      feature('yeast_or_sourdough', 'Yeast or sourdough', 'Μαγιά ή προζύμι', presence('present'), 'critical'),
+      feature('gluten_structure', 'Gluten structure', 'Δομή γλουτένης', presence('required'), 'critical'),
+      feature('fermentation', 'Fermentation', 'Ζύμωση', presence('absent'), 'critical'),
     ],
-  }),
-  definition({
-    id: 'family.enriched-yeast-dough',
-    kind: 'family',
-    en: 'Enriched yeast dough',
-    el: 'Εμπλουτισμένη ζύμη με μαγιά',
-    parentIds: ['family.gluten-structured'],
+  },
+  'family.unleavened-gluten.pasta-noodle': {
+    structuralFeatures: [feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('very_low', 'medium'), 'high')],
+  },
+  'family.unleavened-gluten.wrapper-dumpling': {
+    structuralFeatures: [feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('low', 'medium'), 'high')],
+  },
+  'family.unleavened-gluten.flatbread': {
+    structuralFeatures: [feature('thermal_geometry', 'Flat geometry', 'Επίπεδη γεωμετρία', compatibility('flatbread'), 'high')],
+  },
+  'family.laminated-gluten': {
     structuralFeatures: [
-      feature('enrichment', 'Enrichment', 'Εμπλουτισμός', bandRange('medium', 'high'), 'critical'),
-      feature('fluidity', 'Fluidity', 'Ρευστότητα', bandRange('low', 'medium'), 'medium'),
-    ],
-    structuralConstraints: [
-      feature('yeast_fermentation', 'Yeast fermentation', 'Ζύμωση με μαγιά', presence('present'), 'critical'),
-    ],
-  }),
-  definition({
-    id: 'family.laminated-yeast-dough',
-    kind: 'family',
-    en: 'Laminated yeast dough',
-    el: 'Φυλλοποιημένη ζύμη με μαγιά',
-    parentIds: ['family.gluten-structured'],
-    structuralFeatures: [
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', band('high'), 'critical'),
       feature('layer_integrity', 'Layer integrity', 'Ακεραιότητα στρώσεων', band('high'), 'high'),
       feature('steam_potential', 'Steam potential', 'Δυνατότητα ατμού', band('high'), 'high'),
     ],
     structuralConstraints: [
+      feature('gluten_structure', 'Gluten structure', 'Δομή γλουτένης', presence('required'), 'critical'),
       feature('lamination', 'Lamination', 'Φυλλοποίηση', presence('required'), 'critical'),
       feature('layer_fat', 'Layer fat', 'Λίπος στρώσης', presence('required'), 'critical'),
     ],
-  }),
-  definition({
-    id: 'family.fat-shortened',
-    kind: 'family',
-    en: 'Fat-shortened system',
-    el: 'Σύστημα με υψηλό λίπος και περιορισμένη δομή',
+  },
+  'family.laminated-gluten.fermented': {
+    structuralConstraints: [feature('fermentation', 'Fermentation', 'Ζύμωση', presence('present'), 'critical')],
+  },
+  'family.laminated-gluten.unfermented': {
+    structuralConstraints: [feature('fermentation', 'Fermentation', 'Ζύμωση', presence('absent'), 'critical')],
+  },
+  'family.short-fat-shortened': {
     structuralFeatures: [
       feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('high', 'very_high'), 'critical'),
       feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('very_low', 'low'), 'critical'),
       feature('fluidity', 'Fluidity', 'Ρευστότητα', band('very_low'), 'high'),
     ],
-    structuralConstraints: [
-      feature('suppressed_gluten', 'Suppressed gluten development', 'Περιορισμένη ανάπτυξη γλουτένης', presence('required'), 'critical'),
-    ],
-  }),
-  definition({
-    id: 'family.batter-systems',
-    kind: 'family',
-    en: 'Batter system',
-    el: 'Σύστημα batter',
+    structuralConstraints: [feature('suppressed_gluten', 'Suppressed gluten development', 'Περιορισμένη ανάπτυξη γλουτένης', presence('required'), 'critical')],
+  },
+  'family.short-fat-shortened.basic-shortcrust': {
+    structuralFeatures: [feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', bandRange('very_low', 'low'), 'medium')],
+  },
+  'family.short-fat-shortened.sweet-shortcrust': {
+    structuralFeatures: [feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', bandRange('medium', 'high'), 'high')],
+  },
+  'family.short-fat-shortened.sandy-sable': {
+    structuralFeatures: [feature('fat_load', 'Fat load', 'Φορτίο λίπους', band('high'), 'high')],
+  },
+  'family.short-fat-shortened.shortbread': {
     structuralFeatures: [
-      feature('fluidity', 'Fluidity', 'Ρευστότητα', bandRange('medium', 'very_high'), 'high'),
-      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', band('low'), 'critical'),
+      feature('fat_load', 'Fat load', 'Φορτίο λίπους', band('very_high'), 'critical'),
+      feature('water_load', 'Water load', 'Φορτίο νερού', band('very_low'), 'critical'),
     ],
-    structuralConstraints: [
-      feature('starch_or_protein_set', 'Starch or protein setting', 'Στήσιμο από άμυλο ή πρωτεΐνη', presence('required'), 'critical'),
-    ],
-  }),
-  definition({
-    id: 'family.foam-structured-batters',
-    kind: 'family',
-    en: 'Foam-structured batter',
-    el: 'Batter με δομή αφρού',
-    parentIds: ['family.batter-systems'],
+  },
+  'family.cookie-biscuit': {
     structuralFeatures: [
-      feature('egg_protein', 'Egg protein', 'Πρωτεΐνη αυγού', band('high'), 'high'),
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('very_low', 'low'), 'critical'),
+      feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('medium', 'very_high'), 'high'),
+      feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', bandRange('medium', 'very_high'), 'high'),
+    ],
+    structuralConstraints: [feature('shape_class', 'Cookie shape', 'Σχήμα μπισκότου', compatibility('cookie'), 'high')],
+  },
+  'family.chemical-cake': {
+    structuralFeatures: [
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('very_low', 'low'), 'critical'),
+      feature('setting_capacity', 'Setting capacity', 'Ικανότητα στησίματος', bandRange('medium', 'high'), 'critical'),
+    ],
+    structuralConstraints: [feature('shape_class', 'Cake shape', 'Σχήμα κέικ', compatibility('cake', 'muffin'), 'high')],
+  },
+  'family.chemical-cake.butter': {
+    structuralFeatures: [feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('medium', 'high'), 'high')],
+  },
+  'family.chemical-cake.oil': {
+    structuralFeatures: [feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('medium', 'high'), 'high')],
+  },
+  'family.chemical-cake.high-ratio': {
+    structuralFeatures: [
+      feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', band('high'), 'high'),
+      feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('medium', 'high'), 'high'),
+    ],
+  },
+  'family.foam-cake': {
+    structuralFeatures: [
+      feature('egg_protein', 'Egg protein', 'Πρωτεΐνη αυγού', bandRange('high', 'very_high'), 'critical'),
+      feature('setting_capacity', 'Setting capacity', 'Ικανότητα στησίματος', bandRange('medium', 'high'), 'high'),
     ],
     structuralConstraints: [
+      feature('shape_class', 'Cake shape', 'Σχήμα κέικ', compatibility('cake'), 'high'),
       feature('mechanical_aeration', 'Mechanical aeration', 'Μηχανικός αερισμός', presence('required'), 'critical'),
     ],
-  }),
-  definition({
-    id: 'family.steam-dominant',
-    kind: 'family',
-    en: 'Steam-dominant system',
-    el: 'Σύστημα όπου κυριαρχεί ο ατμός',
+  },
+  'family.foam-cake.whole-egg': {
+    structuralFeatures: [feature('egg_solids', 'Egg solids', 'Στερεά αυγού', bandRange('medium', 'high'), 'high')],
+  },
+  'family.foam-cake.egg-white': {
+    structuralFeatures: [feature('egg_protein', 'Egg-white protein', 'Πρωτεΐνη ασπραδιού', band('very_high'), 'critical')],
+    structuralConstraints: [feature('egg_white_foam', 'Whipped egg-white foam', 'Αφρός χτυπημένου ασπραδιού', presence('required'), 'critical')],
+  },
+  'family.foam-cake.separated-egg': {
+    structuralFeatures: [feature('egg_protein', 'Egg protein', 'Πρωτεΐνη αυγού', band('high'), 'high')],
+  },
+  'family.foam-cake.hybrid': {
+    structuralFeatures: [feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('low', 'medium'), 'medium')],
+  },
+  'family.quick-bread': {
+    structuralFeatures: [
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('very_low', 'low'), 'critical'),
+      feature('setting_capacity', 'Setting capacity', 'Ικανότητα στησίματος', bandRange('medium', 'high'), 'high'),
+    ],
+    structuralConstraints: [feature('shape_class', 'Quick-bread shape', 'Σχήμα γρήγορου ψωμιού', compatibility('muffin', 'cake'), 'high')],
+  },
+  'family.quick-bread.muffin': {
+    structuralConstraints: [feature('shape_class', 'Muffin shape', 'Σχήμα muffin', compatibility('muffin'), 'critical')],
+  },
+  'family.quick-bread.quick-loaf': {
+    structuralConstraints: [feature('shape_class', 'Loaf shape', 'Σχήμα καρβελιού', compatibility('loaf'), 'high')],
+  },
+  'family.chemical-pourable': {
+    structuralFeatures: [
+      feature('fluidity', 'Fluidity', 'Ρευστότητα', bandRange('high', 'very_high'), 'critical'),
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', band('low'), 'critical'),
+    ],
+    structuralConstraints: [feature('pourable_batter', 'Pourable batter', 'Ρευστό μείγμα που χύνεται', presence('required'), 'critical')],
+  },
+  'family.chemical-pourable.pancake': {
+    structuralConstraints: [feature('shape_class', 'Pancake shape', 'Σχήμα pancake', compatibility('pancake'), 'high')],
+  },
+  'family.chemical-pourable.waffle': {
+    structuralConstraints: [feature('shape_class', 'Waffle geometry', 'Γεωμετρία waffle', compatibility('pancake'), 'medium')],
+  },
+  'family.chemical-pourable.fritter-coating': {
+    structuralConstraints: [feature('thermal_method', 'Frying or coating process', 'Τηγάνισμα ή διαδικασία επικάλυψης', compatibility('deep_fry'), 'high')],
+  },
+  'family.unleavened-pourable': {
+    structuralFeatures: [
+      feature('fluidity', 'Fluidity', 'Ρευστότητα', band('very_high'), 'critical'),
+      feature('setting_capacity', 'Setting capacity', 'Ικανότητα στησίματος', bandRange('medium', 'high'), 'high'),
+    ],
+    structuralConstraints: [
+      feature('pourable_batter', 'Pourable batter', 'Ρευστό μείγμα που χύνεται', presence('required'), 'critical'),
+      feature('fermentation', 'Fermentation', 'Ζύμωση', presence('absent'), 'high'),
+    ],
+  },
+  'family.unleavened-pourable.crepe': {
+    structuralConstraints: [feature('thermal_geometry', 'Very thin geometry', 'Πολύ λεπτή γεωμετρία', compatibility('thin_sheet', 'crepe'), 'critical')],
+  },
+  'family.fermented-batter': {
+    structuralFeatures: [feature('fluidity', 'Fluidity', 'Ρευστότητα', bandRange('high', 'very_high'), 'critical')],
+    structuralConstraints: [
+      feature('pourable_batter', 'Pourable batter', 'Ρευστό μείγμα που χύνεται', presence('required'), 'critical'),
+      feature('fermentation', 'Fermentation', 'Ζύμωση', presence('present'), 'critical'),
+    ],
+  },
+  'family.fermented-batter.yeast': {
+    structuralConstraints: [feature('fermentation_agent', 'Fermentation agent', 'Παράγοντας ζύμωσης', compatibility('commercial_yeast'), 'high')],
+  },
+  'family.fermented-batter.lactic-mixed': {
+    structuralConstraints: [feature('fermentation_agent', 'Fermentation agent', 'Παράγοντας ζύμωσης', compatibility('sourdough', 'mixed'), 'high')],
+  },
+  'family.steam-paste': {
     structuralFeatures: [
       feature('available_water', 'Available water', 'Διαθέσιμο νερό', band('high'), 'critical'),
       feature('setting_capacity', 'Setting capacity', 'Ικανότητα στησίματος', band('high'), 'critical'),
     ],
-    structuralConstraints: [
-      feature('steam_leavening', 'Steam leavening', 'Διόγκωση με ατμό', presence('required'), 'critical'),
+    structuralConstraints: [feature('steam_leavening', 'Steam leavening', 'Διόγκωση με ατμό', presence('required'), 'critical')],
+  },
+  'family.steam-paste.choux': {
+    structuralFeatures: [feature('egg_solids', 'Egg solids', 'Στερεά αυγού', band('high'), 'critical')],
+  },
+  'family.starch-dominant': {
+    structuralFeatures: [
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('very_low', 'low'), 'critical'),
+      feature('setting_capacity', 'Setting capacity', 'Ικανότητα στησίματος', bandRange('medium', 'high'), 'critical'),
     ],
-  }),
+  },
+  'family.starch-dominant.potato': {
+    structuralFeatures: [feature('water_load', 'Water load', 'Φορτίο νερού', bandRange('medium', 'high'), 'medium')],
+  },
+  'family.starch-dominant.rice-starch': {
+    structuralFeatures: [feature('water_load', 'Water load', 'Φορτίο νερού', bandRange('medium', 'very_high'), 'high')],
+  },
+};
+
+function taxonomyFamilyDefinition(node: typeof STRUCTURAL_FAMILY_NODES[number]): PrototypeDefinition {
+  const rule = FAMILY_RULES[node.id] ?? {};
+  return definition({
+    id: node.id,
+    kind: 'family',
+    en: node.label.en,
+    el: node.label.el,
+    parentIds: node.parentId ? [node.parentId] : [],
+    structuralFeatures: rule.structuralFeatures,
+    structuralConstraints: rule.structuralConstraints,
+    noteEn: `Canonical structural family: ${node.description.en || node.label.en}`,
+    noteEl: `Canonical δομική οικογένεια: ${node.description.el || node.label.el}`,
+    provenanceSourceId: 'user-provided canonical structural taxonomy',
+    provenanceSourceVersion: 'v1',
+  });
+}
+
+const DEFINITIONS: readonly PrototypeDefinition[] = [
+  ...STRUCTURAL_FAMILY_NODES.map(taxonomyFamilyDefinition),
   definition({
     id: 'prototype.lean-bread',
     kind: 'prototype',
     en: 'Lean bread dough',
     el: 'Λιτή ζύμη ψωμιού',
-    parentIds: ['family.lean-bread'],
-    familyIds: ['family.lean-bread'],
+    parentIds: ['family.fermented-gluten.lean-bread'],
+    familyIds: ['family.fermented-gluten.lean-bread'],
     structuralFeatures: [
       feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', band('high'), 'critical'),
       feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('medium', 'high'), 'high'),
@@ -219,8 +360,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Brioche',
     el: 'Brioche',
-    parentIds: ['family.enriched-yeast-dough'],
-    familyIds: ['family.enriched-yeast-dough'],
+    parentIds: ['family.fermented-gluten.rich-enriched'],
+    familyIds: ['family.fermented-gluten.rich-enriched'],
     structuralFeatures: [
       feature('fat_load', 'Fat load', 'Φορτίο λίπους', band('very_high'), 'critical'),
       feature('egg_solids', 'Egg solids', 'Στερεά αυγού', band('high'), 'high'),
@@ -238,8 +379,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Shortbread',
     el: 'Shortbread',
-    parentIds: ['family.fat-shortened'],
-    familyIds: ['family.fat-shortened'],
+    parentIds: ['family.short-fat-shortened.shortbread'],
+    familyIds: ['family.short-fat-shortened.shortbread'],
     structuralFeatures: [
       feature('fat_load', 'Fat load', 'Φορτίο λίπους', band('very_high'), 'critical'),
       feature('water_load', 'Water load', 'Φορτίο νερού', band('very_low'), 'critical'),
@@ -257,8 +398,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Pancake',
     el: 'Pancake',
-    parentIds: ['family.batter-systems'],
-    familyIds: ['family.batter-systems'],
+    parentIds: ['family.chemical-pourable.pancake'],
+    familyIds: ['family.chemical-pourable.pancake'],
     structuralFeatures: [
       feature('fluidity', 'Fluidity', 'Ρευστότητα', band('high'), 'critical'),
       feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', band('low'), 'high'),
@@ -268,7 +409,7 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     ],
     structuralConstraints: [
       feature('chemical_leavening', 'Chemical leavening', 'Χημικό διογκωτικό', presence('present'), 'critical'),
-      feature('pourable_batter', 'Pourable batter', 'Ρευστό batter που χύνεται', presence('required'), 'critical'),
+      feature('pourable_batter', 'Pourable batter', 'Ρευστό μείγμα που χύνεται', presence('required'), 'critical'),
     ],
   }),
   definition({
@@ -276,8 +417,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Crêpe',
     el: 'Κρέπα',
-    parentIds: ['family.batter-systems'],
-    familyIds: ['family.batter-systems'],
+    parentIds: ['family.unleavened-pourable.crepe'],
+    familyIds: ['family.unleavened-pourable.crepe'],
     structuralFeatures: [
       feature('fluidity', 'Fluidity', 'Ρευστότητα', band('very_high'), 'critical'),
       feature('egg_solids', 'Egg solids', 'Στερεά αυγού', bandRange('medium', 'high'), 'high'),
@@ -293,8 +434,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Angel food cake',
     el: 'Angel food cake',
-    parentIds: ['family.foam-structured-batters'],
-    familyIds: ['family.foam-structured-batters'],
+    parentIds: ['family.foam-cake.egg-white'],
+    familyIds: ['family.foam-cake.egg-white'],
     structuralFeatures: [
       feature('egg_protein', 'Egg-white protein', 'Πρωτεΐνη ασπραδιού', band('very_high'), 'critical'),
       feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', band('high'), 'high'),
@@ -310,8 +451,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Choux pastry',
     el: 'Ζύμη choux',
-    parentIds: ['family.steam-dominant'],
-    familyIds: ['family.steam-dominant'],
+    parentIds: ['family.steam-paste.choux'],
+    familyIds: ['family.steam-paste.choux'],
     structuralFeatures: [
       feature('available_water', 'Available water', 'Διαθέσιμο νερό', band('high'), 'critical'),
       feature('egg_solids', 'Egg solids', 'Στερεά αυγού', band('high'), 'critical'),
@@ -328,8 +469,8 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     kind: 'prototype',
     en: 'Croissant',
     el: 'Κρουασάν',
-    parentIds: ['family.laminated-yeast-dough'],
-    familyIds: ['family.laminated-yeast-dough'],
+    parentIds: ['family.laminated-gluten.fermented'],
+    familyIds: ['family.laminated-gluten.fermented'],
     structuralFeatures: [
       feature('layer_integrity', 'Layer integrity', 'Ακεραιότητα στρώσεων', band('high'), 'high'),
       feature('steam_potential', 'Steam potential', 'Δυνατότητα ατμού', band('high'), 'high'),

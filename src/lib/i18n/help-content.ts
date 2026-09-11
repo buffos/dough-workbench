@@ -167,7 +167,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
             title: 'Composition data source',
             canonical: 'Provenance',
             body: 'This tells you where the functional composition came from: the versioned starter catalog or a local custom definition. A catalog choice is read-only; a custom definition belongs only to this formula line.',
-            examples: 'Starter catalog · starter-catalog-v1, or Local custom definition.',
+            examples: 'Starter catalog · starter-catalog-v2, or Local custom definition.',
           },
           {
             title: 'Composition data confidence',
@@ -397,7 +397,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
             title: 'Πηγή δεδομένων σύστασης',
             canonical: 'Provenance / Προέλευση',
             body: 'Δείχνει από πού προήλθε η λειτουργική σύσταση: από τον εκδομένο αρχικό κατάλογο ή από έναν τοπικό προσαρμοσμένο ορισμό. Η επιλογή καταλόγου είναι μόνο για ανάγνωση· ο προσαρμοσμένος ορισμός ανήκει μόνο στη συγκεκριμένη γραμμή της φόρμουλας.',
-            examples: 'Αρχικός κατάλογος · starter-catalog-v1 ή Τοπικός προσαρμοσμένος ορισμός.',
+            examples: 'Αρχικός κατάλογος · starter-catalog-v2 ή Τοπικός προσαρμοσμένος ορισμός.',
           },
           {
             title: 'Βεβαιότητα σύστασης',

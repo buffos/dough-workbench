@@ -1,7 +1,7 @@
 export const PROTOTYPE_CATALOG_INTEGRITY_POLICY = 'prototype-catalog-integrity-v1';
 export const PROTOTYPE_CATALOG_ID = 'prototype-catalog';
-export const PROTOTYPE_CATALOG_VERSION = 'prototype-catalog-v1';
-export const PROTOTYPE_MODEL_VERSION = 'prototype-model-v1';
+export const PROTOTYPE_CATALOG_VERSION = 'prototype-catalog-v2';
+export const PROTOTYPE_MODEL_VERSION = 'prototype-model-v2';
 
 export const PROTOTYPE_CONFIDENCE_TIERS = ['high', 'medium', 'calibration-limited'] as const;
 export type PrototypeConfidenceTier = (typeof PROTOTYPE_CONFIDENCE_TIERS)[number];

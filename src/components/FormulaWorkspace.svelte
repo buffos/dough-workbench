@@ -24,11 +24,15 @@
     normalizeProcessDraft,
     prepareAnalysisInputDraft,
     resetExplorationDraft,
+    resolveReferenceFormulaDraft,
+    startFormulaWorkspaceFromBlank,
+    startFormulaWorkspaceFromReference,
   } from '../lib/application/formula-workspace';
   import IntrinsicMetricsPanel from './IntrinsicMetricsPanel.svelte';
   import EffectiveBehaviorPanel from './EffectiveBehaviorPanel.svelte';
   import ClassificationPanel from './ClassificationPanel.svelte';
   import ExplorationPanel from './ExplorationPanel.svelte';
+  import ReferenceStartPanel from './ReferenceStartPanel.svelte';
   import {
     PROCESS_ADDITION_ACTIONS,
     PROCESS_FIELD_DESCRIPTORS,
@@ -57,6 +61,7 @@
   import type { AnalysisInputOutcome, AnalysisPath, FormulaProcessReference } from '../lib/domain/handoff';
   import type { EffectiveAnalysisResult } from '../lib/domain/effective';
   import type { ClassificationResult } from '../lib/domain/classification';
+  import type { DatasetRecordSnapshot } from '../lib/domain/dataset';
   import type {
     ComparisonResult,
     CounterfactualScenario,
@@ -104,6 +109,10 @@
   let explorationComparison: ComparisonResult | null = null;
   let explorationPatchError: ExplorationDiagnostic | null = null;
   let explorationBaselineError: ExplorationDiagnostic | null = null;
+  let activeReference: DatasetRecordSnapshot | null = null;
+  let pendingStart: 'blank' | DatasetRecordSnapshot | null = null;
+  let replacementDialogOpen = false;
+  let referenceStartError: 'reference_copy_invalid' | null = null;
 
   $: if (hydrated) {
     persistDraft(draft);
@@ -116,6 +125,14 @@
       draft = savedDraft;
       result = normalizeFormulaDraft(savedDraft);
       intrinsicResult = calculateIntrinsicMetricsDraft(savedDraft);
+      if (savedDraft.sourceReference) {
+        const restoredReference = resolveReferenceFormulaDraft(
+          savedDraft.sourceReference.sourceReleaseId,
+          savedDraft.sourceReference.sourceRecordId,
+        );
+        activeReference = restoredReference.record;
+        if (!restoredReference.record) referenceStartError = 'reference_copy_invalid';
+      }
     }
     const savedProcess = loadProcess();
     if (savedProcess && savedProcess.formulaId === draft.formulaId) {
@@ -652,12 +669,7 @@
     return resultIngredientDisplayName(id, id);
   }
 
-  function resetDraft(): void {
-    clearDraft();
-    clearProcess();
-    commandLedger.clear();
-    draft = createInitialFormulaDraft();
-    processDraft = createInitialProcessDraft(draft.formulaId);
+  function clearWorkspaceAnalysis(): void {
     result = null;
     intrinsicResult = null;
     processResult = null;
@@ -668,7 +680,80 @@
     requestedAnalysisPath = 'full';
     explanationOpen = false;
     clearExplorationState();
+  }
+
+  function workspaceIsDirty(): boolean {
+    return draft.revision > 1 || processDraft.revision > 1;
+  }
+
+  function applyBlankStart(): void {
+    const replacement = startFormulaWorkspaceFromBlank(draft, processDraft, true);
+    if (replacement.outcome !== 'blank_selected' || !replacement.formula || !replacement.process) return;
+    clearDraft();
+    clearProcess();
+    commandLedger.clear();
+    draft = replacement.formula;
+    processDraft = replacement.process;
+    activeReference = null;
+    referenceStartError = null;
+    clearWorkspaceAnalysis();
     hydrated = true;
+  }
+
+  function applyReferenceStart(record: DatasetRecordSnapshot): void {
+    const replacement = startFormulaWorkspaceFromReference(record, draft, processDraft, true);
+    if (replacement.outcome !== 'selected' || !replacement.formula || !replacement.process) {
+      referenceStartError = 'reference_copy_invalid';
+      return;
+    }
+    clearDraft();
+    clearProcess();
+    commandLedger.clear();
+    draft = replacement.formula;
+    processDraft = replacement.process;
+    activeReference = record;
+    referenceStartError = null;
+    clearWorkspaceAnalysis();
+    hydrated = true;
+  }
+
+  function requestBlankStart(): void {
+    if (workspaceIsDirty()) {
+      pendingStart = 'blank';
+      replacementDialogOpen = true;
+      return;
+    }
+    applyBlankStart();
+  }
+
+  function requestReferenceStart(record: DatasetRecordSnapshot): void {
+    if (workspaceIsDirty()) {
+      pendingStart = record;
+      replacementDialogOpen = true;
+      return;
+    }
+    applyReferenceStart(record);
+  }
+
+  function confirmReplacement(): void {
+    const requested = pendingStart;
+    pendingStart = null;
+    replacementDialogOpen = false;
+    if (requested === 'blank') applyBlankStart();
+    else if (requested) applyReferenceStart(requested);
+  }
+
+  function cancelReplacement(): void {
+    pendingStart = null;
+    replacementDialogOpen = false;
+  }
+
+  function handleReplacementKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') cancelReplacement();
+  }
+
+  function resetDraft(): void {
+    requestBlankStart();
   }
 
   function formatNumber(value: number): string {
@@ -767,6 +852,7 @@
       <span class="nav-current">{t(locale, 'nav.workspace')}</span>
       <a class="help-link" href={`${localeHref(basePath, locale)}help/`}>{t(locale, 'nav.help')}</a>
       <a class="help-link" href={`${localeHref(basePath, locale)}catalog/`}>{t(locale, 'nav.catalog')}</a>
+      <a class="help-link" href={`${localeHref(basePath, locale)}theory/`}>{t(locale, 'nav.theory')}</a>
       <span class="nav-divider" aria-hidden="true"></span>
       <a class="language-link" href={localeHref(basePath, locale === 'en' ? 'el' : 'en')}>
         <span class="language-dot" aria-hidden="true"></span>
@@ -799,6 +885,21 @@
         <button type="button" class="text-button" on:click={resetDraft}>{t(locale, 'action.startOver')}</button>
       </div>
     </section>
+
+    <ReferenceStartPanel
+      locale={locale}
+      activeReference={activeReference}
+      localEdit={workspaceIsDirty()}
+      onBlankSelect={requestBlankStart}
+      onReferenceSelect={requestReferenceStart}
+    />
+
+    {#if referenceStartError}
+      <div class="reference-start-error" role="alert">
+        <strong>{t(locale, 'reference.copyInvalidTitle')}</strong>
+        <p>{t(locale, 'reference.copyInvalidBody')}</p>
+      </div>
+    {/if}
 
     <div class="workspace-grid">
       <section class="editor-panel panel">
@@ -1604,6 +1705,30 @@
   </main>
 
   <footer class="site-footer"><span>© 2026 DFI</span><span>{t(locale, 'footer.note')}</span></footer>
+
+  {#if replacementDialogOpen}
+    <div class="replacement-dialog-backdrop">
+      <section
+        class="replacement-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="replacement-dialog-title"
+        aria-describedby="replacement-dialog-body"
+        on:keydown={handleReplacementKeydown}
+      >
+        <span class="section-kicker">{t(locale, 'reference.reset.title')}</span>
+        <h2 id="replacement-dialog-title">{pendingStart === 'blank' ? t(locale, 'reference.reset.title') : t(locale, 'reference.confirm.title')}</h2>
+        <p id="replacement-dialog-body">{pendingStart === 'blank' ? t(locale, 'reference.reset.body') : t(locale, 'reference.confirm.body')}</p>
+        {#if pendingStart && pendingStart !== 'blank'}
+          <div class="replacement-target"><span>{t(locale, 'reference.selected')}</span><strong>{pendingStart.identity.label[locale]}</strong></div>
+        {/if}
+        <div class="replacement-dialog-actions">
+          <button type="button" class="text-button" autofocus on:click={cancelReplacement}>{t(locale, 'reference.confirm.cancel')}</button>
+          <button type="button" class="primary-button" on:click={confirmReplacement}>{pendingStart === 'blank' ? t(locale, 'reference.reset.action') : t(locale, 'reference.confirm.replace')} <span class="button-arrow">→</span></button>
+        </div>
+      </section>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -1876,8 +2001,18 @@
   .correction-callout { margin: 1rem 1.25rem; padding: 1.2rem; border: 1px dashed #d9a08c; background: #fff8f3; }
   .correction-callout strong { color: #985341; font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 400; }
   .correction-callout p { margin: 0.4rem 0 0; color: #6f6258; font-size: 0.72rem; line-height: 1.5; }
+  .reference-start-error { margin: 0 0 1rem; padding: 0.85rem 1rem; border-left: 3px solid #ad5c43; background: #fff1e9; color: #7f4939; }
+  .reference-start-error p { margin: 0.35rem 0 0; color: #6f6258; font-size: 0.72rem; line-height: 1.5; }
+  .replacement-dialog-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(35, 43, 38, 0.34); }
+  .replacement-dialog { width: min(100%, 32rem); padding: 1.35rem; border: 1px solid #d2c0b1; background: #fffdf9; box-shadow: 0 1rem 3rem rgba(31, 39, 34, 0.2); }
+  .replacement-dialog h2 { margin: 0.35rem 0 0; color: #29463a; font-family: Georgia, "Times New Roman", serif; font-size: 1.55rem; font-weight: 400; }
+  .replacement-dialog > p { margin: 0.7rem 0 0; color: #5d6961; font-size: 0.78rem; line-height: 1.55; }
+  .replacement-target { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.8rem; padding: 0.65rem 0.75rem; background: #f7eee4; color: #76513f; }
+  .replacement-target span { font-size: 0.59rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .replacement-target strong { color: #385446; font-size: 0.84rem; }
+  .replacement-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1.1rem; }
   .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; color: #5f6860; font-size: 0.57rem; letter-spacing: 0.08em; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   @media (max-width: 1080px) { .workspace-grid { grid-template-columns: 1fr; } .editor-panel, .result-panel, .process-panel { grid-column: 1; } .editor-panel { grid-row: 1; } .result-panel { grid-row: 2; min-height: auto; } .process-panel { grid-row: 3; } .process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .empty-result { min-height: 360px; } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block, .flour-composition-details { margin-left: 0; } .composition-grid, .flour-composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block, .flour-composition-details { margin-left: 0; } .composition-grid, .flour-composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .replacement-dialog-actions { flex-direction: column-reverse; align-items: stretch; } .replacement-dialog-actions .text-button { align-self: flex-start; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
 </style>

@@ -36,6 +36,7 @@
 
   $: workspaceHref = localeHref(basePath, locale);
   $: helpHref = `${workspaceHref}help/`;
+  $: theoryHref = `${workspaceHref}theory/`;
   $: languageHref = `${localeHref(basePath, locale === 'en' ? 'el' : 'en')}catalog/`;
   $: loadResult = loadPrototypeCatalog(requestedVersion);
   $: resolutionResult = loadResult.status === 'available' ? resolvePrototypeCatalog(loadResult.snapshot) : null;
@@ -254,6 +255,7 @@
     <nav class="topnav" aria-label={locale === 'el' ? 'Πλοήγηση' : 'Site navigation'}>
       <a class="workspace-link" href={workspaceHref}>{t(locale, 'nav.workspace')}</a>
       <a class="help-link" href={helpHref}>{t(locale, 'nav.help')}</a>
+      <a class="help-link" href={theoryHref}>{t(locale, 'nav.theory')}</a>
       <span class="nav-current">{t(locale, 'nav.catalog')}</span>
       <span class="nav-divider" aria-hidden="true"></span>
       <a class="language-link" href={languageHref}>

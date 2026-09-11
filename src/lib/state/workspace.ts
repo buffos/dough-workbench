@@ -46,6 +46,17 @@ function isProvenance(value: unknown): value is Provenance {
   );
 }
 
+function isReferenceDraftProvenance(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return value.kind === 'derived-from-reference'
+    && typeof value.sourceReleaseId === 'string'
+    && value.sourceReleaseId.length > 0
+    && typeof value.sourceRecordId === 'string'
+    && value.sourceRecordId.length > 0
+    && typeof value.sourcePreparationKey === 'string'
+    && value.sourcePreparationKey.length > 0;
+}
+
 function isDraftValueState(value: unknown): value is DraftValueState {
   if (!isRecord(value) || typeof value.state !== 'string') return false;
   if (value.state === 'none') return true;
@@ -82,6 +93,7 @@ function isFormulaDraft(value: unknown): value is FormulaDraft {
     !Number.isInteger(value.revision) ||
     value.revision < 1
   ) return false;
+  if (value.sourceReference !== undefined && !isReferenceDraftProvenance(value.sourceReference)) return false;
   if (!Array.isArray(value.flourComponents) || !Array.isArray(value.ingredientLines)) return false;
 
   const validFlours = value.flourComponents.every((component) => {
@@ -137,6 +149,7 @@ function isProcessDraft(value: unknown): value is ProcessDraft {
     !Number.isInteger(value.revision) ||
     value.revision < 1
   ) return false;
+  if (value.sourceReference !== undefined && !isReferenceDraftProvenance(value.sourceReference)) return false;
 
   const sectionValues = ['mixing', 'aeration', 'fermentation', 'lamination', 'thermalProcess', 'geometry'];
   if (!sectionValues.every((section) => isRecord(value[section]))) return false;

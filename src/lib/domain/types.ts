@@ -174,8 +174,16 @@ export interface IngredientLineDraft {
 export interface FormulaDraft {
   formulaId: string;
   revision: number;
+  sourceReference?: ReferenceDraftProvenance;
   flourComponents: FlourComponentDraft[];
   ingredientLines: IngredientLineDraft[];
+}
+
+export interface ReferenceDraftProvenance {
+  kind: 'derived-from-reference';
+  sourceReleaseId: string;
+  sourceRecordId: string;
+  sourcePreparationKey: string;
 }
 
 export interface Diagnostic {

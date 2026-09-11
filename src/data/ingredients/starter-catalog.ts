@@ -1,6 +1,6 @@
 import type { CompositionField } from '../../lib/domain/types';
 
-export const STARTER_CATALOG_VERSION = 'starter-catalog-v1';
+export const STARTER_CATALOG_VERSION = 'starter-catalog-v2';
 
 export type CatalogLocale = 'en' | 'el';
 
@@ -53,6 +53,24 @@ export const STARTER_FLOUR_CATALOG: StarterFlour[] = [
     label: { en: 'Rye flour', el: 'Άλευρο σίκαλης' },
     composition: { water: 14, protein: 9, starch: 65, fiber: 12 },
     absorptionPercentage: 75,
+  },
+  {
+    id: 'durum-semolina',
+    name: 'Durum semolina',
+    label: { en: 'Durum semolina', el: 'Σιμιγδάλι σκληρού σίτου' },
+    composition: {},
+  },
+  {
+    id: 'gluten-free-bread-mix',
+    name: 'Gluten-free bread mix',
+    label: { en: 'Gluten-free bread mix', el: 'Μείγμα ψωμιού χωρίς γλουτένη' },
+    composition: {},
+  },
+  {
+    id: 'gluten-free-pancake-mix',
+    name: 'Gluten-free pancake mix',
+    label: { en: 'Gluten-free pancake mix', el: 'Μείγμα pancake χωρίς γλουτένη' },
+    composition: {},
   },
 ];
 
@@ -110,6 +128,54 @@ export const STARTER_CATALOG: Record<string, StarterIngredient> = {
     name: 'Raisin',
     label: { en: 'Raisin', el: 'Σταφίδα' },
     composition: { water: 16, sugar: 59, fiber: 4 },
+  },
+  'instant-yeast': {
+    id: 'instant-yeast',
+    name: 'Instant yeast',
+    label: { en: 'Instant yeast', el: 'Ξηρή στιγμιαία μαγιά' },
+    composition: {},
+  },
+  'fresh-yeast': {
+    id: 'fresh-yeast',
+    name: 'Fresh yeast',
+    label: { en: 'Fresh yeast', el: 'Νωπή μαγιά' },
+    composition: {},
+  },
+  'neutral-oil': {
+    id: 'neutral-oil',
+    name: 'Neutral vegetable oil',
+    label: { en: 'Neutral vegetable oil', el: 'Ουδέτερο φυτικό λάδι' },
+    composition: { fat: 100 },
+  },
+  'heavy-cream': {
+    id: 'heavy-cream',
+    name: 'Heavy cream',
+    label: { en: 'Heavy cream', el: 'Κρέμα γάλακτος' },
+    composition: { water: 60, fat: 35, protein: 2, sugar: 3, dairySolids: 40 },
+  },
+  'baking-powder': {
+    id: 'baking-powder',
+    name: 'Baking powder',
+    label: { en: 'Baking powder', el: 'Μπέικιν πάουντερ' },
+    composition: {},
+  },
+  'vanilla-paste': {
+    id: 'vanilla-paste',
+    name: 'Vanilla paste',
+    label: { en: 'Vanilla paste', el: 'Πάστα βανίλιας' },
+    composition: {},
+  },
+  'egg-yolk': {
+    id: 'egg-yolk',
+    name: 'Egg yolk',
+    label: { en: 'Egg yolk', el: 'Κρόκος αυγού' },
+    composition: { water: 48, fat: 33, protein: 17, eggSolids: 52 },
+  },
+  'evaporated-milk': {
+    id: 'evaporated-milk',
+    name: 'Evaporated milk',
+    label: { en: 'Evaporated milk', el: 'Εβαπορέ γάλα' },
+    composition: {},
   },
 };
 
