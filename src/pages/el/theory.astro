@@ -1,0 +1,11 @@
+---
+import LocaleLayout from '../../layouts/LocaleLayout.astro';
+import TheoryPage from '../../components/TheoryPage.svelte';
+
+const locale = 'el';
+const basePath = import.meta.env.BASE_URL;
+---
+
+<LocaleLayout locale={locale} basePath={basePath}>
+  <TheoryPage locale={locale} basePath={basePath} />
+</LocaleLayout>
