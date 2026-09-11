@@ -1,7 +1,7 @@
 # Dough Formula Intelligence — Application PRD
 
-Status: Initial application synthesis
-Date: 2026-09-07
+Status: Current application synthesis
+Date: 2026-09-10
 
 This document is the product-level synthesis for the initial confirmed OKF
 topology. Detailed capability truth is maintained under the linked
@@ -49,6 +49,12 @@ first vertical slice covers:
 - Greek and English localized navigation, content, labels, and explanations.
 - A browser-side counterfactual flow that can recompute the analysis when
   selected formula or process values change.
+- A curated, versioned reference-formula release that can populate a local
+  Formula and optional Process draft before analysis, while keeping Blank as a
+  first-class starting point.
+- A broad preparation coverage inventory and maintainer-controlled offline
+  source-acquisition path that can grow the reference release without runtime
+  scraping in the public frontend.
 
 ## MVP non-goals
 
@@ -57,7 +63,9 @@ The MVP does not promise:
 - exact loaf volume, crumb-cell size, spread diameter, baking time, proof time,
   fermentation rate, water activity, or sensory prediction;
 - machine learning, neural-network classification, or LLM classification;
-- automatic recipe scraping or a finalized external dataset provider;
+- browser/runtime scraping, unattended crawling, or a finalized external
+  dataset provider; approved offline acquisition is a maintainer workflow and
+  remains subject to source terms, attribution, and human review;
 - server persistence, accounts, an API, or backend services;
 - automatic recipe generation or guaranteed substitution equivalence;
 - a complete named-product taxonomy or calibrated numeric boundaries for every
@@ -84,6 +92,16 @@ The user changes a selected ingredient or process parameter and compares the
 new analysis with the current one. Changes must remain deterministic and
 explainable; composition and process effects must remain distinguishable.
 
+### Start from a reference formula
+
+The user may choose Blank or browse a searchable bilingual list of curated
+Reference Formulas grouped by structural family and preparation. Selecting one
+loads its immutable Formula Snapshot and optional independent Process Snapshot
+into a local editable draft. If the current draft is dirty, replacement
+requires explicit confirmation; the system never silently merges two formulas.
+The selected release, source, and maturity remain visible so the reference is
+understood as a starting point rather than a universal recipe claim.
+
 ### Learn and compare
 
 The user browses ingredient composition concepts and prototype definitions,
@@ -108,6 +126,7 @@ The durable planning owners are:
 - [Interactive Formula Exploration](../.okf/capabilities/interactive-exploration.md)
 - [Ingredient and Prototype Knowledge](../.okf/capabilities/ingredient-prototype-knowledge.md)
 - [Validation and Calibration](../.okf/capabilities/validation-calibration.md)
+- [Reference Dataset Acquisition and Curation](../.okf/capabilities/validation-calibration/reference-dataset-acquisition.md)
 - [Bilingual Content and Localization](../.okf/capabilities/shared/bilingual-content.md)
 - [Trust, Provenance, and Uncertainty](../.okf/capabilities/shared/trust-and-provenance.md)
 
@@ -127,6 +146,7 @@ The exact node-level reference set now also includes:
 - [Ingredient and Prototype Knowledge](architecture/ingredient-prototype-knowledge/prd.md)
 - [Bilingual Content and Localization](architecture/bilingual-content/prd.md)
 - [Trust, Provenance, and Uncertainty](architecture/trust-and-provenance/prd.md)
+- [Reference Dataset Acquisition and Curation](architecture/reference-dataset-acquisition/prd.md)
 
 ## Cross-capability dependencies
 
@@ -139,10 +159,15 @@ Formula Input and Normalization
 ```
 
 Ingredient and Prototype Knowledge supplies versioned definitions to the
-analysis capabilities. Trust, Provenance, and Uncertainty applies to every
-metric and explanation. Bilingual Content and Localization applies to all
-public journeys. Validation and Calibration governs model maturity and
-regression evidence but does not block the first deterministic vertical slice.
+analysis capabilities and to the acquisition taxonomy. Reference Dataset
+Acquisition and Curation maintains the preparation inventory, source registry,
+offline candidate path, and normalization traces. Validation and Calibration
+supplies verified Gold Dataset/reference snapshots and model
+maturity/regression evidence to the Formula Analysis Workspace. Trust,
+Provenance, and Uncertainty applies to every metric, source, and explanation.
+Bilingual Content and Localization applies to all public journeys. Interactive
+Formula Exploration consumes the resulting local draft; it does not edit the
+source release.
 
 ## Shared product policies
 
@@ -177,8 +202,13 @@ These policies are recorded in [ADR-0001](agents/adr/0001-calculated-estimated-h
 4. Add an expert-seed classifier for the high-confidence V1 families.
 5. Build the explainable analysis workspace and no-match/confidence states.
 6. Add counterfactual recomputation and comparison UI.
-7. Curate and version the first gold dataset.
-8. Calibrate and expand the taxonomy only when validation evidence supports it.
+7. Define the broad preparation inventory and its navigation/structural-family
+   mapping.
+8. Register approved sources, acquire candidate facts offline, normalize them,
+   and validate a small pilot across the inventory categories.
+9. Curate/version the Gold Dataset and expose its accepted public reference
+   subset as a workspace starting point.
+10. Calibrate and expand the inventory and model only when evidence supports it.
 
 No issue slicing begins until the application synthesis remains aligned with the
 graph and the inherited root verification policy is satisfied.
@@ -193,7 +223,11 @@ GitHub Pages preview checks when those harnesses exist.
 Required scenario families include canonical recognition, no-match behavior,
 cross-family sanity, smooth counterfactuals, process independence, functional
 ingredient equivalence, unknown handling, hybrid recognition, confidence
-sanity, and explanation fidelity.
+sanity, explanation fidelity, reference selection, immutable local copying,
+dirty-draft replacement, release reproducibility, and calibration/test
+partition isolation. Acquisition-specific checks cover stable preparation keys,
+category/family separation, source provenance, offline policy enforcement,
+normalization traceability, Unknown handling, and honest pilot coverage.
 
 The inherited root policy is `when-supported`: backend-boundary verification is
 not applicable, frontend-integration verification is required when a harness

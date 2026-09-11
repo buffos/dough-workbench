@@ -49,8 +49,9 @@ policy metadata, and explicit cycle/dangling-reference diagnostics. The
 immutable source snapshot remains unchanged.
 
 Issue 021 is implemented: the static catalog now contains the initial
-high-confidence expert seed of eight structural families and eight named
-prototypes. Qualitative targets, confidence tiers, maturity, matcher metadata,
+high-confidence expert seed of eight named prototypes plus the canonical
+structural taxonomy of 13 roots and 41 child families. Qualitative targets,
+confidence tiers, maturity, matcher metadata, orthogonal modifier vocabulary,
 and provenance remain explicit; calibrated numeric classification boundaries
 remain outside this capability.
 
@@ -64,6 +65,10 @@ version metadata, provenance, and explicit unavailable-version recovery.
 Artifact impact: delivery truth changed only. The application PRD and
 application architecture summary remain current; dataset collection and
 calibration remain outside this slice under Validation and Calibration.
+
+The reference dataset now consumes the same canonical family IDs through its
+154-entry coverage inventory. Preparation-to-family assignment is explicit in
+that inventory, and the former family labels are not part of runtime data.
 
 Next action: Classification, Similarity, and Explanation is the next
 downstream frontier after this catalog prerequisite. Dataset collection and

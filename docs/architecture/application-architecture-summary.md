@@ -1,7 +1,7 @@
 # Dough Formula Intelligence — Application Architecture Summary
 
-Status: Initial application synthesis
-Date: 2026-09-07
+Status: Current application synthesis
+Date: 2026-09-10
 
 This summary consolidates the initial architecture direction and links back to
 the durable planning graph. Capability-specific exact contracts are maintained
@@ -16,6 +16,8 @@ under their owning folders after bounded-node refinement.
 - No backend, account system, database, or server API is required for V1.
 - The calculation core must be deterministic, explainable, versioned, and
   independent from the presentation framework.
+- The public browser consumes static release data only; source acquisition and
+  normalization run in a maintainer-controlled offline workflow.
 
 ## Platform decision
 
@@ -62,6 +64,8 @@ PrototypeCatalog
 SimilarityEngine
 ExplanationEngine
 Validation
+ReferenceRelease
+CalibrationEvaluation
 ```
 
 The primary data flow is:
@@ -94,12 +98,24 @@ ingredient names. Formula and Process remain independent input structures.
   filling, topping, and other roles remain separate from the continuous phase.
 - Process fields distinguish known values, explicit `None`, and `Unknown`.
 
-### Versioned model data
+### Versioned model and reference data
 
 Ingredient definitions, prototype definitions, matcher metadata, model
-parameters, and future validation records are static, versioned project data.
-They are not hidden inside UI components. The future dataset capability remains
-open about collection source and storage format.
+parameters, Gold Dataset releases, and validation records are static, versioned
+project data. They are not hidden inside UI components. A maintainer-controlled
+offline acquisition workflow may build traceable candidate records from
+approved sources, but the first Gold Dataset release contains only normalized,
+reviewed, attributable candidates. Its accepted records may carry both
+calibration/reference roles, while public selection is controlled by an
+explicit `publicSelectable` flag; validation/test records are not silently
+exposed. The browser never scrapes sources or fetches recipe content at runtime.
+
+The Formula Workspace consumes a compact reference summary and, on selection,
+receives an immutable Formula Snapshot plus an optional independent Process
+Snapshot. It copies those values into a local draft. No browser edit mutates a
+release, and an unavailable release produces a diagnostic instead of a silent
+fallback. This boundary remains compatible with a future local curation or
+calibration CLI without requiring a V1 backend.
 
 ## Proposed project boundaries
 
@@ -114,6 +130,10 @@ src/
   data/
     ingredients/           # versioned functional ingredient definitions
     prototypes/            # versioned prototype definitions
+    reference-formulas/    # versioned Gold Dataset/reference releases
+  reference-data/          # maintainer-only inventory, source, and candidate inputs
+scripts/
+  reference-data/           # offline acquisition/normalization adapters
 ```
 
 The exact folder names can change during implementation, but the dependency
@@ -148,6 +168,12 @@ model maturity, evidence references, and a precision policy.
 ## Cross-capability sequencing
 
 ```text
+Coverage Inventory / Approved Source Registry
+  -> Offline Acquisition / Normalization
+  -> Gold Dataset / Reference Release
+  -> Formula Workspace (local Formula + optional Process draft)
+  -> Analysis and Counterfactual Exploration
+
 Input/Normalization
   -> Composition/Intrinsic Metrics
   -> Process/Effective Behavior
@@ -156,10 +182,13 @@ Input/Normalization
 ```
 
 The Ingredient and Prototype Knowledge capability supplies the catalog and
-prototype definitions across this path. Validation and Calibration supplies
-model maturity and regression evidence. Application-level changes must refresh
-this summary when boundaries, dependencies, verification, or sequencing
-change.
+prototype definitions across this path. Reference Dataset Acquisition and
+Curation supplies the inventory, source registry, and traceable offline
+candidate path. Validation and Calibration supplies reference releases, model
+maturity, and regression evidence. The Formula Workspace owns applying
+snapshots to a local draft; Interactive Formula Exploration owns subsequent
+what-if changes. Application-level changes must refresh this summary when
+boundaries, dependencies, verification, or sequencing change.
 
 ## Node specification sources
 
@@ -173,6 +202,7 @@ The exact capability contracts are maintained next to their owning nodes:
 - [Ingredient and Prototype Knowledge](ingredient-prototype-knowledge/prd.md)
 - [Bilingual Content and Localization](bilingual-content/prd.md)
 - [Trust, Provenance, and Uncertainty](trust-and-provenance/prd.md)
+- [Reference Dataset Acquisition and Curation](reference-dataset-acquisition/prd.md)
 
 ## Verification strategy
 
@@ -185,6 +215,10 @@ The architecture expects:
 - static build and route checks for GitHub Pages base paths, 404 behavior, and
   `/en/`/`/el/` parity;
 - counterfactual regression tests for smooth changes and process independence;
+- reference-release resolution, public eligibility, immutable snapshot copying,
+  dirty-draft replacement, and no-fallback diagnostics;
+- offline source acquisition manifests, normalization traceability, source
+  policy enforcement, and pilot coverage reports;
 - validation datasets and confusion/unknown-detection evidence once calibration
   begins.
 
@@ -195,9 +229,15 @@ exists.
 
 ## Architecture open decisions
 
-- Refine the first vertical-slice catalog and decide how seed data is stored.
-- Clear the fog around dataset ownership, sources, curation, and collection.
-- Define the first calibrated parameter/data release for the Validation and
-  Calibration capability.
+- Approve the full preparation coverage inventory and navigation/family mapping.
+- Populate the source registry and verify the acquisition/reuse status of each
+  selected source, including attribution/licensing notes.
+- Acquire and normalize the pilot candidate records before publishing
+  `gold-formulas-v2`.
+- Choose the concrete static release file layout and quality-weight values.
+- Define the first calibrated parameter release after the Gold evidence passes
+  its partition and regression checks.
 
-These are intentionally tracked as planning frontiers, not hidden assumptions.
+These are now bounded delivery decisions rather than hidden planning fog.
+Unattended runtime scraping remains outside the product; broader source
+collection and controlled experiments remain later maturity stages.

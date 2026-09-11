@@ -3,7 +3,7 @@ type: project
 title: Dough Formula Intelligence
 description: A bilingual browser-only application that analyzes dough and batter formulas through composition, process, structural behavior, and explainable prototype similarity.
 tags: [dough, formula-analysis, frontend, bilingual, github-pages]
-timestamp: 2026-09-07T08:54:12Z
+timestamp: 2026-09-10T16:45:41Z
 children:
   - /capabilities/formula-analysis-workspace.md
   - /capabilities/interactive-exploration.md

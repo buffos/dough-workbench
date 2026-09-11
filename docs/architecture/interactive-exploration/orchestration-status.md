@@ -33,11 +33,8 @@ state policy remain unchanged. Issues 028–032 are implemented and archived in
 dependency order after the grouped English/Greek visual review was approved on
 2026-09-10. The capability is now `implemented` with no active delivery issue.
 
-The next planning frontier is Validation and Calibration. It remains foggy
-because its dataset scope, source tiers, collection ownership, storage,
-curation, and acceptance evidence are still open.
-
-Validation and Calibration remains foggy because its dataset scope, source
-tiers, collection ownership, storage, curation, and acceptance evidence are
-still open. That separate planning frontier does not block this deterministic
-counterfactual UI slice.
+Validation and Calibration is now specified. It supplies versioned reference
+Formula/optional Process snapshots and model-evidence releases; this capability
+continues to own only the subsequent counterfactual comparison and reset flow.
+The reference-start integration is a separate dependency-aware delivery slice
+and does not change the deterministic counterfactual boundary.

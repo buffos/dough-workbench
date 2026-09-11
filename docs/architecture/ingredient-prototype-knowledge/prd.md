@@ -16,6 +16,10 @@ embedding domain data in UI components.
   confidence;
 - custom Formula-local definitions and line-local overrides;
 - family hierarchy and prototype inheritance;
+- canonical primary structural taxonomy of 13 root families and 41 child
+  families, selected by the dominant structure mechanism;
+- orthogonal modifier axes for leavening, structural system, enrichment,
+  consistency, fat handling, and special process;
 - feature matcher metadata, structural constraints, identity modifiers, and
   confidence tiers;
 - static seed catalog loading and catalog-version reporting.
@@ -35,6 +39,8 @@ ownership, nutrition-label completeness, and a complete product taxonomy.
 6. A missing or unknown field is preserved as Unknown.
 7. The starter catalog can be replaced by a future version without changing
    the Formula or classifier contracts.
+8. Reference preparation mappings use the same canonical family IDs as the
+   prototype catalog; legacy family labels are not runtime inputs.
 
 ## Success criteria
 

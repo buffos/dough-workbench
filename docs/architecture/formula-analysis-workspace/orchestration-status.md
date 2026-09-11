@@ -26,8 +26,10 @@ resolver, expert seed catalog, and bilingual inspection surface are present.
 Issues 019–022 are archived after the grouped visual review was accepted.
 Classification, Similarity, and Explanation is now implemented, including its
 bounded presentation of the eight most relevant family memberships and
-prototype candidates. The separate foggy Validation and Calibration capability
-remains the next planning frontier and is not advanced by this delivery.
+prototype candidates. Validation and Calibration is now a specified
+cross-capability input for versioned reference Formula/optional Process
+snapshots; its reference-start integration is planned as delivery work rather
+than an independent roll-up scope.
 The application PRD and architecture summary are current for the initial
 topology and link the child artifacts. The current delivery batches have
 Issues 001–007 and 008–012 completed after visual review. No active delivery

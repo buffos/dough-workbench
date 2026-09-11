@@ -6,6 +6,7 @@
 - [Interactive Formula Exploration](interactive-exploration.md)
 - [Ingredient and Prototype Knowledge](ingredient-prototype-knowledge.md)
 - [Validation and Calibration](validation-calibration.md)
+  - [Reference Dataset Acquisition and Curation](validation-calibration/reference-dataset-acquisition.md)
 
 ## Shared concerns
 

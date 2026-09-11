@@ -3,7 +3,7 @@ type: capability
 title: Ingredient and Prototype Knowledge
 description: Maintain the versioned functional ingredient catalog and the structural and named prototype catalog used by the analyzer.
 tags: [ingredients, prototypes, taxonomy, knowledge]
-timestamp: 2026-09-09T13:47:34Z
+timestamp: 2026-09-11T18:20:00Z
 state: implemented
 state_changed: 2026-09-09T13:47:34Z
 project: /project.md
@@ -51,4 +51,9 @@ version metadata. It excludes product-specific rules inside ingredient logic.
 # Notes
 
 Canonical identifiers remain language-neutral; Greek and English display names
-belong to the presentation/content layer.
+belong to the presentation/content layer. The structural taxonomy is now the
+shared primary tree: 13 root families with 41 child families, selected by the
+dominant structure mechanism. Leavening, enrichment, consistency, fat handling,
+and special process remain orthogonal modifier axes. Reference preparations use
+the same canonical `family.*` IDs; old family labels are not retained as a
+runtime mapping layer.

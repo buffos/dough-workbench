@@ -3,9 +3,9 @@ type: capability
 title: Bilingual Content and Localization
 description: Keep the public product, educational content, explanations, and navigation usable in Greek and English.
 tags: [bilingual, greek, english, i18n, content]
-timestamp: 2026-09-08T12:00:00Z
-state: specified
-state_changed: 2026-09-08T12:00:00Z
+timestamp: 2026-09-10T07:35:41Z
+state: implemented
+state_changed: 2026-09-10T07:35:41Z
 project: /project.md
 parent: /project.md
 shared_with:
@@ -48,3 +48,8 @@ policy, metadata, and parity checks between supported languages.
 
 The baseline route policy is explicit `/en/` and `/el/` paths. Canonical model
 identifiers remain in English; translated display labels are separate data.
+The V1 bilingual surface is implemented and code-verified: route counterparts,
+the static `/` → `/en/` entry, public 404 handling, localized workspace/help/
+catalog content, parity diagnostics, and locale-neutral analysis state are
+covered. Future locales, browser-language detection, and additional content
+expansion remain outside the current scope.
