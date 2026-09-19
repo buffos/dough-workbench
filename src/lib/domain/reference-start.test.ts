@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { createInitialFormulaDraft, knownDraftValue, normalizeFormula } from './normalization';
 import { createInitialProcessDraft, normalizeProcess, PROCESS_FIELD_DESCRIPTORS } from './process';
 import { GOLD_DATASET_RELEASE_ID, type DatasetRecordSnapshot } from './dataset';
+import { GOLD_FORMULAS_RELEASE } from '../../data/reference/release';
 import {
   createLocalDraftFromBlank,
   createLocalDraftFromReference,
   formulaSnapshotToDraft,
   isWorkspaceDraftDirty,
+  processSnapshotToDraft,
   processSnapshotHasIndependentCopy,
+  restoreProcessDraftForSavedReference,
 } from './reference-start';
 
 function makeRecord(withProcess = false): DatasetRecordSnapshot {
@@ -77,6 +80,49 @@ describe('reference-start draft copying', () => {
     expect(result.process?.mixing.method).toEqual({ state: 'none' });
     expect(result.process && processSnapshotHasIndependentCopy(record, result.process)).toBe(true);
     expect(result.process?.processId).not.toBe(record.process?.processId);
+  });
+
+  it('copies the published breadstick process data into the editable workspace draft', () => {
+    const record = GOLD_FORMULAS_RELEASE.records.find((candidate) => candidate.identity.preparationKey === 'breadsticks');
+    expect(record).toBeDefined();
+    if (!record) return;
+
+    const result = createLocalDraftFromReference(record);
+
+    expect(result.outcome).toBe('selected');
+    expect(result.process?.mixing.method).toMatchObject({ state: 'known', value: 'hand_knead' });
+    expect(result.process?.fermentation.agent).toMatchObject({ state: 'known', value: 'commercial_yeast' });
+    expect(result.process?.thermalProcess.temperatureCelsius).toMatchObject({ state: 'known', value: '190' });
+    expect(result.process?.geometry.characteristicThicknessMillimeters).toMatchObject({ state: 'known', value: '7' });
+  });
+
+  it('repairs an untouched saved process from the current reference snapshot', () => {
+    const record = GOLD_FORMULAS_RELEASE.records.find((candidate) => candidate.identity.preparationKey === 'breadsticks');
+    expect(record).toBeDefined();
+    if (!record) return;
+    const formula = formulaSnapshotToDraft(record);
+    const stale = createInitialProcessDraft(formula.formulaId);
+
+    const restored = restoreProcessDraftForSavedReference(record, stale, formula.formulaId);
+
+    expect(restored.mixing.method).toMatchObject({ state: 'known', value: 'hand_knead' });
+    expect(restored.geometry.characteristicThicknessMillimeters).toMatchObject({ state: 'known', value: '7' });
+    expect(restored.sourceReference?.sourceRecordId).toBe(record.recordId);
+  });
+
+  it('preserves a deliberately edited saved process during reference restoration', () => {
+    const record = GOLD_FORMULAS_RELEASE.records.find((candidate) => candidate.identity.preparationKey === 'breadsticks');
+    expect(record).toBeDefined();
+    if (!record) return;
+    const formula = formulaSnapshotToDraft(record);
+    const edited = processSnapshotToDraft(record, formula.formulaId);
+    edited.revision = 2;
+    edited.mixing.method = knownDraftValue('machine_knead');
+
+    const restored = restoreProcessDraftForSavedReference(record, edited, formula.formulaId);
+
+    expect(restored.mixing.method).toMatchObject({ state: 'known', value: 'machine_knead' });
+    expect(restored.revision).toBe(2);
   });
 
   it('keeps the published record unchanged when the local copy is edited', () => {

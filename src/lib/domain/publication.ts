@@ -30,6 +30,7 @@ export function assembleGoldDatasetRelease(input: {
   handoff: PilotHandoff;
   registry: SourceRegistry;
   modifierIdsByPreparationKey?: Readonly<Record<string, readonly string[]>>;
+  prototypeIdsByPreparationKey?: Readonly<Record<string, string>>;
   releaseId?: string;
   createdAt: string;
   supersedes?: string | null;
@@ -62,6 +63,9 @@ export function assembleGoldDatasetRelease(input: {
         preparationKey: candidate.preparationKey,
         label: { ...candidate.label },
         familyId: candidate.structuralFamilyIds[0] ?? 'unmapped-family',
+        ...(input.prototypeIdsByPreparationKey?.[candidate.preparationKey]
+          ? { prototypeId: input.prototypeIdsByPreparationKey[candidate.preparationKey] }
+          : {}),
         modifierIds: [...(input.modifierIdsByPreparationKey?.[candidate.preparationKey] ?? [])],
       },
       formula: clone(candidate.formula),

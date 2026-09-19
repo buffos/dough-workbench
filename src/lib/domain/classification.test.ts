@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadPrototypeCatalog } from '../../data/prototypes/catalog';
+import { GOLD_FORMULAS_RELEASE } from '../../data/reference/release';
 import {
   calculateIntrinsicMetricsDraft,
   evaluateEffectiveBehaviorDraft,
@@ -10,6 +11,7 @@ import {
   knownDraftValue,
 } from './normalization';
 import { createInitialProcessDraft } from './process';
+import { createLocalDraftFromReference } from './reference-start';
 import { resolvePrototypeCatalog } from './prototype-catalog';
 import {
   buildClassificationFeatureSet,
@@ -32,6 +34,7 @@ function prepareReference(targetDevelopment = 'full') {
   process.fermentation.bulkTimeSeconds = knownDraftValue(3600);
   process.lamination.enabled = knownDraftValue('false');
   process.aeration.method = knownDraftValue('none');
+  process.geometry.shapeClass = knownDraftValue('loaf');
   const handoff = prepareAnalysisInputDraft(formula, process);
   expect(handoff.data).not.toBeNull();
   const reference = handoff.data!;
@@ -82,6 +85,56 @@ describe('classification feature snapshot', () => {
     expect(aeration?.state).toMatchObject({ state: 'known', value: 'absent' });
     expect(thermal?.state.state).toBe('unknown');
     expect(thermal?.state).not.toEqual(expect.objectContaining({ value: 0 }));
+  });
+
+  it('treats partial mixing as developed gluten structure without calling it strong development', () => {
+    const prepared = prepareReference('partial');
+    const result = buildClassificationFeatureSet({
+      reference: prepared.reference,
+      intrinsic: prepared.intrinsic,
+      effective: prepared.effective,
+      catalog: prepared.catalog,
+    });
+
+    expect(result.status).toBe('ready');
+    if (result.status !== 'ready') return;
+    expect(getClassificationFeature(result.data, 'gluten_structure')?.state).toMatchObject({ state: 'known', value: 'present' });
+    expect(getClassificationFeature(result.data, 'strong_gluten_development')?.state).toMatchObject({ state: 'known', value: 'absent' });
+  });
+
+  it('recognizes the classic olive-oil breadsticks reference against the breadsticks prototype', () => {
+    const record = GOLD_FORMULAS_RELEASE.records.find((candidate) => candidate.identity.preparationKey === 'breadsticks');
+    expect(record).toBeDefined();
+    if (!record) return;
+    const started = createLocalDraftFromReference(record);
+    expect(started.formula).not.toBeNull();
+    expect(started.process).not.toBeNull();
+    if (!started.formula || !started.process) return;
+    const handoff = prepareAnalysisInputDraft(started.formula, started.process);
+    const intrinsic = calculateIntrinsicMetricsDraft(started.formula);
+    expect(handoff.data).not.toBeNull();
+    expect(intrinsic).not.toBeNull();
+    if (!handoff.data || !intrinsic) return;
+    const effective = evaluateEffectiveBehaviorDraft(handoff.data);
+    const catalog = loadPrototypeCatalog();
+    expect(catalog.status).toBe('available');
+    if (catalog.status !== 'available') return;
+    const featureSet = buildClassificationFeatureSet({
+      reference: handoff.data,
+      intrinsic,
+      effective,
+      catalog,
+    });
+    expect(featureSet.status).toBe('ready');
+    if (featureSet.status !== 'ready') return;
+    const candidate = evaluatePrototypeSimilarities(featureSet.data, catalog.snapshot)
+      .find((item) => item.prototypeId === 'prototype.breadsticks');
+    expect(candidate).toMatchObject({
+      compositionSimilarity: 1,
+      processSimilarity: 1,
+      overallIdentitySimilarity: 1,
+      status: 'supported',
+    });
   });
 
   it('retains multiple family memberships instead of forcing one family', () => {
@@ -214,7 +267,13 @@ describe('classification feature snapshot', () => {
     expect(featureSet.status).toBe('ready');
     if (featureSet.status !== 'ready') return;
     const candidates = evaluatePrototypeSimilarities(featureSet.data, prepared.catalog.snapshot);
-    const candidate = candidates.find((item) => item.prototypeId === 'prototype.lean-bread');
+    const resolved = classifyFormula({
+      reference: prepared.reference,
+      intrinsic: prepared.intrinsic,
+      effective: prepared.effective,
+      catalog: prepared.catalog,
+    });
+    const candidate = candidates.find((item) => item.prototypeId === resolved.explanation.primaryPrototypeId);
     expect(candidate).toBeDefined();
     if (!candidate) return;
     const resolvedCatalog = resolvePrototypeCatalog(prepared.catalog.snapshot);
@@ -223,12 +282,6 @@ describe('classification feature snapshot', () => {
     const definition = resolvedCatalog.snapshot.byId[candidate.prototypeId];
     expect(definition).toBeDefined();
     if (!definition) return;
-    const resolved = classifyFormula({
-      reference: prepared.reference,
-      intrinsic: prepared.intrinsic,
-      effective: prepared.effective,
-      catalog: prepared.catalog,
-    });
     const explanation = explainClassification({
       featureSet: featureSet.data,
       definition,

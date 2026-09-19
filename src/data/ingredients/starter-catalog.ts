@@ -111,7 +111,7 @@ export const STARTER_CATALOG: Record<string, StarterIngredient> = {
     label: { en: 'Milk', el: 'Γάλα' },
     composition: { water: 87, fat: 3.5, protein: 3.3, sugar: 5, dairySolids: 13 },
   },
-  oliveOil: {
+  'olive-oil': {
     id: 'olive-oil',
     name: 'Olive oil',
     label: { en: 'Olive oil', el: 'Ελαιόλαδο' },

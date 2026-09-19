@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COVERAGE_INVENTORY, validateCoverageInventory } from '../../data/reference/coverage';
-import { SOURCE_REGISTRY, PROPOSED_RECIPE_SOURCES } from '../../data/reference/sources';
+import { SOURCE_REGISTRY, INTERNAL_RECIPE_SOURCES } from '../../data/reference/sources';
 import { STARTER_CATALOG_VERSION } from '../../data/ingredients/starter-catalog';
 import {
   ACQUISITION_PIPELINE_VERSION,
@@ -85,26 +85,28 @@ function capture(overrides: Partial<CandidateCapture> = {}): CandidateCapture {
 
 describe('coverage inventory and source policy', () => {
   it('keeps the approved planning baseline machine-readable', () => {
-    expect(COVERAGE_INVENTORY.entries).toHaveLength(154);
+    expect(COVERAGE_INVENTORY.entries).toHaveLength(163);
     expect(validateCoverageInventory(COVERAGE_INVENTORY)).toEqual([]);
     expect(new Set(COVERAGE_INVENTORY.categories.map((item) => item.id)).size).toBe(11);
     expect(COVERAGE_INVENTORY.entries.every((entry) => entry.candidateStructuralFamilies.length === 1
       && entry.candidateStructuralFamilies.every((familyId) => Boolean(STRUCTURAL_FAMILY_BY_ID[familyId])))).toBe(true);
   });
 
-  it('validates the proposed source registry without treating proposals as approved evidence', () => {
-    expect(PROPOSED_RECIPE_SOURCES).toHaveLength(5);
+  it('validates the first-party source registry without reintroducing third-party recipe sources', () => {
+    expect(INTERNAL_RECIPE_SOURCES).toHaveLength(1);
     expect(validateSourceRegistry(SOURCE_REGISTRY, COVERAGE_INVENTORY)).toEqual([]);
     expect(SOURCE_REGISTRY.sources.every((source) => source.acquisitionStatus === 'manual-only')).toBe(true);
+    expect(SOURCE_REGISTRY.sources.every((source) => source.sourceId.startsWith('source.dfi-'))).toBe(true);
   });
 
   it('reports an empty pilot as explicit coverage gaps even when source paths are usable', () => {
     const report = preparePilotCoverage(COVERAGE_INVENTORY, SOURCE_REGISTRY, []);
     expect(report.acceptedCandidateIds).toEqual([]);
-    expect(report.missingInventoryEntries).toHaveLength(154);
-    expect(report.blockedEntries).toHaveLength(0);
+    expect(report.missingInventoryEntries).toHaveLength(163);
+    expect(report.blockedEntries.length).toBeGreaterThan(0);
     expect(Object.values(report.categoryCounts)).toHaveLength(11);
-    expect(Object.values(report.categoryCounts).every((item) => item.sourcePathAvailable && !item.targetMet)).toBe(true);
+    expect(report.categoryCounts['yeasted-breads']?.sourcePathAvailable).toBe(true);
+    expect(report.categoryCounts['enriched-sweet-yeast']?.sourcePathAvailable).toBe(false);
   });
 
   it('reports missing source attribution and rejects unclear acquisition', () => {

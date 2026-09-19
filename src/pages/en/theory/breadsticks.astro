@@ -1,0 +1,11 @@
+---
+import LocaleLayout from '../../../layouts/LocaleLayout.astro';
+import BreadsticksTheoryPage from '../../../components/BreadsticksTheoryPage.svelte';
+
+const locale = 'en';
+const basePath = import.meta.env.BASE_URL;
+---
+
+<LocaleLayout locale={locale} basePath={basePath}>
+  <BreadsticksTheoryPage locale={locale} basePath={basePath} />
+</LocaleLayout>

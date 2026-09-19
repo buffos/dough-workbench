@@ -1,15 +1,17 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import {
     browseReferenceFormulaDrafts,
     resolveReferenceFormulaDraft,
   } from '../lib/application/formula-workspace';
   import {
-    listReferenceFamilyOptions,
     listReferenceModifierFilterGroups,
+    listReferencePrototypeOptions,
     type DatasetRecordSnapshot,
   } from '../lib/domain/dataset';
   import { REFERENCE_DATASET_REGISTRY } from '../data/reference/release';
   import { SOURCE_REGISTRY } from '../data/reference/sources';
+  import { PROTOTYPE_DEFINITIONS } from '../data/prototypes/catalog';
   import { t, type Locale } from '../lib/i18n/messages';
 
   export let locale: Locale;
@@ -21,23 +23,27 @@
   type StartMode = 'blank' | 'reference';
   let mode: StartMode = 'blank';
   let query = '';
-  let familyFilter = '';
+  let prototypeFilter = '';
   let modifierFilters: Record<string, string> = {};
   let page = 1;
   const pageSize = 8;
 
-  const familyOptions = listReferenceFamilyOptions(REFERENCE_DATASET_REGISTRY);
+  const prototypeOptions = listReferencePrototypeOptions(REFERENCE_DATASET_REGISTRY);
   const modifierFilterGroups = listReferenceModifierFilterGroups(REFERENCE_DATASET_REGISTRY);
   $: selectedModifierIds = Object.values(modifierFilters).filter((modifierId) => modifierId.length > 0);
   $: browseResult = browseReferenceFormulaDrafts({
     locale,
     query,
-    familyId: familyFilter || undefined,
+    prototypeId: prototypeFilter || undefined,
     modifierIds: selectedModifierIds,
     page,
     pageSize,
   });
   let selectionError = false;
+
+  onMount(() => {
+    if (window.location.hash === '#reference-start-title') selectReferenceMode();
+  });
 
   function selectBlank(): void {
     mode = 'blank';
@@ -55,8 +61,8 @@
     page = 1;
   }
 
-  function updateFamily(value: string): void {
-    familyFilter = value;
+  function updatePrototype(value: string): void {
+    prototypeFilter = value;
     page = 1;
   }
 
@@ -70,7 +76,7 @@
 
   function clearFilters(): void {
     query = '';
-    familyFilter = '';
+    prototypeFilter = '';
     modifierFilters = {};
     page = 1;
   }
@@ -91,10 +97,21 @@
     return translated.startsWith('[missing-translation:') ? t(locale, 'reference.family.unknown') : translated;
   }
 
-  function familyOptionLabel(option: { id: string; label: { en: string; el: string }; depth?: number; count?: number }): string {
-    const indentation = '· '.repeat(option.depth ?? 0);
-    const count = option.count ?? 0;
-    return `${indentation}${familyLabel(option.id, option.label)} (${count})`;
+  function prototypeLabel(prototypeId: string): string {
+    return PROTOTYPE_DEFINITIONS.find((prototype) => prototype.id === prototypeId)?.label[locale]
+      ?? t(locale, 'reference.prototype.unknown');
+  }
+
+  function prototypeOptionLabel(option: { id: string; count: number }): string {
+    return `${prototypeLabel(option.id)} (${option.count})`;
+  }
+
+  function resultGroupKey(item: { prototypeId?: string; structuralFamilyId: string }): string {
+    return item.prototypeId ? `prototype:${item.prototypeId}` : `family:${item.structuralFamilyId}`;
+  }
+
+  function resultGroupLabel(item: { prototypeId?: string; structuralFamilyId: string; structuralFamilyLabel?: { en: string; el: string } }): string {
+    return item.prototypeId ? prototypeLabel(item.prototypeId) : familyLabel(item.structuralFamilyId, item.structuralFamilyLabel);
   }
 
   function maturityLabel(maturity: string): string {
@@ -161,13 +178,6 @@
         <span>{t(locale, 'reference.release')}: {releaseLabel(activeReference.releaseId)}</span>
         <span>{localEdit ? t(locale, 'reference.localEdit') : t(locale, 'reference.noLocalEdit')}</span>
       </div>
-      <details class="active-reference-details">
-        <summary>{t(locale, 'reference.technical')}</summary>
-        <span>{t(locale, 'reference.source')}: {activeReference.provenance.sourceId}</span>
-        <span>{t(locale, 'reference.release')}: {activeReference.releaseId}</span>
-        <span>{t(locale, 'reference.familyId')}: {activeReference.identity.familyId}</span>
-        <span>{t(locale, 'reference.record')}: {activeReference.recordId}</span>
-      </details>
     </div>
   {/if}
 
@@ -208,11 +218,11 @@
             />
           </label>
           <label>
-            <span>{t(locale, 'reference.family')}</span>
-            <select value={familyFilter} on:change={(event) => updateFamily((event.currentTarget as HTMLSelectElement).value)}>
-              <option value="">{t(locale, 'reference.allFamilies')}</option>
-              {#each familyOptions as option (option.id)}
-                <option value={option.id} disabled={option.selectable === false}>{familyOptionLabel(option)}</option>
+            <span>{t(locale, 'reference.prototype')}</span>
+            <select value={prototypeFilter} on:change={(event) => updatePrototype((event.currentTarget as HTMLSelectElement).value)}>
+              <option value="">{t(locale, 'reference.allPrototypes')}</option>
+              {#each prototypeOptions as option (option.id)}
+                <option value={option.id}>{prototypeOptionLabel(option)}</option>
               {/each}
             </select>
           </label>
@@ -224,7 +234,7 @@
             <button
               type="button"
               class="reference-filter-clear"
-              disabled={!query && !familyFilter && selectedModifierIds.length === 0}
+              disabled={!query && !prototypeFilter && selectedModifierIds.length === 0}
               on:click={clearFilters}
             >
               {t(locale, 'reference.clearFilters')}
@@ -259,14 +269,14 @@
 
         {#if browseResult.items.length === 0}
           <div class="reference-empty" role="status">
-            <strong>{query || familyFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResults') : t(locale, 'reference.empty')}</strong>
-            <p>{query || familyFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResultsHint') : t(locale, 'reference.recovery')}</p>
+            <strong>{query || prototypeFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResults') : t(locale, 'reference.empty')}</strong>
+            <p>{query || prototypeFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResultsHint') : t(locale, 'reference.recovery')}</p>
           </div>
         {:else}
           <div class="reference-result-list">
             {#each browseResult.items as item, index (item.recordId)}
-              {#if index === 0 || browseResult.items[index - 1].structuralFamilyId !== item.structuralFamilyId}
-                <h5>{familyLabel(item.structuralFamilyId, item.structuralFamilyLabel)}</h5>
+              {#if index === 0 || resultGroupKey(browseResult.items[index - 1]) !== resultGroupKey(item)}
+                <h5>{resultGroupLabel(item)}</h5>
               {/if}
               {#if index === 0 || browseResult.items[index - 1].preparationKey !== item.preparationKey}
                 <div class="reference-preparation-heading">
@@ -323,9 +333,6 @@
   .active-reference strong { color: #29463a; font-size: 0.92rem; }
   .active-reference small { color: #64756a; font-size: 0.7rem; }
   .active-reference-meta { display: flex; flex-direction: column; align-items: end; gap: 0.25rem; text-align: right; }
-  .active-reference-details { display: flex; flex-direction: column; align-items: end; gap: 0.2rem; color: #6b756e; font-size: 0.63rem; }
-  .active-reference-details summary { cursor: pointer; color: #51675a; font-weight: 700; }
-  .active-reference-details span { font-family: "SFMono-Regular", Consolas, monospace; }
   .reference-browser { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e1d9cf; }
   .release-pill { padding: 0.45rem 0.6rem; border: 1px solid #d9c1ad; color: #8f503a; }
   .reference-filters { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 0.65rem; margin: 1rem 0 0.65rem; }
@@ -364,5 +371,5 @@
   .reference-unavailable, .reference-empty, .reference-selection-error { margin-top: 0.8rem; padding: 1rem; border: 1px solid #dfc6b2; background: #fff5ea; color: #704535; }
   .reference-unavailable p, .reference-empty p, .reference-selection-error p { margin: 0.4rem 0 0.8rem; color: #6d665f; font-size: 0.78rem; line-height: 1.5; }
   :global(button:focus-visible), :global(input:focus-visible), :global(select:focus-visible), :global(summary:focus-visible) { outline: 2px solid #b15f43; outline-offset: 2px; }
-  @media (max-width: 680px) { .start-mode-switcher, .reference-filters, .reference-modifier-grid { grid-template-columns: 1fr; } .active-reference { flex-direction: column; } .active-reference-meta, .active-reference-details { align-items: flex-start; text-align: left; } .reference-result-topline { display: block; } .reference-process-state { max-width: none; margin-top: 0.55rem; text-align: left; } .reference-pagination { flex-wrap: wrap; } }
+  @media (max-width: 680px) { .start-mode-switcher, .reference-filters, .reference-modifier-grid { grid-template-columns: 1fr; } .active-reference { flex-direction: column; } .active-reference-meta { align-items: flex-start; text-align: left; } .reference-result-topline { display: block; } .reference-process-state { max-width: none; margin-top: 0.55rem; text-align: left; } .reference-pagination { flex-wrap: wrap; } }
 </style>

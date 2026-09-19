@@ -7,10 +7,16 @@
     type PrototypeFeatureTarget,
     type PrototypeImportance,
     type PrototypeMaturity,
+    type PrototypeProcessProfileFact,
+    type PrototypeProcessProfileSection,
     type ResolvedPrototypeDefinition,
     type ResolvedPrototypeFeature,
   } from '../lib/domain/prototype-catalog';
   import { loadPrototypeCatalog } from '../data/prototypes/catalog';
+  import { REFERENCE_DATASET_REGISTRY } from '../data/reference/release';
+  import { listReferenceRecordsForPrototype, type DatasetRecordSnapshot } from '../lib/domain/dataset';
+  import type { NormalizedProcess, NormalizedProcessSection, ProcessScalar } from '../lib/domain/process';
+  import type { ValueState } from '../lib/domain/types';
   import { localeHref, t, type Locale } from '../lib/i18n/messages';
 
   export let locale: Locale;
@@ -21,10 +27,43 @@
 
   type FamilyTreeEntry = {
     key: string;
-    family: ResolvedPrototypeDefinition;
+    kind: 'family' | 'prototype';
+    family?: ResolvedPrototypeDefinition;
+    prototype?: ResolvedPrototypeDefinition;
     depth: number;
     hasChildren: boolean;
   };
+
+  type ProcessSummaryField = {
+    path: string;
+    section: Exclude<keyof NormalizedProcess, 'processId' | 'formulaId' | 'revision' | 'readiness' | 'ingredientAddition' | 'policy' | 'modelVersion'>;
+    field: string;
+  };
+
+  type ProcessSummaryRow = {
+    label: string;
+    value: string;
+  };
+
+  const PROCESS_SUMMARY_FIELDS: readonly ProcessSummaryField[] = [
+    { path: 'mixing.method', section: 'mixing', field: 'method' },
+    { path: 'mixing.targetDevelopment', section: 'mixing', field: 'targetDevelopment' },
+    { path: 'aeration.method', section: 'aeration', field: 'method' },
+    { path: 'fermentation.agent', section: 'fermentation', field: 'agent' },
+    { path: 'fermentation.bulkTimeSeconds', section: 'fermentation', field: 'bulkTimeSeconds' },
+    { path: 'fermentation.bulkTemperatureCelsius', section: 'fermentation', field: 'bulkTemperatureCelsius' },
+    { path: 'fermentation.coldFermentation', section: 'fermentation', field: 'coldFermentation' },
+    { path: 'lamination.enabled', section: 'lamination', field: 'enabled' },
+    { path: 'thermalProcess.method', section: 'thermalProcess', field: 'method' },
+    { path: 'thermalProcess.temperatureCelsius', section: 'thermalProcess', field: 'temperatureCelsius' },
+    { path: 'thermalProcess.durationSeconds', section: 'thermalProcess', field: 'durationSeconds' },
+    { path: 'thermalProcess.preheated', section: 'thermalProcess', field: 'preheated' },
+    { path: 'thermalProcess.surfaceTreatment', section: 'thermalProcess', field: 'surfaceTreatment' },
+    { path: 'geometry.shapeClass', section: 'geometry', field: 'shapeClass' },
+    { path: 'geometry.characteristicThicknessMillimeters', section: 'geometry', field: 'characteristicThicknessMillimeters' },
+    { path: 'geometry.surfaceVolumeClass', section: 'geometry', field: 'surfaceVolumeClass' },
+    { path: 'geometry.containerType', section: 'geometry', field: 'containerType' },
+  ];
 
   let requestedVersion = PROTOTYPE_CATALOG_VERSION;
   let query = '';
@@ -54,7 +93,10 @@
   $: pagedPrototypes = filteredPrototypes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   $: activePrototypeId = filteredPrototypes.find((prototype) => prototype.id === selectedPrototypeId)?.id ?? filteredPrototypes[0]?.id ?? '';
   $: selectedPrototype = catalog && activePrototypeId ? catalog.byId[activePrototypeId] ?? null : null;
-  $: familyTree = buildFamilyTree(families, rootFamilies, expandedFamilyIds);
+  $: selectedPrototypeReferences = selectedPrototype
+    ? listReferenceRecordsForPrototype(REFERENCE_DATASET_REGISTRY, selectedPrototype.id)
+    : [];
+  $: familyTree = buildFamilyTree(families, prototypes, rootFamilies, expandedFamilyIds);
 
   function childFamilies(familyId: string): ResolvedPrototypeDefinition[] {
     return families
@@ -64,6 +106,10 @@
 
   function familyTypeCount(familyId: string): number {
     return prototypes.filter((prototype) => prototype.ancestry.includes(familyId)).length;
+  }
+
+  function prototypeReferenceCount(prototypeId: string): number {
+    return listReferenceRecordsForPrototype(REFERENCE_DATASET_REGISTRY, prototypeId).length;
   }
 
   function familyPath(prototype: ResolvedPrototypeDefinition): string {
@@ -96,6 +142,7 @@
 
   function buildFamilyTree(
     definitions: readonly ResolvedPrototypeDefinition[],
+    prototypeDefinitions: readonly ResolvedPrototypeDefinition[],
     roots: readonly ResolvedPrototypeDefinition[],
     expanded: readonly string[],
   ): FamilyTreeEntry[] {
@@ -106,12 +153,25 @@
         .sort((a, b) => a.label[locale].localeCompare(b.label[locale], locale));
       entries.push({
         key: [...path, family.id].join('/'),
+        kind: 'family',
         family,
         depth,
         hasChildren: children.length > 0,
       });
       if (expanded.includes(family.id)) {
         children.forEach((child) => visit(child, depth + 1, [...path, family.id]));
+        prototypeDefinitions
+          .filter((prototype) => prototype.parentIds.includes(family.id))
+          .sort((a, b) => a.label[locale].localeCompare(b.label[locale], locale))
+          .forEach((prototype) => {
+            entries.push({
+              key: [...path, family.id, prototype.id].join('/'),
+              kind: 'prototype',
+              prototype,
+              depth: depth + 1,
+              hasChildren: false,
+            });
+          });
       }
     };
     roots.forEach((root) => visit(root, 0, []));
@@ -183,6 +243,14 @@
     return t(locale, `catalog.explorer.${isFamilyExpanded(family.id) ? 'collapse' : 'expand'}`, { name: family.label[locale] });
   }
 
+  function selectPrototypeFromTree(prototype: ResolvedPrototypeDefinition): void {
+    selectedFamilyId = prototype.parentIds[0] ?? '';
+    selectedPrototypeId = prototype.id;
+    currentPage = 1;
+    if (selectedFamilyId) expandFamilyPath(selectedFamilyId);
+    updateUrl();
+  }
+
   function importanceLabel(importance: PrototypeImportance): string {
     return t(locale, `catalog.importance.${importance}`);
   }
@@ -218,6 +286,44 @@
 
   function originLabel(feature: ResolvedPrototypeFeature): string {
     return t(locale, `catalog.feature.${feature.origin}`);
+  }
+
+  function processState(record: DatasetRecordSnapshot, field: ProcessSummaryField): ValueState<ProcessScalar> | null {
+    const process = record.process;
+    if (!process) return null;
+    const section = process[field.section] as NormalizedProcessSection | undefined;
+    return section?.[field.field] ?? null;
+  }
+
+  function processEnumLabel(value: string): string {
+    const translated = t(locale, `process.enum.${value}`);
+    return translated.startsWith('[missing-translation:') ? value.replaceAll('_', ' ') : translated;
+  }
+
+  function processValueLabel(field: ProcessSummaryField, state: ValueState<ProcessScalar> | null): string | null {
+    if (!state || state.state !== 'known') return null;
+    if (typeof state.value === 'boolean') return t(locale, `process.enum.${state.value ? 'true' : 'false'}`);
+    if (typeof state.value === 'string') return processEnumLabel(state.value);
+    if (field.path.endsWith('Seconds')) return `${Math.round(state.value / 60)} min`;
+    if (field.path.endsWith('Celsius')) return `${state.value} °C`;
+    if (field.path.endsWith('Millimeters')) return `${state.value} mm`;
+    return String(state.value);
+  }
+
+  function processSummary(record: DatasetRecordSnapshot): ProcessSummaryRow[] {
+    return PROCESS_SUMMARY_FIELDS.flatMap((field) => {
+      const value = processValueLabel(field, processState(record, field));
+      if (value === null) return [];
+      return [{ label: t(locale, `process.field.${field.field}`), value }];
+    });
+  }
+
+  function processProfileSectionLabel(section: PrototypeProcessProfileSection): string {
+    return section.label[locale];
+  }
+
+  function processProfileFactLabel(fact: PrototypeProcessProfileFact): string {
+    return fact.label[locale];
   }
 
   onMount(() => {
@@ -271,11 +377,6 @@
       <div class="hero-copy">
         <h1>{t(locale, 'catalog.title')}</h1>
         <p>{t(locale, 'catalog.intro')}</p>
-      </div>
-      <div class="hero-index" aria-hidden="true">
-        <span>CATALOG</span>
-        <span class="hero-index-rule"></span>
-        <span>DFI</span>
       </div>
     </section>
 
@@ -387,31 +488,49 @@
 
             <ul class="family-tree" role="tree" aria-label={t(locale, 'catalog.explorer.families')}>
               {#each familyTree as entry (entry.key)}
-                <li role="treeitem" aria-level={entry.depth + 1} aria-expanded={entry.hasChildren ? isFamilyExpanded(entry.family.id) : undefined}>
-                  <div class="tree-row" style={`--depth: ${entry.depth}`}>
-                    {#if entry.hasChildren}
+                {#if entry.kind === 'family' && entry.family}
+                  <li role="treeitem" aria-level={entry.depth + 1} aria-expanded={entry.hasChildren ? isFamilyExpanded(entry.family.id) : undefined}>
+                    <div class="tree-row" style={`--depth: ${entry.depth}`}>
+                      {#if entry.hasChildren}
+                        <button
+                          class="tree-toggle"
+                          type="button"
+                          aria-expanded={isFamilyExpanded(entry.family.id)}
+                          aria-label={treeToggleLabel(entry.family)}
+                          on:click={() => toggleFamily(entry.family.id)}
+                        >{isFamilyExpanded(entry.family.id) ? '−' : '+'}</button>
+                      {:else}
+                        <span class="tree-spacer" aria-hidden="true">·</span>
+                      {/if}
                       <button
-                        class="tree-toggle"
+                        class:selected={selectedFamilyId === entry.family.id}
+                        class="tree-select"
                         type="button"
-                        aria-expanded={isFamilyExpanded(entry.family.id)}
-                        aria-label={treeToggleLabel(entry.family)}
-                        on:click={() => toggleFamily(entry.family.id)}
-                      >{isFamilyExpanded(entry.family.id) ? '−' : '+'}</button>
-                    {:else}
-                      <span class="tree-spacer" aria-hidden="true">·</span>
-                    {/if}
-                    <button
-                      class:selected={selectedFamilyId === entry.family.id}
-                      class="tree-select"
-                      type="button"
-                      aria-current={selectedFamilyId === entry.family.id ? 'page' : undefined}
-                      on:click={() => selectFamily(entry.family.id)}
-                    >
-                      <span class="tree-label">{entry.family.label[locale]}</span>
-                      <span class="tree-count">{familyTypeCount(entry.family.id)}</span>
-                    </button>
-                  </div>
-                </li>
+                        aria-current={selectedFamilyId === entry.family.id ? 'page' : undefined}
+                        on:click={() => selectFamily(entry.family.id)}
+                      >
+                        <span class="tree-label">{entry.family.label[locale]}</span>
+                        <span class="tree-count">{familyTypeCount(entry.family.id)}</span>
+                      </button>
+                    </div>
+                  </li>
+                {:else if entry.prototype}
+                  <li role="treeitem" aria-level={entry.depth + 1}>
+                    <div class="tree-row tree-row-prototype" style={`--depth: ${entry.depth}`}>
+                      <span class="tree-spacer" aria-hidden="true">↳</span>
+                      <button
+                        class:selected={selectedPrototypeId === entry.prototype.id}
+                        class="tree-select tree-prototype-select"
+                        type="button"
+                        aria-current={selectedPrototypeId === entry.prototype.id ? 'page' : undefined}
+                        on:click={() => selectPrototypeFromTree(entry.prototype)}
+                      >
+                        <span class="tree-label">{entry.prototype.label[locale]}</span>
+                        <span class="tree-count">{prototypeReferenceCount(entry.prototype.id)}</span>
+                      </button>
+                    </div>
+                  </li>
+                {/if}
               {/each}
             </ul>
             <p class="tree-help">{t(locale, 'catalog.explorer.treeHelp')}</p>
@@ -545,9 +664,38 @@
                   </section>
                 </div>
 
+                {#if selectedPrototype.processProfile?.length}
+                  <section class="process-profile" aria-labelledby="process-profile-title">
+                    <div class="process-profile-heading">
+                      <div>
+                        <p class="section-kicker">{t(locale, 'catalog.process.kicker')}</p>
+                        <h4 id="process-profile-title">{t(locale, 'catalog.process.title')}</h4>
+                      </div>
+                    </div>
+                    <p class="process-profile-intro">{t(locale, 'catalog.process.intro')}</p>
+                    <div class="process-profile-grid">
+                      {#each selectedPrototype.processProfile as section (section.id)}
+                        <section class="process-profile-section">
+                          <h5>{processProfileSectionLabel(section)}</h5>
+                          <dl>
+                            {#each section.facts as fact (fact.id)}
+                              <div>
+                                <dt>{processProfileFactLabel(fact)}</dt>
+                                <dd>{fact.value[locale]}</dd>
+                                {#if fact.note}
+                                  <small>{fact.note[locale]}</small>
+                                {/if}
+                              </div>
+                            {/each}
+                          </dl>
+                        </section>
+                      {/each}
+                    </div>
+                  </section>
+                {/if}
+
                 <aside class="matcher-policy">
                   <h4>{t(locale, 'catalog.section.matcherPolicy')}</h4>
-                  <p><code>{selectedPrototype.matcherPolicy.id}</code></p>
                   <ul>
                     <li>{t(locale, 'catalog.matcher.missing')}</li>
                     <li>{t(locale, 'catalog.matcher.critical')}</li>
@@ -555,19 +703,50 @@
                   </ul>
                 </aside>
 
-                <div class="provenance-block">
-                  <h4>{t(locale, 'catalog.section.provenance')}</h4>
-                  <p><strong>{t(locale, 'catalog.provenance.source')}:</strong> <code>{selectedPrototype.provenance.sourceId}</code>{#if selectedPrototype.provenance.sourceVersion} · <code>{selectedPrototype.provenance.sourceVersion}</code>{/if}</p>
-                  <p><strong>{t(locale, 'catalog.provenance.method')}:</strong> {t(locale, 'catalog.provenance.expertSeed')} · {selectedPrototype.provenance.note[locale]}</p>
-                </div>
+                <section class="reference-formulas" aria-labelledby="reference-formulas-title">
+                  <div class="reference-formulas-heading">
+                    <div>
+                      <p class="section-kicker">{t(locale, 'catalog.reference.kicker')}</p>
+                      <h4 id="reference-formulas-title">{t(locale, 'catalog.reference.title')}</h4>
+                    </div>
+                    <span>{t(locale, selectedPrototypeReferences.length === 1 ? 'catalog.reference.count.one' : 'catalog.reference.count.other', { count: selectedPrototypeReferences.length })}</span>
+                  </div>
+                  <p class="reference-formulas-intro">{t(locale, 'catalog.reference.intro')}</p>
+                  {#if selectedPrototypeReferences.length > 0}
+                    <div class="reference-formula-list">
+                      {#each selectedPrototypeReferences as record (record.recordId)}
+                        <article class="reference-formula-row">
+                          <div class="reference-formula-main">
+                            <div>
+                              <strong>{record.identity.label[locale]}</strong>
+                              <small>{record.identity.preparationKey}</small>
+                            </div>
+                            {#if record.process && processSummary(record).length > 0}
+                              <details class="reference-process-details">
+                                <summary>{t(locale, 'catalog.reference.processDetails')}</summary>
+                                <dl>
+                                  {#each processSummary(record) as item (item.label)}
+                                    <div>
+                                      <dt>{item.label}</dt>
+                                      <dd>{item.value}</dd>
+                                    </div>
+                                  {/each}
+                                </dl>
+                              </details>
+                            {/if}
+                          </div>
+                          <span class="reference-formula-status">{record.process ? t(locale, 'reference.processIncluded') : t(locale, 'reference.formulaOnly')}</span>
+                        </article>
+                      {/each}
+                    </div>
+                    <a class="reference-formulas-link" href={`${workspaceHref}#reference-start-title`}>
+                      {t(locale, 'catalog.reference.open')} <span aria-hidden="true">→</span>
+                    </a>
+                  {:else}
+                    <p class="reference-formulas-empty">{t(locale, 'catalog.reference.empty')}</p>
+                  {/if}
+                </section>
 
-                <details class="technical-details prototype-technical">
-                  <summary>{t(locale, 'catalog.section.technicalIdentity')}</summary>
-                  <dl>
-                    <div><dt>{t(locale, 'catalog.technical.id')}</dt><dd><code>{selectedPrototype.id}</code></dd></div>
-                    <div><dt>{t(locale, 'catalog.technical.matcher')}</dt><dd><code>{selectedPrototype.matcherPolicy.id}</code></dd></div>
-                  </dl>
-                </details>
               </article>
             {/if}
           </section>
@@ -576,10 +755,6 @@
     {/if}
   </main>
 
-  <footer class="site-footer">
-    <span>© 2026 DFI</span>
-    <span>{t(locale, 'footer.note')}</span>
-  </footer>
 </div>
 
 <style>
@@ -592,7 +767,7 @@
   .brand { display: inline-flex; align-items: center; gap: 0.7rem; color: inherit; text-decoration: none; }
   .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #b87957; border-radius: 50%; color: #914d38; font-size: 0.58rem; font-weight: 800; letter-spacing: -0.05em; }
   .brand-copy { display: flex; flex-direction: column; gap: 0.15rem; }
-  .brand-eyebrow, .section-kicker, .site-footer { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
+  .brand-eyebrow, .section-kicker { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
   .brand-eyebrow { color: #7b4f3f; font-weight: 760; }
   .brand-name { font-size: 0.86rem; line-height: 0.92; font-weight: 740; letter-spacing: -0.03em; }
   .topnav { display: flex; gap: 0.9rem; align-items: center; font-size: 0.78rem; }
@@ -603,14 +778,12 @@
   .language-link { display: inline-flex; gap: 0.45rem; align-items: center; }
   .language-dot { width: 6px; height: 6px; display: inline-block; background: #cc7853; border-radius: 50%; }
   main { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; }
-  .catalog-hero { min-height: 320px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: 1fr auto; align-items: end; position: relative; }
+  .catalog-hero { min-height: 320px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: 1fr; align-items: end; position: relative; }
   .hero-kicker { grid-column: 1 / -1; display: flex; gap: 0.7rem; align-items: center; color: #8b4f3b; font-size: 0.66rem; font-weight: 760; letter-spacing: 0.15em; text-transform: uppercase; }
   .kicker-line { width: 36px; height: 1px; background: #c77954; }
   .hero-copy { max-width: 800px; grid-column: 1; }
   .hero-copy h1 { max-width: 800px; margin: 1.1rem 0 1rem; color: #263d34; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3rem, 6vw, 6.7rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.065em; }
   .hero-copy p { max-width: 720px; margin: 0; color: #58665d; font-size: 0.97rem; line-height: 1.65; }
-  .hero-index { grid-column: 2; display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.35rem; color: #68736b; font-size: 0.68rem; letter-spacing: 0.12em; }
-  .hero-index-rule { width: 52px; height: 1px; background: #bdc1b9; }
   .catalog-control { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 380px); gap: 2rem; align-items: end; padding: 1.25rem; border: 1px solid #d8c5b4; background: rgba(255, 249, 241, 0.76); }
   .section-kicker { margin: 0 0 0.55rem; color: #8b4f3b; font-weight: 800; }
   .control-copy h2, .section-heading h2 { margin: 0; color: #2f493d; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.6rem, 3vw, 2.8rem); font-weight: 400; letter-spacing: -0.05em; }
@@ -659,6 +832,8 @@
   .tree-toggle:hover { background: #f7e8dc; }
   .tree-select { min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 0.45rem; padding: 0.42rem 0.45rem; border: 1px solid transparent; border-radius: 0; background: transparent; color: #52645a; font: inherit; font-size: 0.68rem; text-align: left; cursor: pointer; }
   .tree-select:hover, .tree-select.selected { border-color: #d5e1d3; background: #edf4ec; color: #345d43; }
+  .tree-row-prototype .tree-spacer { color: #b26b4d; font-size: 0.78rem; }
+  .tree-prototype-select { color: #80533f; }
   .tree-label { min-width: 0; overflow-wrap: anywhere; }
   .tree-help { margin: 0.85rem 0 0; padding-top: 0.75rem; border-top: 1px solid rgba(65, 75, 67, 0.12); color: #6d756d; font-size: 0.62rem; line-height: 1.45; }
   .results-browser { min-width: 0; }
@@ -692,12 +867,6 @@
   .pagination span { color: #68746b; font-size: 0.63rem; }
   .prototype-detail { min-width: 0; margin-top: 1rem; padding: 1.1rem; border: 1px solid #d0b49f; background: rgba(255, 253, 249, 0.9); scroll-margin-top: 1rem; }
   .prototype-detail h3 { margin: 0; color: #304c3d; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.45rem, 2.5vw, 2.1rem); font-weight: 400; letter-spacing: -0.035em; }
-  .technical-details { margin-top: 0.9rem; padding-top: 0.7rem; border-top: 1px solid rgba(65, 75, 67, 0.12); }
-  .technical-details summary { color: #68746b; cursor: pointer; font-size: 0.61rem; font-weight: 700; }
-  .technical-details dl { margin: 0.65rem 0 0; }
-  .technical-details dl > div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 0.4rem; margin-top: 0.3rem; }
-  .technical-details dt { color: #758078; font-size: 0.58rem; }
-  .technical-details dd { min-width: 0; margin: 0; color: #8f5b42; }
   .prototype-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
   .family-line { margin: 0.35rem 0 0; color: #4f7057; }
   .prototype-badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.3rem; max-width: 11rem; }
@@ -708,7 +877,7 @@
   .ancestry-line strong { color: #80533f; }
   .feature-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.9rem; }
   .feature-group { min-width: 0; }
-  .feature-group h4, .matcher-policy h4, .provenance-block h4 { margin: 0; color: #48634e; font-size: 0.68rem; letter-spacing: 0.04em; }
+  .feature-group h4, .matcher-policy h4 { margin: 0; color: #48634e; font-size: 0.68rem; letter-spacing: 0.04em; }
   .feature-list { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.5rem 0 0; padding: 0; list-style: none; }
   .feature-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "origin importance" "copy copy"; gap: 0.38rem 0.5rem; align-items: start; padding: 0.55rem; border: 1px solid rgba(65, 75, 67, 0.11); background: #fbf8f3; }
   .origin-badge.own { color: #416149; background: #e7f1e6; }
@@ -721,14 +890,42 @@
   .importance-badge { grid-area: importance; justify-self: end; color: #7f5945; background: #f5eee6; white-space: normal; text-align: right; }
   .identity-group { grid-column: 1 / -1; padding-top: 0.75rem; border-top: 1px dashed rgba(65, 75, 67, 0.16); }
   .empty-group { margin: 0.5rem 0 0; color: #6d756d; font-size: 0.65rem; line-height: 1.45; }
+  .process-profile { margin-top: 0.9rem; padding: 0.85rem; border: 1px solid #e4c8b8; background: #fff7f1; }
+  .process-profile-heading h4 { margin: 0; color: #48634e; font-size: 0.78rem; }
+  .process-profile-intro { max-width: 58rem; margin: 0.45rem 0 0; color: #5d6b61; font-size: 0.65rem; line-height: 1.5; }
+  .process-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin-top: 0.7rem; }
+  .process-profile-section { min-width: 0; padding: 0.65rem; border: 1px solid #ead8cc; background: #fffdfa; }
+  .process-profile-section h5 { margin: 0; color: #80533f; font-size: 0.68rem; }
+  .process-profile-section dl { display: grid; gap: 0.45rem; margin: 0.55rem 0 0; }
+  .process-profile-section dl > div { display: grid; grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr); gap: 0.45rem; align-items: start; }
+  .process-profile-section dt { color: #68746b; font-size: 0.59rem; line-height: 1.35; }
+  .process-profile-section dd { margin: 0; color: #3e5948; font-size: 0.63rem; line-height: 1.4; }
+  .process-profile-section small { grid-column: 2; color: #758078; font-size: 0.57rem; line-height: 1.35; }
   .matcher-policy { margin-top: 0.9rem; padding: 0.75rem; border: 1px solid #dbe5da; background: #f4faf3; }
-  .matcher-policy p { margin: 0.35rem 0 0; color: #8f5b42; }
   .matcher-policy ul { margin: 0.55rem 0 0; padding-left: 1rem; color: #5d6b61; font-size: 0.63rem; line-height: 1.5; }
-  .provenance-block { margin-top: 0.9rem; padding-top: 0.75rem; border-top: 1px solid rgba(65, 75, 67, 0.13); }
-  .provenance-block p { margin: 0.4rem 0 0; color: #626d65; font-size: 0.62rem; line-height: 1.45; }
-  .provenance-block strong { color: #4f6955; }
-  .prototype-technical { margin-top: 0.85rem; }
-  .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; gap: 1rem; color: #5f6860; }
+  .reference-formulas { margin-top: 0.9rem; padding: 0.85rem; border: 1px solid #dbe5da; background: #f4faf3; }
+  .reference-formulas-heading { display: flex; justify-content: space-between; align-items: end; gap: 0.8rem; }
+  .reference-formulas-heading .section-kicker { margin-bottom: 0.35rem; }
+  .reference-formulas-heading h4 { margin: 0; color: #48634e; font-size: 0.78rem; }
+  .reference-formulas-heading > span { color: #5d765f; font-size: 0.62rem; font-weight: 750; }
+  .reference-formulas-intro { max-width: 58rem; margin: 0.45rem 0 0; color: #5d6b61; font-size: 0.65rem; line-height: 1.5; }
+  .reference-formula-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem; margin-top: 0.7rem; }
+  .reference-formula-row { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.55rem; border: 1px solid #d5e1d3; background: #fffdfa; }
+  .reference-formula-main { min-width: 0; flex: 1 1 auto; }
+  .reference-formula-row strong, .reference-formula-row small { display: block; }
+  .reference-formula-row strong { color: #3e5948; font-size: 0.7rem; line-height: 1.3; }
+  .reference-formula-row small { margin-top: 0.15rem; color: #758078; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.55rem; overflow-wrap: anywhere; }
+  .reference-formula-status { flex: 0 0 auto; align-self: start; color: #68746b; font-size: 0.55rem; line-height: 1.35; text-align: right; }
+  .reference-process-details { margin-top: 0.5rem; border-top: 1px solid #e4eadd; }
+  .reference-process-details summary { padding-top: 0.45rem; color: #8e553e; font-size: 0.59rem; font-weight: 750; cursor: pointer; }
+  .reference-process-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem 0.55rem; margin: 0.45rem 0 0; }
+  .reference-process-details dl > div { min-width: 0; }
+  .reference-process-details dt { color: #758078; font-size: 0.53rem; line-height: 1.25; }
+  .reference-process-details dd { margin: 0.1rem 0 0; color: #3e5948; font-size: 0.59rem; line-height: 1.3; overflow-wrap: anywhere; }
+  .reference-formulas-link { display: flex; justify-content: space-between; gap: 0.8rem; margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid #d5e1d3; color: #8e553e; font-size: 0.67rem; font-weight: 750; text-decoration: none; }
+  .reference-formulas-link:hover { color: #365541; }
+  .reference-formulas-empty { margin: 0.6rem 0 0; color: #68746b; font-size: 0.65rem; }
   @media (max-width: 900px) { .catalog-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .topnav { gap: 0.55rem; font-size: 0.68rem; } .nav-current, .nav-divider { display: none; } .catalog-hero { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(2.8rem, 15vw, 5rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .catalog-control, .explorer-toolbar { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; } .catalog-metadata { grid-template-columns: 1fr; } .catalog-section { padding-top: 2.5rem; } .explorer-layout { grid-template-columns: 1fr; } .family-browser { position: static; } .family-tree { max-height: 22rem; } .prototype-heading { display: block; } .prototype-badges { justify-content: flex-start; max-width: none; margin-top: 0.7rem; } .type-row { grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: start; } .type-row-status { grid-column: 2 / -1; justify-content: flex-start; } .type-row-arrow { display: none; } .feature-columns { grid-template-columns: 1fr; } .identity-group { grid-column: auto; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 720px) { .reference-formula-list { grid-template-columns: 1fr; } .reference-formulas-heading { align-items: flex-start; flex-direction: column; } .process-profile-grid { grid-template-columns: 1fr; } .process-profile-section dl > div { grid-template-columns: minmax(6.5rem, 0.8fr) minmax(0, 1.2fr); } }
+  @media (max-width: 720px) { main { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .topnav { gap: 0.55rem; font-size: 0.68rem; } .nav-current, .nav-divider { display: none; } .catalog-hero { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(2.8rem, 15vw, 5rem); } .hero-copy p { font-size: 0.88rem; } .catalog-control, .explorer-toolbar { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; } .catalog-metadata { grid-template-columns: 1fr; } .catalog-section { padding-top: 2.5rem; } .explorer-layout { grid-template-columns: 1fr; } .family-browser { position: static; } .family-tree { max-height: 22rem; } .prototype-heading { display: block; } .prototype-badges { justify-content: flex-start; max-width: none; margin-top: 0.7rem; } .type-row { grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: start; } .type-row-status { grid-column: 2 / -1; justify-content: flex-start; } .type-row-arrow { display: none; } .feature-columns { grid-template-columns: 1fr; } .identity-group { grid-column: auto; } }
 </style>

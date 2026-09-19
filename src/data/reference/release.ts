@@ -5,9 +5,10 @@ import {
 import { assembleGoldDatasetRelease, publishIntoRegistry } from '../../lib/domain/publication';
 import { PILOT_DATASET } from './pilot';
 import { REFERENCE_MODIFIER_ASSIGNMENTS } from './modifiers';
+import { REFERENCE_PROTOTYPE_ASSIGNMENTS } from './prototype-assignments';
 import { SOURCE_REGISTRY } from './sources';
 
-export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-10T20:48:27Z';
+export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-19T00:00:00Z';
 
 /**
  * The browser-safe registry is assembled only from the owner-approved pilot
@@ -20,6 +21,7 @@ function publishApprovedPilot(): DatasetReleaseRegistry {
     handoff: PILOT_DATASET.handoff,
     registry: SOURCE_REGISTRY,
     modifierIdsByPreparationKey: REFERENCE_MODIFIER_ASSIGNMENTS,
+    prototypeIdsByPreparationKey: REFERENCE_PROTOTYPE_ASSIGNMENTS,
     releaseId: GOLD_DATASET_RELEASE_ID,
     createdAt: GOLD_FORMULAS_RELEASE_CREATED_AT,
     supersedes: null,

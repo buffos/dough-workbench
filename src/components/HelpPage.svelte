@@ -49,11 +49,6 @@
         <h1>{content.title}</h1>
         <p>{content.intro}</p>
       </div>
-      <div class="hero-index" aria-hidden="true">
-        <span>HELP</span>
-        <span class="hero-index-rule"></span>
-        <span>DFI</span>
-      </div>
     </section>
 
     <div class="help-layout">
@@ -98,10 +93,6 @@
     </div>
   </main>
 
-  <footer class="site-footer">
-    <span>© 2026 DFI</span>
-    <span>{locale === 'el' ? 'Τοπική τεκμηρίωση • χωρίς λογαριασμό ή backend' : 'Local documentation • no account or backend'}</span>
-  </footer>
 </div>
 
 <style>
@@ -114,7 +105,7 @@
   .brand { display: inline-flex; align-items: center; gap: 0.7rem; color: inherit; text-decoration: none; }
   .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #b87957; border-radius: 50%; color: #914d38; font-size: 0.58rem; font-weight: 800; letter-spacing: -0.05em; }
   .brand-copy { display: flex; flex-direction: column; gap: 0.15rem; }
-  .brand-eyebrow, .section-kicker, .index-title, .site-footer { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
+  .brand-eyebrow, .section-kicker, .index-title { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
   .brand-eyebrow { color: #7b4f3f; font-weight: 760; }
   .brand-name { font-size: 0.86rem; line-height: 0.92; font-weight: 740; letter-spacing: -0.03em; }
   .topnav { display: flex; gap: 0.9rem; align-items: center; font-size: 0.78rem; }
@@ -125,14 +116,12 @@
   .language-link { display: inline-flex; gap: 0.45rem; align-items: center; }
   .language-dot { width: 6px; height: 6px; display: inline-block; background: #cc7853; border-radius: 50%; }
   main { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; }
-  .help-hero { min-height: 320px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: 1fr auto; align-items: end; position: relative; }
+  .help-hero { min-height: 320px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: 1fr; align-items: end; position: relative; }
   .hero-kicker { grid-column: 1 / -1; display: flex; gap: 0.7rem; align-items: center; color: #8b4f3b; font-size: 0.66rem; font-weight: 760; letter-spacing: 0.15em; text-transform: uppercase; }
   .kicker-line { width: 36px; height: 1px; background: #c77954; }
   .hero-copy { max-width: 780px; grid-column: 1; }
   .hero-copy h1 { max-width: 790px; margin: 1.1rem 0 1rem; color: #263d34; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3rem, 6vw, 6.7rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.065em; }
   .hero-copy p { max-width: 660px; margin: 0; color: #58665d; font-size: 0.97rem; line-height: 1.65; }
-  .hero-index { grid-column: 2; display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.35rem; color: #68736b; font-size: 0.68rem; letter-spacing: 0.12em; }
-  .hero-index-rule { width: 52px; height: 1px; background: #bdc1b9; }
   .help-layout { display: grid; grid-template-columns: minmax(190px, 0.28fr) minmax(0, 0.72fr); gap: clamp(2rem, 7vw, 7rem); padding: 2rem 0 4rem; border-top: 1px solid rgba(42, 50, 45, 0.16); }
   .help-index { position: sticky; top: 1.5rem; align-self: start; }
   .index-title { margin: 0 0 1rem; color: #8b4f3b; font-weight: 800; }
@@ -154,7 +143,6 @@
   .help-entry .entry-examples { color: #526b59; }
   .help-entry .entry-note { padding-top: 0.65rem; border-top: 1px solid rgba(65, 75, 67, 0.12); color: #705441; font-size: 0.7rem; }
   .help-entry strong { font-weight: 750; }
-  .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; gap: 1rem; color: #5f6860; }
   @media (max-width: 900px) { .help-layout { grid-template-columns: 1fr; gap: 2rem; } .help-index { position: static; } .help-index nav { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .topnav { gap: 0.55rem; font-size: 0.68rem; } .nav-current, .nav-divider { display: none; } .help-hero { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(2.8rem, 15vw, 5rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .help-index nav, .help-entries { grid-template-columns: 1fr; } .help-section { padding-bottom: 2.5rem; } .help-section + .help-section { padding-top: 2.5rem; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 720px) { main { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .topnav { gap: 0.55rem; font-size: 0.68rem; } .nav-current, .nav-divider { display: none; } .help-hero { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(2.8rem, 15vw, 5rem); } .hero-copy p { font-size: 0.88rem; } .help-index nav, .help-entries { grid-template-columns: 1fr; } .help-section { padding-bottom: 2.5rem; } .help-section + .help-section { padding-top: 2.5rem; } }
 </style>

@@ -1,54 +1,101 @@
 # Dough Formula Intelligence
 
-Bilingual Greek/English frontend for transparent dough and batter formula
-normalization. The current vertical slice runs entirely in the browser and is
-deployed as a static Astro site to GitHub Pages.
+Dough Formula Intelligence is a bilingual Greek/English static web application
+for exploring dough formulas, process data, and structural dough prototypes.
+It is an early public prototype: the goal is to make formula assumptions
+visible, comparable, and easy to refine as the reference dataset grows.
 
-## Stack
+The application currently includes:
 
-- Astro + TypeScript for static routes and content shell
-- Svelte for the interactive Formula workspace
-- Framework-independent domain normalization and validation under `src/lib/domain`
-- Versioned starter ingredient fixture under `src/data/ingredients`
+- A formula workspace for ingredient composition and process information.
+- Greek and English routes with matching content and navigation.
+- A prototype catalog for dough families and their defining characteristics.
+- Reference formulas, including first-party breadstick formulas.
+- Process fields for mixing, fermentation, aeration, thermal treatment, and
+  geometry.
+- Theory and terminology pages that explain the vocabulary used by the model.
+- Static, browser-only behavior with no account, backend, or database.
 
-## Development
+## Technology
+
+- Astro and TypeScript for the static site and routes.
+- Svelte for the interactive formula workspace.
+- Vitest, ESLint, and TypeScript for the quality gates.
+- GitHub Actions and GitHub Pages for continuous deployment.
+
+## Local development
+
+Install the dependencies and start the development server:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open `/en/` or `/el/` for the workspace, and `/en/help/` or `/el/help/` for the
-terminology and calculation guide. The transient draft is kept in
-`sessionStorage` only to preserve the active formula while switching locale;
-there is no backend or account persistence.
+Open the URL printed by Astro and choose either the `/en/` or `/el/` route.
+The main application routes are:
 
-The repository also includes a PowerShell-compatible `Makefile`:
+- `/en/` and `/el/` — formula workspace.
+- `/en/catalog/` and `/el/catalog/` — prototype catalog.
+- `/en/help/` and `/el/help/` — terminology and field explanations.
+- `/en/theory/` and `/el/theory/` — theory overview.
+- `/en/theory/breadsticks/` and `/el/theory/breadsticks/` — breadstick theory.
 
-```bash
-make help
-make dev
-```
+The current draft is kept in browser `sessionStorage` while changing locale.
+It is not persisted to a server or shared between users.
+
+## Data and code layout
+
+- `src/data/ingredients/` contains the starter ingredient catalog.
+- `src/data/reference/` contains reference formulas, source metadata, and
+  prototype assignments.
+- `src/data/prototypes/` contains the prototype catalog.
+- `src/lib/domain/` contains framework-independent normalization, validation,
+  classification, and process logic.
+- `src/components/` contains the interactive Svelte panels.
+- `src/pages/` contains the localized Astro routes.
+- `exploration/` contains working notes and source material for the evolving
+  model.
 
 ## Verification
+
+Run the full local quality gate before publishing changes:
 
 ```bash
 npm run verify
 ```
 
-The equivalent Make target is `make verify`. For a GitHub Pages-style check
-with the default repository base path, use `make pages-verify`; override it
-with `make pages-verify BASE_PATH=/another-repository` when needed.
-
-This runs domain tests, ESLint, TypeScript, the static Astro build, and route
-checks. GitHub Pages builds set `BASE_PATH` to the repository name. In a POSIX
-shell:
+This runs the test suite, ESLint, TypeScript checking, the Astro static build,
+and static route/content checks. The equivalent PowerShell-compatible Make
+target is:
 
 ```bash
-BASE_PATH=/website-doughs npm run build
-BASE_PATH=/website-doughs npm run check:static
+make verify
 ```
 
-In PowerShell, set `$env:BASE_PATH = '/website-doughs'` before each command.
+To verify the repository as a GitHub Pages project site locally, set the base
+path to the repository name:
 
-The canonical product and architecture decisions live in `docs/` and `.okf/`.
+```bash
+BASE_PATH=/repository-name npm run verify
+```
+
+In PowerShell, use `$env:BASE_PATH = '/repository-name'` before running the
+command.
+
+## GitHub Pages deployment
+
+The workflow in `.github/workflows/deploy.yml` runs the quality gate for pull
+requests and deploys successful pushes to the default branch to GitHub Pages.
+The build receives the repository name as `BASE_PATH`, so project-page assets
+and links work below `https://<owner>.github.io/<repository-name>/`.
+
+The site is fully static. Publishing a later change is simply a push to the
+configured deployment branch; GitHub Actions rebuilds and redeploys it
+automatically after the checks pass.
+
+## Project documentation
+
+Product notes, architecture decisions, and the evolving domain model live in
+`docs/` and `.okf/`. They describe the intended behavior more fully than this
+short public README.

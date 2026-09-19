@@ -135,6 +135,18 @@ export function processSnapshotToDraft(
   };
 }
 
+export function restoreProcessDraftForSavedReference(
+  record: DatasetRecordSnapshot,
+  savedProcess: ProcessDraft | null,
+  formulaId: string,
+): ProcessDraft {
+  const belongsToReference = savedProcess?.formulaId === formulaId
+    && savedProcess.sourceReference?.sourceReleaseId === record.releaseId
+    && savedProcess.sourceReference.sourceRecordId === record.recordId;
+  if (belongsToReference && savedProcess.revision > 1) return savedProcess;
+  return processSnapshotToDraft(record, formulaId);
+}
+
 export function isWorkspaceDraftDirty(formula: FormulaDraft, process: ProcessDraft): boolean {
   return formula.revision > 1 || process.revision > 1;
 }

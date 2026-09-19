@@ -1,7 +1,7 @@
 export const PROTOTYPE_CATALOG_INTEGRITY_POLICY = 'prototype-catalog-integrity-v1';
 export const PROTOTYPE_CATALOG_ID = 'prototype-catalog';
-export const PROTOTYPE_CATALOG_VERSION = 'prototype-catalog-v2';
-export const PROTOTYPE_MODEL_VERSION = 'prototype-model-v2';
+export const PROTOTYPE_CATALOG_VERSION = 'prototype-catalog-v3';
+export const PROTOTYPE_MODEL_VERSION = 'prototype-model-v3';
 
 export const PROTOTYPE_CONFIDENCE_TIERS = ['high', 'medium', 'calibration-limited'] as const;
 export type PrototypeConfidenceTier = (typeof PROTOTYPE_CONFIDENCE_TIERS)[number];
@@ -38,6 +38,19 @@ export interface PrototypeFeature {
   importance: PrototypeImportance;
 }
 
+export interface PrototypeProcessProfileFact {
+  id: string;
+  label: PrototypeLocalizedLabel;
+  value: PrototypeLocalizedLabel;
+  note?: PrototypeLocalizedLabel;
+}
+
+export interface PrototypeProcessProfileSection {
+  id: string;
+  label: PrototypeLocalizedLabel;
+  facts: readonly PrototypeProcessProfileFact[];
+}
+
 export interface PrototypeMatcherPolicy {
   id: string;
   mode: 'qualitative';
@@ -62,6 +75,7 @@ export interface PrototypeDefinition {
   structuralFeatures: readonly PrototypeFeature[];
   structuralConstraints: readonly PrototypeFeature[];
   identityModifiers: readonly PrototypeFeature[];
+  processProfile?: readonly PrototypeProcessProfileSection[];
   matcherPolicy?: PrototypeMatcherPolicy;
   confidenceTier: PrototypeConfidenceTier;
   maturity: PrototypeMaturity;
@@ -245,6 +259,53 @@ function validateMatcherPolicy(policy: PrototypeMatcherPolicy, path: string, dia
   }
 }
 
+function validateProcessProfile(
+  profile: readonly PrototypeProcessProfileSection[] | undefined,
+  path: string,
+  diagnostics: PrototypeCatalogDiagnostic[],
+): void {
+  if (profile === undefined) return;
+  if (!Array.isArray(profile)) {
+    diagnostics.push(diagnostic('MALFORMED_METADATA', path, 'catalog.diagnostic.malformedMetadata'));
+    return;
+  }
+  const sections = profile as readonly PrototypeProcessProfileSection[];
+  const sectionIds = new Set<string>();
+  sections.forEach((section, sectionIndex) => {
+    const sectionPath = `${path}[${sectionIndex}]`;
+    if (!isNonEmptyString(section.id) || !ID_PATTERN.test(section.id) || sectionIds.has(section.id)) {
+      diagnostics.push(diagnostic(
+        sectionIds.has(section.id) ? 'DUPLICATE_ID' : 'MALFORMED_METADATA',
+        `${sectionPath}.id`,
+        sectionIds.has(section.id) ? 'catalog.diagnostic.duplicateId' : 'catalog.diagnostic.malformedMetadata',
+        sectionIds.has(section.id) ? { id: section.id } : {},
+      ));
+    }
+    sectionIds.add(section.id);
+    validateLabels(section.label, `${sectionPath}.label`, diagnostics);
+    if (!Array.isArray(section.facts)) {
+      diagnostics.push(diagnostic('MALFORMED_METADATA', `${sectionPath}.facts`, 'catalog.diagnostic.malformedMetadata'));
+      return;
+    }
+    const factIds = new Set<string>();
+    section.facts.forEach((fact, factIndex) => {
+      const factPath = `${sectionPath}.facts[${factIndex}]`;
+      if (!isNonEmptyString(fact.id) || !ID_PATTERN.test(fact.id) || factIds.has(fact.id)) {
+        diagnostics.push(diagnostic(
+          factIds.has(fact.id) ? 'DUPLICATE_ID' : 'MALFORMED_METADATA',
+          `${factPath}.id`,
+          factIds.has(fact.id) ? 'catalog.diagnostic.duplicateId' : 'catalog.diagnostic.malformedMetadata',
+          factIds.has(fact.id) ? { id: fact.id } : {},
+        ));
+      }
+      factIds.add(fact.id);
+      validateLabels(fact.label, `${factPath}.label`, diagnostics);
+      validateLabels(fact.value, `${factPath}.value`, diagnostics);
+      if (fact.note !== undefined) validateLabels(fact.note, `${factPath}.note`, diagnostics);
+    });
+  });
+}
+
 export function validatePrototypeCatalog(input: PrototypeCatalogInput): PrototypeCatalogValidationResult {
   const diagnostics: PrototypeCatalogDiagnostic[] = [];
   if (!isNonEmptyString(input.catalogId) || !isNonEmptyString(input.version) || !isNonEmptyString(input.modelVersion)) {
@@ -281,6 +342,7 @@ export function validatePrototypeCatalog(input: PrototypeCatalogInput): Prototyp
     validateFeatureCollection(definition.structuralFeatures, `${path}.structuralFeatures`, diagnostics);
     validateFeatureCollection(definition.structuralConstraints, `${path}.structuralConstraints`, diagnostics);
     validateFeatureCollection(definition.identityModifiers, `${path}.identityModifiers`, diagnostics);
+    validateProcessProfile(definition.processProfile, `${path}.processProfile`, diagnostics);
     if (definition.matcherPolicy) validateMatcherPolicy(definition.matcherPolicy, `${path}.matcherPolicy`, diagnostics);
     if (!PROTOTYPE_CONFIDENCE_TIERS.includes(definition.confidenceTier)
       || !PROTOTYPE_MATURITIES.includes(definition.maturity)
@@ -331,6 +393,19 @@ function cloneTarget(target: PrototypeFeatureTarget): PrototypeFeatureTarget {
   return target.kind === 'compatibility' ? { ...target, values: [...target.values] } : { ...target };
 }
 
+function cloneProcessProfile(profile: readonly PrototypeProcessProfileSection[] | undefined): PrototypeProcessProfileSection[] | undefined {
+  return profile?.map((section) => ({
+    ...section,
+    label: { ...section.label },
+    facts: section.facts.map((fact) => ({
+      ...fact,
+      label: { ...fact.label },
+      value: { ...fact.value },
+      note: fact.note ? { ...fact.note } : undefined,
+    })),
+  }));
+}
+
 function freezeDeep<T>(value: T, seen = new WeakSet<object>()): T {
   if (typeof value !== 'object' || value === null) return value;
   const objectValue = value as object;
@@ -348,6 +423,7 @@ function cloneDefinition(definition: PrototypeDefinition): PrototypeDefinition {
     structuralFeatures: definition.structuralFeatures.map((feature) => ({ ...feature, label: { ...feature.label }, target: cloneTarget(feature.target) })),
     structuralConstraints: definition.structuralConstraints.map((feature) => ({ ...feature, label: { ...feature.label }, target: cloneTarget(feature.target) })),
     identityModifiers: definition.identityModifiers.map((feature) => ({ ...feature, label: { ...feature.label }, target: cloneTarget(feature.target) })),
+    processProfile: cloneProcessProfile(definition.processProfile),
     matcherPolicy: definition.matcherPolicy ? { ...definition.matcherPolicy } : undefined,
     provenance: { ...definition.provenance, note: { ...definition.provenance.note } },
   };

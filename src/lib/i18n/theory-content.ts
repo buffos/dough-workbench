@@ -35,11 +35,12 @@ export interface TheoryContent {
   intro: string;
   backToWorkspace: string;
   contentsTitle: string;
-  sourceNote: string;
-  sourceLabel: string;
   chapterLabel: string;
   tableLabel: string;
   noteLabel: string;
+  breadsticksLinkKicker: string;
+  breadsticksLinkTitle: string;
+  breadsticksLinkIntro: string;
   chapters: TheoryChapter[];
 }
 
@@ -50,11 +51,12 @@ export const THEORY_CONTENT: Record<Locale, TheoryContent> = {
     intro: 'Read a dough from the inside out: structure, water, gas, texture, and the process that brings them together. These chapters turn a recipe into a model you can reason about.',
     backToWorkspace: 'Back to workspace',
     contentsTitle: 'On this page',
-    sourceNote: 'Rewritten from the 14 internal theory notes in exploration/theory. The ranges are practical guides, not hard boundaries or calibrated predictions.',
-    sourceLabel: 'Internal theory notes',
     chapterLabel: 'Chapter',
     tableLabel: 'Reference table',
     noteLabel: 'Keep in mind',
+    breadsticksLinkKicker: 'Focused guide',
+    breadsticksLinkTitle: 'Breadsticks / grissini',
+    breadsticksLinkIntro: 'A separate map of hydration, fat, leavening, thickness, and ten starting formulas.',
     chapters: [
       {
         id: 'introduction',
@@ -524,11 +526,12 @@ export const THEORY_CONTENT: Record<Locale, TheoryContent> = {
     intro: 'Διάβασε μια ζύμη από μέσα προς τα έξω: δομή, νερό, αέριο, υφή και η διαδικασία που τα ενώνει. Αυτά τα κεφάλαια μετατρέπουν μια συνταγή σε ένα μοντέλο που μπορείς να κατανοήσεις και να εξερευνήσεις.',
     backToWorkspace: 'Πίσω στον χώρο εργασίας',
     contentsTitle: 'Σελίδα περιεχομένων',
-    sourceNote: 'Ξαναγραμμένο από τα 14 εσωτερικά κείμενα θεωρίας του exploration/theory. Τα εύρη είναι πρακτικοί οδηγοί, όχι αυστηρά όρια ή βαθμονομημένες προβλέψεις.',
-    sourceLabel: 'Εσωτερικά κείμενα θεωρίας',
     chapterLabel: 'Κεφάλαιο',
     tableLabel: 'Πίνακας αναφοράς',
     noteLabel: 'Να θυμάσαι',
+    breadsticksLinkKicker: 'Ειδικός οδηγός',
+    breadsticksLinkTitle: 'Κριτσίνια / grissini',
+    breadsticksLinkIntro: 'Ξεχωριστός χάρτης για ενυδάτωση, λίπος, διόγκωση, πάχος και δέκα φόρμουλες εκκίνησης.',
     chapters: [
       {
         id: 'introduction',

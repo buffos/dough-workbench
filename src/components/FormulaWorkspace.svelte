@@ -37,6 +37,7 @@
     PROCESS_ADDITION_ACTIONS,
     PROCESS_FIELD_DESCRIPTORS,
     createInitialProcessDraft,
+    getProcessDraftField,
     type ProcessDraft,
     type ProcessFieldDescriptor,
     type ProcessNormalizationOutcome,
@@ -76,6 +77,7 @@
     persistDraft,
     persistProcess,
   } from '../lib/state/workspace';
+  import { restoreProcessDraftForSavedReference } from '../lib/domain/reference-start';
   import { createLocalCommandLedger } from '../lib/application/command-ledger';
 
   export let locale: Locale;
@@ -121,6 +123,7 @@
 
   onMount(() => {
     const savedDraft = loadDraft();
+    let savedReferenceRecord: DatasetRecordSnapshot | null = null;
     if (savedDraft) {
       draft = savedDraft;
       result = normalizeFormulaDraft(savedDraft);
@@ -131,11 +134,15 @@
           savedDraft.sourceReference.sourceRecordId,
         );
         activeReference = restoredReference.record;
+        savedReferenceRecord = restoredReference.record;
         if (!restoredReference.record) referenceStartError = 'reference_copy_invalid';
       }
     }
     const savedProcess = loadProcess();
-    if (savedProcess && savedProcess.formulaId === draft.formulaId) {
+    if (savedReferenceRecord) {
+      processDraft = restoreProcessDraftForSavedReference(savedReferenceRecord, savedProcess, draft.formulaId);
+      processResult = normalizeProcessDraft(processDraft, draft.ingredientLines.map((line) => line.id));
+    } else if (savedProcess && savedProcess.formulaId === draft.formulaId) {
       processDraft = savedProcess;
       processResult = normalizeProcessDraft(savedProcess, draft.ingredientLines.map((line) => line.id));
     } else {
@@ -447,8 +454,7 @@
   }
 
   function processField(path: ProcessValuePath): DraftValueState {
-    const [section, field] = path.split('.') as [keyof ProcessDraft, string];
-    return (processDraft[section] as Record<string, DraftValueState>)[field];
+    return getProcessDraftField(processDraft, path);
   }
 
   function updateProcessState(path: ProcessValuePath, nextState: string): void {
@@ -868,11 +874,6 @@
         <h1>{t(locale, 'brand.title')}</h1>
         <p>{t(locale, 'brand.subtitle')}</p>
       </div>
-      <div class="hero-index" aria-hidden="true">
-        <span>01</span>
-        <span class="hero-index-rule"></span>
-        <span>DFI</span>
-      </div>
     </section>
 
     <section class="workspace-heading">
@@ -1276,7 +1277,7 @@
               <legend>{t(locale, `process.section.${section.key}`)}</legend>
               <div class="process-fields">
                 {#each section.fields as field (field.path)}
-                  {@const current = processField(field.path)}
+                  {@const current = getProcessDraftField(processDraft, field.path)}
                   <div class="process-field">
                     <FieldHelp
                       label={`${processFieldLabel(field)}${processUnitLabel(field) ? ` (${processUnitLabel(field)})` : ''}`}
@@ -1704,8 +1705,6 @@
     </div>
   </main>
 
-  <footer class="site-footer"><span>© 2026 DFI</span><span>{t(locale, 'footer.note')}</span></footer>
-
   {#if replacementDialogOpen}
     <div class="replacement-dialog-backdrop">
       <section
@@ -1743,7 +1742,7 @@
   .brand { display: inline-flex; align-items: center; gap: 0.7rem; color: inherit; text-decoration: none; }
   .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #b87957; border-radius: 50%; color: #914d38; font-size: 0.58rem; font-weight: 800; letter-spacing: -0.05em; }
   .brand-copy { display: flex; flex-direction: column; gap: 0.15rem; }
-  .brand-eyebrow, .section-kicker, .hero-kicker, .panel-number, .metric-label, .field span, .composition-label, .policy-strip, .site-footer, .draft-meta span, .result-block-heading span { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
+  .brand-eyebrow, .section-kicker, .hero-kicker, .panel-number, .metric-label, .field span, .composition-label, .policy-strip, .draft-meta span, .result-block-heading span { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
   .brand-eyebrow { color: #7b4f3f; font-weight: 760; }
   .brand-name { font-size: 0.86rem; line-height: 0.92; font-weight: 740; letter-spacing: -0.03em; }
   .topnav { display: flex; gap: 0.9rem; align-items: center; font-size: 0.78rem; }
@@ -1755,14 +1754,12 @@
   .language-link:hover { color: #a24e37; }
   .language-dot, .status-dot { width: 6px; height: 6px; display: inline-block; background: #cc7853; border-radius: 50%; }
   main { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; }
-  .hero-section { min-height: 300px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: 1fr auto; align-items: end; position: relative; }
+  .hero-section { min-height: 300px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: 1fr; align-items: end; position: relative; }
   .hero-kicker { display: flex; gap: 0.7rem; align-items: center; color: #8b4f3b; font-weight: 760; }
   .kicker-line { width: 36px; height: 1px; background: #c77954; }
   .hero-copy { max-width: 720px; grid-column: 1; }
   .hero-copy h1 { max-width: 690px; margin: 1.1rem 0 1rem; color: #263d34; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3.2rem, 7vw, 7.8rem); font-weight: 400; line-height: 0.9; letter-spacing: -0.065em; }
   .hero-copy p { max-width: 560px; margin: 0; color: #58665d; font-size: 0.97rem; line-height: 1.65; }
-  .hero-index { grid-column: 2; display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.35rem; color: #68736b; font-size: 0.68rem; letter-spacing: 0.12em; }
-  .hero-index-rule { width: 52px; height: 1px; background: #bdc1b9; }
   .workspace-heading { padding: 1.5rem 0 1.25rem; display: flex; justify-content: space-between; gap: 2rem; align-items: end; border-top: 1px solid rgba(42, 50, 45, 0.16); }
   .section-kicker { margin: 0 0 0.55rem; color: #8b4f3b; font-weight: 800; }
   .workspace-heading h2 { margin: 0; color: #273f35; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 400; letter-spacing: -0.05em; }
@@ -2011,8 +2008,7 @@
   .replacement-target span { font-size: 0.59rem; letter-spacing: 0.08em; text-transform: uppercase; }
   .replacement-target strong { color: #385446; font-size: 0.84rem; }
   .replacement-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1.1rem; }
-  .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; color: #5f6860; font-size: 0.57rem; letter-spacing: 0.08em; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   @media (max-width: 1080px) { .workspace-grid { grid-template-columns: 1fr; } .editor-panel, .result-panel, .process-panel { grid-column: 1; } .editor-panel { grid-row: 1; } .result-panel { grid-row: 2; min-height: auto; } .process-panel { grid-row: 3; } .process-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .empty-result { min-height: 360px; } }
-  @media (max-width: 720px) { main, .site-footer { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .hero-index { margin-top: 2rem; justify-content: flex-end; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block, .flour-composition-details { margin-left: 0; } .composition-grid, .flour-composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .replacement-dialog-actions { flex-direction: column-reverse; align-items: stretch; } .replacement-dialog-actions .text-button { align-self: flex-start; } .site-footer { gap: 0.6rem; flex-wrap: wrap; } }
+  @media (max-width: 720px) { main { width: min(100% - 1.2rem, 1400px); } .topbar { height: 68px; padding: 0 0.8rem; } .brand-name { font-size: 0.72rem; } .brand-eyebrow { font-size: 0.52rem; } .nav-current { display: none; } .hero-section { min-height: 300px; padding: 3.7rem 0 2.5rem; display: block; } .hero-copy h1 { font-size: clamp(3rem, 16vw, 5.6rem); } .hero-copy p { font-size: 0.88rem; } .workspace-heading { display: block; } .draft-meta { margin-top: 1.3rem; justify-content: space-between; } .panel-heading { padding: 1rem; } .editor-section { padding: 1rem; } .input-row { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-blend { grid-column: 2 / 4; } .ingredient-card-head { grid-template-columns: 1.5rem minmax(0, 1fr) 5.5rem 1.25rem; } .field-role { grid-column: 2 / 4; } .role-guide { margin-left: 0; } .composition-block, .flour-composition-details { margin-left: 0; } .composition-grid, .flour-composition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composition-heading { display: block; } .composition-note { display: block; margin-top: 0.25rem; } .ingredient-meta { margin-left: 0; grid-template-columns: 1fr 1fr; } .availability-row { grid-column: 1 / -1; grid-template-columns: 1fr; } .process-intro { padding: 0.9rem 1rem; display: block; } .process-intro > span { display: block; margin-top: 0.45rem; } .process-grid { padding: 1rem; grid-template-columns: 1fr; } .process-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .addition-step-head { grid-template-columns: 3.7rem minmax(0, 1fr) 4.6rem 1.25rem; } .editor-footer { padding: 1rem; align-items: stretch; flex-direction: column; } .primary-button { justify-content: space-between; } .analysis-handoff { margin-left: 1rem; margin-right: 1rem; } .outcome-banner, .diagnostic-list, .partial-note, .metric-grid, .result-block, .policy-strip, .explanation-card { margin-left: 1rem; margin-right: 1rem; } .metric-grid { grid-template-columns: 1fr 1fr; } .metric-featured { grid-column: 1 / -1; } .table-row { grid-template-columns: 1.15fr 0.75fr 0.65fr 0.7fr; font-size: 0.64rem; } .composition-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .explanation-toggle { width: calc(100% - 2rem); margin-left: 1rem; margin-right: 1rem; } .replacement-dialog-actions { flex-direction: column-reverse; align-items: stretch; } .replacement-dialog-actions .text-button { align-self: flex-start; } }
 </style>

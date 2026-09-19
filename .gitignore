@@ -1,6 +1,35 @@
+# Dependencies
 node_modules/
+
+# Astro and build output
 dist/
 .astro/
+.vite/
+
+# Local environment files
 .env
 .env.*
 !.env.example
+
+# Test and coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local scratch files
+tmp/
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

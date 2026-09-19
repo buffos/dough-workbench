@@ -4,6 +4,7 @@ import {
   PROCESS_ADDITION_ACTIONS,
   PROCESS_FIELD_DESCRIPTORS,
   createInitialProcessDraft,
+  getProcessDraftField,
   normalizeProcess,
   validateProcess,
 } from './process';
@@ -11,6 +12,16 @@ import {
 const catalogProvenance = { kind: 'user-entered' as const, sourceId: 'process-test' };
 
 describe('process capture and normalization', () => {
+  it('reads the current editable value for a Process field', () => {
+    const draft = createInitialProcessDraft('formula-process-field');
+    draft.mixing.method = knownDraftValue('hand_knead', catalogProvenance);
+
+    expect(getProcessDraftField(draft, 'mixing.method')).toMatchObject({
+      state: 'known',
+      value: 'hand_knead',
+    });
+  });
+
   it('preserves tri-state values and ordered AdditionSteps in an incomplete process', () => {
     const draft = createInitialProcessDraft('formula-process');
     draft.mixing.method = knownDraftValue('machine_knead', catalogProvenance);

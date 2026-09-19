@@ -1,162 +1,89 @@
 /**
- * Initial structured facet assignments for the published pilot references.
+ * Structured facets for the first-party grissini reference set.
  *
- * These are catalog metadata used for browsing, not claims about calibrated
- * behavior. An axis omitted for a preparation is not recorded here; it is not
- * interpreted as the absence of that modifier.
+ * These are browsing metadata, not claims about a finished bake. An omitted
+ * facet remains unrecorded rather than being interpreted as absent.
  */
-export const REFERENCE_MODIFIER_ASSIGNMENTS_VERSION = 'reference-modifier-seed-v1';
+export const REFERENCE_MODIFIER_ASSIGNMENTS_VERSION = 'first-party-breadsticks-v1';
 
 export const REFERENCE_MODIFIER_ASSIGNMENTS: Readonly<Record<string, readonly string[]>> = {
-  'lean-white-loaf': [
+  breadsticks: [
+    'leavening.yeast',
+    'structural-system.gluten-dominant',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+    'special-process.fermented',
+  ],
+  'breadsticks-torinese': [
     'leavening.yeast',
     'structural-system.gluten-dominant',
     'enrichment.lean',
-    'consistency.soft-dough',
+    'consistency.very-stiff',
+    'fat-handling.incorporated',
     'special-process.fermented',
   ],
-  'country-loaf': [
-    'leavening.yeast',
-    'structural-system.gluten-dominant',
-    'enrichment.lean',
-    'consistency.soft-dough',
-    'special-process.fermented',
-  ],
-  'sourdough-country-loaf': [
-    'leavening.sourdough-mixed',
-    'structural-system.gluten-dominant',
-    'enrichment.lean',
-    'consistency.wet-dough',
-    'special-process.fermented',
-  ],
-  'sourdough-whole-wheat': [
-    'leavening.sourdough-mixed',
-    'structural-system.gluten-dominant',
-    'enrichment.lean',
-    'consistency.wet-dough',
-    'special-process.fermented',
-  ],
-  brioche: [
-    'leavening.yeast',
-    'structural-system.gluten-dominant',
-    'enrichment.highly-enriched',
-    'consistency.soft-dough',
-    'fat-handling.late-incorporated',
-    'special-process.fermented',
-  ],
-  challah: [
+  'breadsticks-greek-style': [
     'leavening.yeast',
     'structural-system.gluten-dominant',
     'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+    'special-process.fermented',
+  ],
+  'breadsticks-biscuit-style': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'breadsticks-airy': [
+    'leavening.yeast',
+    'structural-system.gluten-dominant',
+    'enrichment.lightly-enriched',
     'consistency.soft-dough',
     'fat-handling.incorporated',
     'special-process.fermented',
   ],
-  'kouign-amann': [
+  'breadsticks-semolina': [
     'leavening.yeast',
-    'structural-system.laminated',
-    'enrichment.highly-enriched',
+    'structural-system.gluten-dominant',
+    'enrichment.lightly-enriched',
     'consistency.stiff-dough',
-    'fat-handling.laminated',
+    'fat-handling.incorporated',
     'special-process.fermented',
   ],
-  'puff-pastry': [
-    'leavening.none',
-    'structural-system.laminated',
+  'breadsticks-whole-wheat': [
+    'leavening.yeast',
+    'structural-system.gluten-dominant',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+    'special-process.fermented',
+  ],
+  'breadsticks-seeded': [
+    'leavening.yeast',
+    'structural-system.gluten-dominant',
     'enrichment.enriched',
     'consistency.stiff-dough',
-    'fat-handling.laminated',
+    'fat-handling.incorporated',
+    'special-process.fermented',
   ],
-  'sourdough-pizza': [
+  'breadsticks-cheese': [
+    'leavening.yeast',
+    'structural-system.gluten-dominant',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+    'special-process.fermented',
+  ],
+  'breadsticks-sourdough': [
     'leavening.sourdough-mixed',
     'structural-system.gluten-dominant',
-    'enrichment.lean',
-    'consistency.soft-dough',
-    'special-process.fermented',
-  ],
-  'neapolitan-pizza': [
-    'leavening.yeast',
-    'structural-system.gluten-dominant',
-    'enrichment.lean',
-    'consistency.soft-dough',
-    'special-process.fermented',
-  ],
-  'fresh-egg-pasta': [
-    'leavening.none',
-    'structural-system.gluten-dominant',
     'enrichment.lightly-enriched',
     'consistency.stiff-dough',
-  ],
-  tagliatelle: [
-    'leavening.none',
-    'structural-system.gluten-dominant',
-    'enrichment.lightly-enriched',
-    'consistency.stiff-dough',
-  ],
-  shortbread: [
-    'leavening.none',
-    'structural-system.fat-shortened',
-    'enrichment.highly-enriched',
-    'consistency.stiff-dough',
-  ],
-  'american-pie-dough': [
-    'leavening.none',
-    'structural-system.fat-shortened',
-    'enrichment.enriched',
-    'consistency.stiff-dough',
-  ],
-  'butter-cake': [
-    'leavening.chemical',
-    'enrichment.highly-enriched',
-    'consistency.thick-batter',
-    'special-process.whipped-foam',
-  ],
-  'pound-cake': [
-    'leavening.mechanical-foam',
-    'enrichment.highly-enriched',
-    'consistency.thick-batter',
-    'fat-handling.creamed',
-    'special-process.whipped-foam',
-  ],
-  crepe: [
-    'leavening.none',
-    'enrichment.enriched',
-    'consistency.thin-batter',
-    'special-process.griddled',
-  ],
-  'american-pancake': [
-    'leavening.chemical',
-    'enrichment.lightly-enriched',
-    'consistency.pourable-batter',
-    'special-process.griddled',
-  ],
-  churros: [
-    'leavening.steam',
-    'structural-system.starch-dominant',
-    'enrichment.enriched',
-    'consistency.paste',
-    'special-process.fried',
-  ],
-  beignet: [
-    'leavening.yeast',
-    'structural-system.gluten-dominant',
-    'enrichment.enriched',
-    'consistency.soft-dough',
+    'fat-handling.incorporated',
     'special-process.fermented',
-    'special-process.fried',
-  ],
-  'gluten-free-sandwich-loaf': [
-    'leavening.yeast',
-    'structural-system.starch-dominant',
-    'enrichment.enriched',
-    'consistency.wet-dough',
-    'special-process.fermented',
-  ],
-  'gluten-free-pancake': [
-    'leavening.chemical',
-    'structural-system.starch-dominant',
-    'enrichment.lightly-enriched',
-    'consistency.thick-batter',
-    'special-process.griddled',
   ],
 };

@@ -184,10 +184,16 @@ export interface ReferenceBrowseQuery {
   releaseId?: string;
   query?: string;
   familyId?: string;
+  prototypeId?: string;
   preparationKey?: string;
   modifierIds?: string[];
   page?: number;
   pageSize?: number;
+}
+
+export interface DatasetPrototypeOption {
+  id: string;
+  count: number;
 }
 
 export interface ReferenceBrowseResult {
@@ -606,10 +612,14 @@ export function browseReferenceFormulas(
     .filter(isPublicReferenceEligible)
     .map(summarizeDatasetRecord)
     .filter((summary) => !query.familyId || structuralFamilyMatches(summary.structuralFamilyId, query.familyId))
+    .filter((summary) => !query.prototypeId || summary.prototypeId === query.prototypeId)
     .filter((summary) => !query.preparationKey || summary.preparationKey === query.preparationKey)
     .filter((summary) => !query.modifierIds?.length || query.modifierIds.every((modifierId) => summary.modifierIds.includes(modifierId)))
     .filter((summary) => !search || localizedSearchText(summary).includes(search))
     .sort((left, right) => {
+      const leftGroup = left.prototypeId ? `prototype:${left.prototypeId}` : `family:${left.structuralFamilyId}`;
+      const rightGroup = right.prototypeId ? `prototype:${right.prototypeId}` : `family:${right.structuralFamilyId}`;
+      if (leftGroup !== rightGroup) return leftGroup.localeCompare(rightGroup);
       if (left.structuralFamilyId !== right.structuralFamilyId) return left.structuralFamilyId.localeCompare(right.structuralFamilyId);
       if (left.preparationKey !== right.preparationKey) return left.preparationKey.localeCompare(right.preparationKey);
       if (left.primary !== right.primary) return left.primary ? -1 : 1;
@@ -658,6 +668,29 @@ export function listReferenceFamilyOptions(
     count: counts.get(node.id) ?? 0,
     selectable: (counts.get(node.id) ?? 0) > 0,
   }));
+}
+
+export function listReferencePrototypeOptions(
+  registry: DatasetReleaseRegistry,
+  releaseId?: string,
+): DatasetPrototypeOption[] {
+  const { summaries } = eligibleRecordSummaries(registry, releaseId);
+  const counts = new Map<string, number>();
+  summaries.forEach((summary) => {
+    if (summary.prototypeId) counts.set(summary.prototypeId, (counts.get(summary.prototypeId) ?? 0) + 1);
+  });
+  return [...counts.entries()]
+    .map(([id, count]) => ({ id, count }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+export function listReferenceRecordsForPrototype(
+  registry: DatasetReleaseRegistry,
+  prototypeId: string,
+  releaseId?: string,
+): DatasetRecordSnapshot[] {
+  const resolution = resolveDatasetRelease(registry, releaseId);
+  return resolution.release?.records.filter((record) => isPublicReferenceEligible(record) && record.identity.prototypeId === prototypeId) ?? [];
 }
 
 export function listReferenceModifierFilterGroups(

@@ -124,6 +124,11 @@ export type ProcessValuePath =
   | 'geometry.surfaceVolumeClass'
   | 'geometry.containerType';
 
+export function getProcessDraftField(process: ProcessDraft, path: ProcessValuePath): DraftValueState {
+  const [section, field] = path.split('.') as [keyof ProcessDraft, string];
+  return (process[section] as Record<string, DraftValueState>)[field];
+}
+
 export interface ProcessFieldDescriptor {
   path: ProcessValuePath;
   key: string;
@@ -142,7 +147,7 @@ const FAT_MODES = ['early_coating', 'creamed', 'melted', 'late_incorporation', '
 const AERATION_METHODS = ['none', 'creaming', 'whole_egg_whip', 'egg_white_whip', 'whipped_cream', 'mechanical_beat', 'other'] as const;
 const FERMENTATION_AGENTS = ['none', 'commercial_yeast', 'sourdough', 'mixed', 'other'] as const;
 const THERMAL_METHODS = ['static_oven', 'fan_oven', 'steam_oven', 'air_fryer', 'griddle', 'pan', 'deep_fry', 'boil_then_bake', 'other'] as const;
-const SHAPE_CLASSES = ['loaf', 'roll', 'flatbread', 'thin_sheet', 'cookie', 'cake', 'muffin', 'pancake', 'crepe', 'ring', 'laminated_piece', 'choux_piece', 'other'] as const;
+const SHAPE_CLASSES = ['loaf', 'roll', 'breadstick', 'flatbread', 'thin_sheet', 'cookie', 'cake', 'muffin', 'pancake', 'crepe', 'ring', 'laminated_piece', 'choux_piece', 'other'] as const;
 const DEVELOPMENT_TARGETS = ['minimal', 'partial', 'full'] as const;
 const FOAM_TARGETS = ['low', 'medium', 'high'] as const;
 const POST_AERATION_HANDLING = ['gentle_fold', 'moderate_fold', 'vigorous_mix'] as const;

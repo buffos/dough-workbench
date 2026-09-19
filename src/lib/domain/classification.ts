@@ -570,6 +570,7 @@ function buildFeatures(
   add(processFeature('fermentation_agent', 'fermentation.agent', reference.process));
   add(processFeature('aeration_method', 'aeration.method', reference.process));
   add(processFeature('thermal_method', 'thermalProcess.method', reference.process));
+  add(processFeature('surface_treatment', 'thermalProcess.surfaceTreatment', reference.process));
   add(processFeature('shape_class', 'geometry.shapeClass', reference.process));
   add(processFeature('container_type', 'geometry.containerType', reference.process));
   add(processFeature('steam_level', 'thermalProcess.steamLevel', reference.process, 'ratio'));
@@ -588,7 +589,7 @@ function buildFeatures(
   add(presenceFeature('steam_leavening', 'thermalProcess.method', reference.process, (value) => value === 'steam_oven' || value === 'boil_then_bake'));
   add(presenceFeature('pourable_batter', 'lamination.doughState', reference.process, (value) => value === 'thin_pourable_batter'));
   add(presenceFeature('strong_gluten_development', 'mixing.targetDevelopment', reference.process, (value) => value === 'full'));
-  add(presenceFeature('gluten_structure', 'mixing.targetDevelopment', reference.process, (value) => value === 'full'));
+  add(presenceFeature('gluten_structure', 'mixing.targetDevelopment', reference.process, (value) => value === 'partial' || value === 'full'));
   add(presenceFeature('suppressed_gluten', 'mixing.targetDevelopment', reference.process, (value) => value === 'minimal'));
   add(derivedThermalGeometry(reference.process));
   return features;

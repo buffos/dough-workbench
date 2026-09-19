@@ -35,8 +35,8 @@ export interface CoverageInventory {
   entries: CoverageEntry[];
 }
 
-export const COVERAGE_INVENTORY_REVISION = 'coverage-v2';
-export const EXPECTED_COVERAGE_ENTRY_COUNT = 154;
+export const COVERAGE_INVENTORY_REVISION = 'coverage-v3';
+export const EXPECTED_COVERAGE_ENTRY_COUNT = 163;
 
 const category = (id: string, en: string, el: string, order: number): NavigationCategory => ({
   id,
@@ -92,7 +92,16 @@ export const COVERAGE_ENTRIES: CoverageEntry[] = [
   entry('dinner-rolls', 'Dinner rolls', 'Ψωμάκια φαγητού', 'yeasted-breads', 'family.fermented-gluten.soft-enriched', 'P0'),
   entry('hamburger-buns', 'Hamburger buns', 'Ψωμάκια για burger', 'yeasted-breads', 'family.fermented-gluten.soft-enriched', 'P1'),
   entry('english-muffin', 'English muffin', 'English muffin', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
-  entry('breadsticks', 'Breadsticks / grissini', 'Κριτσίνια', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks', 'Classic olive-oil grissini', 'Κλασικά κριτσίνια με ελαιόλαδο', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-torinese', 'Torinese grissini', 'Κριτσίνια Τορίνο', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-greek-style', 'Greek-style olive-oil grissini', 'Ελληνικού τύπου κριτσίνια λαδιού', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-biscuit-style', 'Biscuit-style breadsticks', 'Κριτσίνια τύπου biscuit', 'pastry-pie-tart-cracker', 'family.short-fat-shortened.shortbread', 'P1'),
+  entry('breadsticks-airy', 'Airy breadsticks', 'Αέρινα κριτσίνια', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-semolina', 'Semolina grissini', 'Κριτσίνια με σιμιγδάλι', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-whole-wheat', 'Whole-wheat grissini', 'Κριτσίνια ολικής άλεσης', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-seeded', 'Seeded grissini', 'Πολύσπορα κριτσίνια', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-cheese', 'Cheese and pepper grissini', 'Κριτσίνια με τυρί και πιπέρι', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
+  entry('breadsticks-sourdough', 'Long-fermentation sourdough grissini', 'Κριτσίνια μακράς ζύμωσης με προζύμι', 'yeasted-breads', 'family.fermented-gluten.lean-bread', 'P1'),
   entry('pretzel', 'Soft pretzel', 'Μαλακό pretzel', 'yeasted-breads', 'family.fermented-gluten.stiff', 'P1'),
 
   // Naturally leavened breads

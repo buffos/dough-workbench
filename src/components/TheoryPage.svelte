@@ -48,15 +48,16 @@
     <section class="theory-hero">
       <div class="hero-kicker"><span class="kicker-line"></span>{content.eyebrow}</div>
       <div class="hero-copy">
-        <div class="hero-badge">{content.sourceLabel} · 14</div>
         <h1>{content.title}</h1>
         <p>{content.intro}</p>
-        <p class="source-note">{content.sourceNote}</p>
-      </div>
-      <div class="hero-index" aria-hidden="true">
-        <span>THEORY</span>
-        <span class="hero-index-rule"></span>
-        <span>DFI</span>
+        <a class="focused-guide-link" href={`${workspaceHref}theory/breadsticks/`}>
+          <span>
+            <small>{content.breadsticksLinkKicker}</small>
+            <strong>{content.breadsticksLinkTitle}</strong>
+            <span>{content.breadsticksLinkIntro}</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
       </div>
     </section>
 
@@ -154,10 +155,6 @@
     </div>
   </main>
 
-  <footer class="site-footer">
-    <span>© 2026 DFI</span>
-    <span>{locale === 'el' ? 'Εσωτερική τεκμηρίωση • χωρίς λογαριασμό ή backend' : 'Internal documentation • no account or backend'}</span>
-  </footer>
 </div>
 
 <style>
@@ -170,7 +167,7 @@
   .brand { display: inline-flex; align-items: center; gap: 0.7rem; color: inherit; text-decoration: none; }
   .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #a65e43; border-radius: 50%; color: #7f422f; font-size: 0.58rem; font-weight: 800; letter-spacing: -0.05em; }
   .brand-copy { display: flex; flex-direction: column; gap: 0.15rem; }
-  .brand-eyebrow, .section-kicker, .index-title, .site-footer, .table-label { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
+  .brand-eyebrow, .section-kicker, .index-title, .table-label { font-size: 0.66rem; letter-spacing: 0.15em; text-transform: uppercase; }
   .brand-eyebrow { color: #724534; font-weight: 800; }
   .brand-name { font-size: 0.86rem; line-height: 0.92; font-weight: 740; letter-spacing: -0.03em; }
   .topnav { display: flex; gap: 0.9rem; align-items: center; font-size: 0.78rem; }
@@ -181,16 +178,18 @@
   .language-link { display: inline-flex; gap: 0.45rem; align-items: center; }
   .language-dot { width: 6px; height: 6px; display: inline-block; background: #bd6848; border-radius: 50%; }
   main { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; }
-  .theory-hero { min-height: 360px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; position: relative; }
+  .theory-hero { min-height: 360px; padding: clamp(3rem, 8vw, 7rem) 0 3.6rem; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; position: relative; }
   .hero-kicker { grid-column: 1 / -1; display: flex; gap: 0.7rem; align-items: center; color: #814833; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; }
   .kicker-line { width: 36px; height: 1px; background: #b96647; }
   .hero-copy { max-width: 930px; grid-column: 1; }
-  .hero-badge { display: inline-flex; margin-top: 1.35rem; padding: 0.38rem 0.55rem; background: #e9f0e8; color: #315344; font-size: 0.68rem; font-weight: 750; letter-spacing: 0.04em; }
   .hero-copy h1 { max-width: 900px; margin: 0.85rem 0 1rem; color: #263d34; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3rem, 6vw, 6.7rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.065em; }
-  .hero-copy > p:not(.source-note) { max-width: 760px; margin: 0; color: #4d5d53; font-size: 0.98rem; line-height: 1.68; }
-  .source-note { max-width: 760px; margin: 1rem 0 0; padding-left: 0.85rem; border-left: 2px solid #c98162; color: #59665d; font-size: 0.75rem; line-height: 1.6; }
-  .hero-index { grid-column: 2; display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.35rem; color: #5f6c64; font-size: 0.68rem; letter-spacing: 0.12em; }
-  .hero-index-rule { width: 52px; height: 1px; background: #aeb8ae; }
+  .hero-copy > p { max-width: 760px; margin: 0; color: #4d5d53; font-size: 0.98rem; line-height: 1.68; }
+  .focused-guide-link { max-width: 760px; display: flex; justify-content: space-between; gap: 1.2rem; margin-top: 1.2rem; padding: 0.75rem 0; border-top: 1px solid #c7a58f; border-bottom: 1px solid #c7a58f; color: #8f503a; text-decoration: none; }
+  .focused-guide-link > span:first-child { display: grid; gap: 0.18rem; }
+  .focused-guide-link small { color: #814833; font-size: 0.63rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+  .focused-guide-link strong { color: #2f5945; font-family: Georgia, "Times New Roman", serif; font-size: 1.12rem; font-weight: 400; }
+  .focused-guide-link > span:first-child > span { max-width: 650px; color: #59665d; font-size: 0.75rem; line-height: 1.55; }
+  .focused-guide-link:hover, .focused-guide-link:focus-visible { color: #2f5945; }
   .theory-layout { display: grid; grid-template-columns: minmax(190px, 0.28fr) minmax(0, 0.72fr); gap: clamp(2rem, 7vw, 7rem); padding: 2rem 0 4rem; border-top: 1px solid rgba(42, 50, 45, 0.18); }
   .theory-index { position: sticky; top: 1.5rem; align-self: start; }
   .index-title { margin: 0 0 1rem; color: #814833; font-weight: 800; }
@@ -225,14 +224,13 @@
   .callout-mark { color: #b16043; font-size: 1.15rem; font-weight: 800; line-height: 1; }
   .chapter-callout .callout-label { color: #315442; font-size: 0.71rem; letter-spacing: 0.08em; }
   .chapter-callout p:last-child { margin: 0.2rem 0 0; color: #3e5d49; font-size: 0.77rem; line-height: 1.62; }
-  .site-footer { width: min(1600px, calc(100% - 2rem)); margin: 0 auto; padding: 2.2rem 0 2.8rem; display: flex; justify-content: space-between; gap: 1rem; color: #56645b; }
   @media (max-width: 900px) {
     .theory-layout { grid-template-columns: 1fr; gap: 2rem; }
     .theory-index { position: static; }
     .theory-index nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 720px) {
-    main, .site-footer { width: min(100% - 1.2rem, 1400px); }
+    main { width: min(100% - 1.2rem, 1400px); }
     .topbar { height: 68px; padding: 0 0.8rem; }
     .brand-name { font-size: 0.72rem; }
     .brand-eyebrow { font-size: 0.52rem; }
@@ -240,14 +238,12 @@
     .nav-current, .nav-divider { display: none; }
     .theory-hero { min-height: 340px; padding: 3.7rem 0 2.5rem; display: block; }
     .hero-copy h1 { font-size: clamp(2.8rem, 15vw, 5rem); }
-    .hero-copy > p:not(.source-note) { font-size: 0.88rem; }
-    .hero-index { margin-top: 2rem; justify-content: flex-end; }
+    .hero-copy > p { font-size: 0.88rem; }
     .theory-index nav, .theory-blocks { grid-template-columns: 1fr; }
     .theory-chapter { padding-bottom: 2.6rem; }
     .theory-chapter + .theory-chapter { padding-top: 2.6rem; }
     .chapter-heading { gap: 0.8rem; }
     .chapter-number { font-size: 2.3rem; }
     .table-card { padding: 0.85rem; }
-    .site-footer { gap: 0.6rem; flex-wrap: wrap; }
   }
 </style>

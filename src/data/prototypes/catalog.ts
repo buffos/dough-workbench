@@ -11,6 +11,8 @@ import {
   type PrototypeLocalizedLabel,
   type PrototypeMatcherPolicy,
   type PrototypeProvenance,
+  type PrototypeProcessProfileFact,
+  type PrototypeProcessProfileSection,
   type PrototypePresenceTarget,
   type PrototypeQualitativeBand,
 } from '../../lib/domain/prototype-catalog';
@@ -30,6 +32,32 @@ function feature(
   importance: PrototypeImportance,
 ): PrototypeFeature {
   return { id, label: label(en, el), target, importance };
+}
+
+function processFact(
+  id: string,
+  labelEn: string,
+  labelEl: string,
+  valueEn: string,
+  valueEl: string,
+  noteEn?: string,
+  noteEl?: string,
+): PrototypeProcessProfileFact {
+  return {
+    id,
+    label: label(labelEn, labelEl),
+    value: label(valueEn, valueEl),
+    ...(noteEn && noteEl ? { note: label(noteEn, noteEl) } : {}),
+  };
+}
+
+function processSection(
+  id: string,
+  labelEn: string,
+  labelEl: string,
+  facts: readonly PrototypeProcessProfileFact[],
+): PrototypeProcessProfileSection {
+  return { id, label: label(labelEn, labelEl), facts };
 }
 
 function policy(id: string): PrototypeMatcherPolicy {
@@ -66,6 +94,7 @@ interface DefinitionOptions {
   structuralFeatures?: readonly PrototypeFeature[];
   structuralConstraints?: readonly PrototypeFeature[];
   identityModifiers?: readonly PrototypeFeature[];
+  processProfile?: readonly PrototypeProcessProfileSection[];
   matcherPolicyId?: string;
   noteEn?: string;
   noteEl?: string;
@@ -83,6 +112,7 @@ function definition(options: DefinitionOptions): PrototypeDefinition {
     structuralFeatures: options.structuralFeatures ?? [],
     structuralConstraints: options.structuralConstraints ?? [],
     identityModifiers: options.identityModifiers ?? [],
+    processProfile: options.processProfile,
     matcherPolicy: policy(options.matcherPolicyId ?? `matcher.${options.kind}-qualitative-v1`),
     confidenceTier: 'high',
     maturity: 'expert-seed',
@@ -335,6 +365,108 @@ function taxonomyFamilyDefinition(node: typeof STRUCTURAL_FAMILY_NODES[number]):
   });
 }
 
+const BREADSTICK_PROCESS_PROFILE: readonly PrototypeProcessProfileSection[] = [
+  processSection('mixing', 'Mixing and dough development', 'Ανάμειξη και ανάπτυξη ζύμης', [
+    processFact(
+      'method',
+      'Method',
+      'Μέθοδος',
+      'Hand knead for fermented variants; minimal combine for the biscuit-style variant.',
+      'Ζύμωμα στο χέρι για τις ζυμωμένες παραλλαγές· απλή ανάμειξη για την biscuit-style παραλλαγή.',
+    ),
+    processFact(
+      'development',
+      'Development target',
+      'Στόχος ανάπτυξης',
+      'Partial gluten development for fermented variants; minimal development for the biscuit-style variant.',
+      'Μερική ανάπτυξη γλουτένης για τις ζυμωμένες παραλλαγές· ελάχιστη ανάπτυξη για την biscuit-style παραλλαγή.',
+    ),
+  ]),
+  processSection('fermentation', 'Fermentation', 'Ζύμωση', [
+    processFact(
+      'agent',
+      'Fermentation agent',
+      'Παράγοντας ζύμωσης',
+      'Commercial yeast in the main variants; mixed culture with levain in the sourdough variant; none in the biscuit-style variant.',
+      'Εμπορική μαγιά στις βασικές παραλλαγές· μικτή καλλιέργεια με levain στην παραλλαγή με προζύμι· κανένας παράγοντας στην biscuit-style παραλλαγή.',
+    ),
+    processFact(
+      'bulk-time',
+      'Bulk fermentation',
+      'Κύρια ζύμωση',
+      'About 60–90 minutes for the fermented variants.',
+      'Περίπου 60–90 λεπτά για τις ζυμωμένες παραλλαγές.',
+    ),
+    processFact(
+      'cold-stage',
+      'Cold stage',
+      'Ψυχρό στάδιο',
+      'Used by the sourdough variant; not used by the direct-yeast variants.',
+      'Χρησιμοποιείται στην παραλλαγή με προζύμι· δεν χρησιμοποιείται στις παραλλαγές με άμεση μαγιά.',
+    ),
+  ]),
+  processSection('geometry', 'Geometry and shaping', 'Γεωμετρία και σχηματισμός', [
+    processFact(
+      'shape',
+      'Shape',
+      'Σχήμα',
+      'Long, thin sticks; the biscuit-style variant is handled as a short cookie-like piece.',
+      'Μακριά, λεπτά μπαστούνια· η biscuit-style παραλλαγή δουλεύεται ως κοντό, μπισκοτοειδές τεμάχιο.',
+    ),
+    processFact(
+      'thickness',
+      'Characteristic thickness',
+      'Χαρακτηριστικό πάχος',
+      '5–12 mm across the linked formulas.',
+      '5–12 mm στις συνδεδεμένες φόρμουλες.',
+    ),
+    processFact(
+      'surface-volume',
+      'Surface / volume',
+      'Επιφάνεια / όγκος',
+      'Medium to high; thinner sticks dry more quickly.',
+      'Μεσαία έως υψηλή σχέση· τα λεπτότερα μπαστούνια στεγνώνουν γρηγορότερα.',
+    ),
+    processFact(
+      'baking-surface',
+      'Baking surface',
+      'Επιφάνεια ψησίματος',
+      'Baking sheet.',
+      'Λαμαρίνα.',
+    ),
+  ]),
+  processSection('thermal', 'Thermal process', 'Θερμική διαδικασία', [
+    processFact(
+      'method',
+      'Method',
+      'Μέθοδος',
+      'Preheated static oven.',
+      'Προθερμασμένος στατικός φούρνος.',
+    ),
+    processFact(
+      'temperature',
+      'Temperature',
+      'Θερμοκρασία',
+      '180–190 °C across the linked formulas.',
+      '180–190 °C στις συνδεδεμένες φόρμουλες.',
+    ),
+    processFact(
+      'duration',
+      'Baking time',
+      'Χρόνος ψησίματος',
+      'About 18–22 minutes, depending on thickness and formula.',
+      'Περίπου 18–22 λεπτά, ανάλογα με το πάχος και τη φόρμουλα.',
+    ),
+    processFact(
+      'surface',
+      'Surface treatment',
+      'Επιφανειακή εφαρμογή',
+      'None recorded as a common step in this set.',
+      'Δεν έχει καταγραφεί κοινή επιφανειακή εφαρμογή σε αυτό το σύνολο.',
+    ),
+  ]),
+];
+
 const DEFINITIONS: readonly PrototypeDefinition[] = [
   ...STRUCTURAL_FAMILY_NODES.map(taxonomyFamilyDefinition),
   definition({
@@ -354,6 +486,36 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
       feature('fermentation', 'Fermentation', 'Ζύμωση', presence('present'), 'critical'),
       feature('yeast_or_sourdough', 'Yeast or sourdough', 'Μαγιά ή προζύμι', presence('present'), 'critical'),
     ],
+  }),
+  definition({
+    id: 'prototype.breadsticks',
+    kind: 'prototype',
+    en: 'Breadsticks / grissini',
+    el: 'Κριτσίνια',
+    parentIds: ['family.fermented-gluten'],
+    familyIds: ['family.fermented-gluten'],
+    structuralFeatures: [
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('medium', 'very_high'), 'critical'),
+      feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('low', 'medium'), 'high'),
+      feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('very_low', 'medium'), 'high'),
+      feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', bandRange('very_low', 'low'), 'medium'),
+      feature('shape_class', 'Stick geometry', 'Γεωμετρία μπαστουνιού', compatibility('breadstick'), 'high'),
+    ],
+    structuralConstraints: [
+      feature('fermentation_agent', 'Fermentation agent', 'Παράγοντας ζύμωσης', compatibility('commercial_yeast', 'mixed'), 'high'),
+      feature('mixing_method', 'Mixing method', 'Μέθοδος ανάμειξης', compatibility('hand_knead', 'minimal_combine'), 'high'),
+      feature('mixing_target', 'Dough development target', 'Στόχος ανάπτυξης ζύμης', compatibility('partial', 'minimal'), 'high'),
+      feature('aeration_method', 'Aeration method', 'Μέθοδος αερισμού', compatibility('none'), 'medium'),
+      feature('lamination', 'Lamination', 'Φυλλοποίηση', presence('absent'), 'high'),
+      feature('thermal_method', 'Thermal method', 'Θερμική μέθοδος', compatibility('static_oven'), 'high'),
+      feature('surface_treatment', 'Surface treatment', 'Επιφανειακή εφαρμογή', compatibility('none'), 'medium'),
+      feature('container_type', 'Baking surface', 'Επιφάνεια ψησίματος', compatibility('baking_sheet'), 'medium'),
+    ],
+    processProfile: BREADSTICK_PROCESS_PROFILE,
+    noteEn: 'An initial breadstick prototype for thin, dried or crisp gluten doughs. The linked formulas are working reference variants, not a single universal recipe.',
+    noteEl: 'Αρχικό prototype για λεπτές, ξηρές ή τραγανές ζύμες γλουτένης. Οι συνδεδεμένες φόρμουλες είναι παραλλαγές αναφοράς και όχι μία καθολική συνταγή.',
+    provenanceSourceId: 'exploration/recepies/kritsinia.txt',
+    provenanceSourceVersion: 'first-party-v1',
   }),
   definition({
     id: 'prototype.brioche',

@@ -254,6 +254,7 @@ const SURFACE_TREATMENT_SCORE: Record<string, number> = {
 const SHAPE_SCORE: Record<string, number> = {
   loaf: 0.58,
   roll: 0.74,
+  breadstick: 0.8,
   flatbread: 0.84,
   thin_sheet: 0.92,
   cookie: 0.86,
