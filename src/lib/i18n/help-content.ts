@@ -65,7 +65,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
           },
           {
             title: 'Process input controls',
-            canonical: 'process-input-v0.2',
+            canonical: 'process-input-v0.3',
             body: 'A Process field is either a controlled option, a number with a unit, or a reference to a Formula line. The normalized Process receives a canonical ID, numeric value, or stable reference—not an arbitrary sentence.',
             examples: 'Preferment → Poolish. Bulk fermentation rise → 50% increase. Fat state → Plastic. Bulk fermentation temperature → 24 °C.',
             note: 'Other is retained as explicitly unclassified. Leave a field at Not recorded yet when no supported value is known.',
@@ -295,7 +295,7 @@ export const HELP_CONTENT: Record<Locale, HelpContent> = {
           },
           {
             title: 'Πεδία εισόδου διαδικασίας',
-            canonical: 'process-input-v0.2',
+            canonical: 'process-input-v0.3',
             body: 'Κάθε πεδίο διαδικασίας είναι είτε ελεγχόμενη επιλογή, είτε αριθμός με μονάδα, είτε αναφορά σε γραμμή της φόρμουλας. Η κανονικοποιημένη διαδικασία παίρνει κωδικό, αριθμητική τιμή ή σταθερή αναφορά — όχι αυθαίρετη πρόταση.',
             examples: 'Τύπος προζυμιού → Poolish. Αύξηση κύριας ζύμωσης → 50%. Κατάσταση λίπους → Πλαστικό. Θερμοκρασία κύριας ζύμωσης → 24 °C.',
             note: 'Το «Άλλο» κρατιέται ως ρητά μη ταξινομημένο. Αν δεν γνωρίζεις υποστηριζόμενη τιμή, άφησε «Δεν έχει καταγραφεί ακόμη».',

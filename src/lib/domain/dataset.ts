@@ -20,7 +20,7 @@ const STRUCTURAL_MODIFIER_OPTIONS_BY_ID = new Map(
   STRUCTURAL_MODIFIER_AXES.flatMap((axis) => axis.options.map((option) => [option.id, axis.id] as const)),
 );
 
-export const GOLD_DATASET_RELEASE_ID = 'gold-formulas-v2';
+export const GOLD_DATASET_RELEASE_ID = 'gold-formulas-v3';
 export const GOLD_DATASET_KIND = 'gold-formulas';
 export const GOLD_DATASET_MODEL_VERSION = 'classification-seed-v2';
 export const DATASET_CONTRACT_VERSION = 'dataset-release-v2';

@@ -1,7 +1,7 @@
 import type { CoverageInventory, CoverageLocalizedText } from '../../data/reference/coverage';
 
 export const SOURCE_REGISTRY_ID = 'recipe-source-registry';
-export const SOURCE_REGISTRY_REVISION = 'sources-v2';
+export const SOURCE_REGISTRY_REVISION = 'sources-v3';
 
 export const SOURCE_ACQUISITION_STATUSES = ['allowed-offline', 'manual-only', 'manual-review', 'blocked', 'unknown'] as const;
 export type SourceAcquisitionStatus = (typeof SOURCE_ACQUISITION_STATUSES)[number];

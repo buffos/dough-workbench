@@ -58,6 +58,14 @@
           </span>
           <span aria-hidden="true">→</span>
         </a>
+        <a class="focused-guide-link" href={`${workspaceHref}theory/crackers/`}>
+          <span>
+            <small>{content.crackersLinkKicker}</small>
+            <strong>{content.crackersLinkTitle}</strong>
+            <span>{content.crackersLinkIntro}</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
       </div>
     </section>
 

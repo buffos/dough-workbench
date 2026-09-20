@@ -1,7 +1,7 @@
 import type { DraftValueState, ReferenceDraftProvenance, ValueState } from './types';
 
 export const PROCESS_NORMALIZATION_POLICY = 'process-normalization-v1';
-export const PROCESS_MODEL_VERSION = 'process-input-v0.2';
+export const PROCESS_MODEL_VERSION = 'process-input-v0.3';
 
 export type ProcessReadiness = 'editing' | 'incomplete' | 'process_ready';
 export type ProcessScalar = string | number | boolean;
@@ -78,6 +78,7 @@ export interface ProcessDraft {
     characteristicThicknessMillimeters: DraftValueState;
     surfaceVolumeClass: DraftValueState;
     containerType: DraftValueState;
+    docking: DraftValueState;
   };
 }
 
@@ -122,7 +123,8 @@ export type ProcessValuePath =
   | 'geometry.shapeClass'
   | 'geometry.characteristicThicknessMillimeters'
   | 'geometry.surfaceVolumeClass'
-  | 'geometry.containerType';
+  | 'geometry.containerType'
+  | 'geometry.docking';
 
 export function getProcessDraftField(process: ProcessDraft, path: ProcessValuePath): DraftValueState {
   const [section, field] = path.split('.') as [keyof ProcessDraft, string];
@@ -159,6 +161,7 @@ const DOUGH_STATES = ['rigid_mass', 'stiff_dough', 'soft_wet_dough', 'thick_batt
 const SURFACE_TREATMENTS = ['none', 'water', 'egg_wash', 'glaze', 'oil_or_fat', 'seeds_or_flour', 'alkaline', 'other'] as const;
 const SURFACE_VOLUME_CLASSES = ['very_high', 'high', 'medium', 'low'] as const;
 const CONTAINER_TYPES = ['freestanding', 'baking_sheet', 'loaf_tin', 'cake_pan', 'muffin_cup', 'cast_iron', 'baking_stone', 'other'] as const;
+const DOCKING_METHODS = ['none', 'fork_or_docker', 'partial', 'other'] as const;
 
 export const PROCESS_FIELD_DESCRIPTORS: readonly ProcessFieldDescriptor[] = [
   { path: 'mixing.method', key: 'method', kind: 'enum', options: MIXING_METHODS },
@@ -202,6 +205,7 @@ export const PROCESS_FIELD_DESCRIPTORS: readonly ProcessFieldDescriptor[] = [
   { path: 'geometry.characteristicThicknessMillimeters', key: 'characteristicThicknessMillimeters', kind: 'number', unit: 'millimeters', min: 0, max: undefined },
   { path: 'geometry.surfaceVolumeClass', key: 'surfaceVolumeClass', kind: 'enum', options: SURFACE_VOLUME_CLASSES },
   { path: 'geometry.containerType', key: 'containerType', kind: 'enum', options: CONTAINER_TYPES },
+  { path: 'geometry.docking', key: 'docking', kind: 'enum', options: DOCKING_METHODS },
 ];
 
 function unknownProcessValue(reasonCode = 'not-supplied'): DraftValueState {
@@ -226,7 +230,7 @@ export function createInitialProcessDraft(formulaId = 'formula_local'): ProcessD
     fermentation: createUnknownSection(['agent', 'prefermentType', 'prefermentPercentage', 'bulkTimeSeconds', 'bulkTemperatureCelsius', 'bulkExpansionTarget', 'finalProofTimeSeconds', 'finalProofTemperatureCelsius', 'finalExpansionTarget', 'coldFermentation']),
     lamination: createUnknownSection(['enabled', 'laminationFat', 'layerFatPercentage', 'foldSequence', 'fatState', 'doughState', 'workingTemperatureCelsius']),
     thermalProcess: createUnknownSection(['method', 'temperatureCelsius', 'durationSeconds', 'preheated', 'steamLevel', 'surfaceTreatment']),
-    geometry: createUnknownSection(['shapeClass', 'characteristicThicknessMillimeters', 'surfaceVolumeClass', 'containerType']),
+    geometry: createUnknownSection(['shapeClass', 'characteristicThicknessMillimeters', 'surfaceVolumeClass', 'containerType', 'docking']),
   };
 }
 

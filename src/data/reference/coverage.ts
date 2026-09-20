@@ -35,8 +35,8 @@ export interface CoverageInventory {
   entries: CoverageEntry[];
 }
 
-export const COVERAGE_INVENTORY_REVISION = 'coverage-v3';
-export const EXPECTED_COVERAGE_ENTRY_COUNT = 163;
+export const COVERAGE_INVENTORY_REVISION = 'coverage-v4';
+export const EXPECTED_COVERAGE_ENTRY_COUNT = 174;
 
 const category = (id: string, en: string, el: string, order: number): NavigationCategory => ({
   id,
@@ -192,7 +192,18 @@ export const COVERAGE_ENTRIES: CoverageEntry[] = [
   entry('phyllo-dough', 'Phyllo dough', 'Φύλλο κρούστας', 'pastry-pie-tart-cracker', 'family.laminated-gluten.unfermented', 'P0'),
   entry('baklava-sheets', 'Baklava sheets', 'Φύλλα για μπακλαβά', 'pastry-pie-tart-cracker', 'family.laminated-gluten.unfermented', 'P1'),
   entry('choux-pastry', 'Choux pastry', 'Ζύμη choux', 'pastry-pie-tart-cracker', 'family.steam-paste.choux', 'P0'),
-  entry('cracker-dough', 'Cracker dough', 'Ζύμη για κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened.basic-shortcrust', 'P1'),
+  entry('cracker-dough', 'Classic plain cracker', 'Κλασικά κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-lean-hard', 'Lean / hard cracker', 'Σκληρά / άλιπα κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-extra-crisp', 'Extra-crisp cracker', 'Εξαιρετικά τραγανά κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-richer-short', 'Richer / short cracker', 'Πλούσια / τριφτά κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-flaky', 'Flaky cracker', 'Φυλλώδη κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-puffy', 'Puffy / aerated cracker', 'Αφράτα / αεριζόμενα κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-cheese', 'Cheese cracker', 'Κράκερ με τυρί', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-seed', 'Seed cracker', 'Πολύσπορα κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-olive-herb', 'Olive and herb cracker', 'Κράκερ με ελιές και βότανα', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-wholegrain', 'Wholegrain cracker', 'Κράκερ ολικής άλεσης', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-rye', 'Rye cracker', 'Κράκερ σίκαλης', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
+  entry('cracker-spiced', 'Spiced cracker', 'Καρυκευμένα κράκερ', 'pastry-pie-tart-cracker', 'family.short-fat-shortened', 'P1'),
   entry('shortbread', 'Shortbread', 'Μπισκότο βουτύρου', 'pastry-pie-tart-cracker', 'family.short-fat-shortened.shortbread', 'P0'),
   entry('empanada-dough', 'Empanada dough', 'Ζύμη για empanada', 'pastry-pie-tart-cracker', 'family.short-fat-shortened.basic-shortcrust', 'P1'),
   entry('savory-tart-dough', 'Savory tart dough', 'Αλμυρή ζύμη τάρτας', 'pastry-pie-tart-cracker', 'family.short-fat-shortened.basic-shortcrust', 'P1'),

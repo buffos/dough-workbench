@@ -4,7 +4,7 @@
  * These are browsing metadata, not claims about a finished bake. An omitted
  * facet remains unrecorded rather than being interpreted as absent.
  */
-export const REFERENCE_MODIFIER_ASSIGNMENTS_VERSION = 'first-party-breadsticks-v1';
+export const REFERENCE_MODIFIER_ASSIGNMENTS_VERSION = 'first-party-breadsticks-crackers-v2';
 
 export const REFERENCE_MODIFIER_ASSIGNMENTS: Readonly<Record<string, readonly string[]>> = {
   breadsticks: [
@@ -85,5 +85,90 @@ export const REFERENCE_MODIFIER_ASSIGNMENTS: Readonly<Record<string, readonly st
     'consistency.stiff-dough',
     'fat-handling.incorporated',
     'special-process.fermented',
+  ],
+  'cracker-dough': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-lean-hard': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.lean',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-extra-crisp': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-richer-short': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-flaky': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'structural-system.laminated',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.laminated',
+  ],
+  'cracker-puffy': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-cheese': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-seed': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-olive-herb': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-wholegrain': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-rye': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
+  ],
+  'cracker-spiced': [
+    'leavening.chemical',
+    'structural-system.fat-shortened',
+    'enrichment.lightly-enriched',
+    'consistency.stiff-dough',
+    'fat-handling.incorporated',
   ],
 };

@@ -11,6 +11,7 @@ import {
   type CapturedIngredient,
   type CapturedPercentage,
   type CapturedProcess,
+  type CapturedAdditionStep,
   type CapturedProcessField,
   type CapturedQuantity,
   type CapturedFlour,
@@ -29,8 +30,8 @@ import {
 import type { CompositionField, IngredientRole } from '../../lib/domain/types';
 import type { ProcessValuePath } from '../../lib/domain/process';
 
-export const PILOT_CAPTURE_VERSION = 'first-party-breadsticks-manual-v1';
-export const PILOT_CAPTURED_AT = '2026-09-19T00:00:00Z';
+export const PILOT_CAPTURE_VERSION = 'first-party-breadsticks-crackers-manual-v2';
+export const PILOT_CAPTURED_AT = '2026-09-20T00:00:00Z';
 
 type MassInput = {
   value: number;
@@ -47,6 +48,7 @@ interface FlourInput {
   ingredientId: string;
   mass: MassInput;
   composition?: CompositionInput;
+  allowUnknownComposition?: boolean;
 }
 
 interface IngredientInput {
@@ -56,12 +58,21 @@ interface IngredientInput {
   mass: MassInput;
   role: IngredientRole;
   composition?: CompositionInput;
+  allowUnknownComposition?: boolean;
 }
 
 interface ProcessInput {
   path: ProcessValuePath;
   value: string | number | boolean;
   unit?: CapturedUnit;
+}
+
+interface AdditionStepInput {
+  id: string;
+  sequence: number;
+  lineIds: string[];
+  action: string;
+  durationSeconds: number;
 }
 
 export interface PilotCandidateDefinition {
@@ -72,6 +83,7 @@ export interface PilotCandidateDefinition {
   flours: FlourInput[];
   ingredients: IngredientInput[];
   process?: ProcessInput[];
+  processSteps?: AdditionStepInput[];
 }
 
 export interface PilotDataset {
@@ -87,6 +99,8 @@ export interface PilotDataset {
 
 const INTERNAL_BREADSTICK_SOURCE_ID = 'source.dfi-internal-breadsticks';
 const INTERNAL_BREADSTICK_SOURCE = 'exploration/recepies/kritsinia.txt';
+const INTERNAL_CRACKER_SOURCE_ID = 'source.dfi-internal-crackers';
+const INTERNAL_CRACKER_SOURCE = 'exploration/recepies/craker.txt';
 
 const grams = (value: number): MassInput => ({ value, unit: 'g' });
 
@@ -125,6 +139,75 @@ function processForBreadstick(options: {
   if (options.bulkTimeSeconds !== undefined) fields.push({ path: 'fermentation.bulkTimeSeconds', value: options.bulkTimeSeconds, unit: 'seconds' });
   if (options.bulkTemperatureCelsius !== undefined) fields.push({ path: 'fermentation.bulkTemperatureCelsius', value: options.bulkTemperatureCelsius, unit: 'celsius' });
   if (options.coldFermentation !== undefined) fields.push({ path: 'fermentation.coldFermentation', value: options.coldFermentation });
+  return fields;
+}
+
+function crackerSteps(options: {
+  fatLineIds: string[];
+  inclusionLineIds?: string[];
+  laminationFatLineId?: string;
+}): AdditionStepInput[] {
+  const steps: AdditionStepInput[] = [
+    { id: 'dry-mix', sequence: 1, lineIds: ['salt', 'baking-powder'], action: 'mix', durationSeconds: 30 },
+    { id: 'fat-coating', sequence: 2, lineIds: options.fatLineIds, action: 'incorporate_fat', durationSeconds: 30 },
+    { id: 'water-addition', sequence: 3, lineIds: ['water'], action: 'add', durationSeconds: 15 },
+  ];
+  if (options.inclusionLineIds?.length) {
+    steps.push({ id: 'inclusions', sequence: 4, lineIds: options.inclusionLineIds, action: 'add', durationSeconds: 15 });
+  }
+  steps.push({
+    id: 'minimal-combine',
+    sequence: steps.length + 1,
+    lineIds: ['water', ...options.fatLineIds, ...(options.inclusionLineIds ?? [])],
+    action: 'mix',
+    durationSeconds: 90,
+  });
+  steps.push({ id: 'covered-rest', sequence: steps.length + 1, lineIds: [], action: 'rest', durationSeconds: 1500 });
+  if (options.laminationFatLineId) {
+    steps.push({ id: 'lamination-fold', sequence: steps.length + 1, lineIds: [options.laminationFatLineId], action: 'fold', durationSeconds: 300 });
+  }
+  return steps;
+}
+
+function processForCracker(options: {
+  thicknessMillimeters?: number;
+  ovenTemperatureCelsius?: number;
+  ovenDurationSeconds?: number;
+  docking?: string;
+  laminationFatLineId?: string;
+  layerFatPercentage?: number;
+  fatMode?: string;
+}): ProcessInput[] {
+  const fields: ProcessInput[] = [
+    { path: 'mixing.method', value: 'minimal_combine' },
+    { path: 'mixing.durationSeconds', value: 90, unit: 'seconds' },
+    { path: 'mixing.restDurationSeconds', value: 1500, unit: 'seconds' },
+    { path: 'mixing.restType', value: 'post_mix_rest' },
+    { path: 'mixing.targetDevelopment', value: 'minimal' },
+    { path: 'ingredientAddition.fatIncorporationMode', value: options.fatMode ?? 'early_coating' },
+    { path: 'fermentation.agent', value: 'none' },
+    { path: 'fermentation.coldFermentation', value: false },
+    { path: 'aeration.method', value: 'none' },
+    { path: 'lamination.enabled', value: Boolean(options.laminationFatLineId) },
+    { path: 'thermalProcess.method', value: 'static_oven' },
+    { path: 'thermalProcess.temperatureCelsius', value: options.ovenTemperatureCelsius ?? 185, unit: 'celsius' },
+    { path: 'thermalProcess.durationSeconds', value: options.ovenDurationSeconds ?? 750, unit: 'seconds' },
+    { path: 'thermalProcess.preheated', value: true },
+    { path: 'thermalProcess.surfaceTreatment', value: 'none' },
+    { path: 'geometry.shapeClass', value: 'thin_sheet' },
+    { path: 'geometry.characteristicThicknessMillimeters', value: options.thicknessMillimeters ?? 1.5 },
+    { path: 'geometry.surfaceVolumeClass', value: 'very_high' },
+    { path: 'geometry.containerType', value: 'baking_sheet' },
+    { path: 'geometry.docking', value: options.docking ?? 'fork_or_docker' },
+  ];
+  if (options.laminationFatLineId) {
+    fields.push(
+      { path: 'lamination.laminationFat', value: options.laminationFatLineId },
+      { path: 'lamination.layerFatPercentage', value: options.layerFatPercentage ?? 0.1, unit: 'ratio' },
+      { path: 'lamination.foldSequence', value: 'single_fold' },
+      { path: 'lamination.doughState', value: 'stiff_dough' },
+    );
+  }
   return fields;
 }
 
@@ -306,6 +389,200 @@ const PILOT_DEFINITIONS: readonly PilotCandidateDefinition[] = [
       ovenDurationSeconds: 1320,
     }),
   },
+  {
+    candidateId: 'internal-crackers-classic-plain-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-dough',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(175), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(60), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-lean-hard-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-lean-hard',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(160), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(25), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(2.5), role: 'inclusion' },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-extra-crisp-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-extra-crisp',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(170), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(50), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+    ],
+    process: processForCracker({ thicknessMillimeters: 0.85 }),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-richer-short-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-richer-short',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(145), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(100), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-flaky-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-flaky',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(190), role: 'continuous_phase' },
+      { id: 'fat-dough', name: 'Olive oil in dough', ingredientId: 'olive-oil', mass: grams(40), role: 'inclusion' },
+      { id: 'fat-lamination', name: 'Fat for laminating and folding', ingredientId: 'custom-lamination-fat', mass: grams(50), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+    ],
+    process: processForCracker({ fatMode: 'laminated', laminationFatLineId: 'fat-lamination', layerFatPercentage: 0.1 }),
+    processSteps: crackerSteps({ fatLineIds: ['fat-dough'], laminationFatLineId: 'fat-lamination' }),
+  },
+  {
+    candidateId: 'internal-crackers-puffy-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-puffy',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(190), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(50), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(11.25), role: 'inclusion' },
+    ],
+    process: processForCracker({ docking: 'partial' }),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-cheese-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-cheese',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(137.5), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(75), role: 'inclusion' },
+      { id: 'hard-cheese', name: 'Hard cheese', ingredientId: 'custom-hard-cheese', mass: grams(150), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(5), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'], inclusionLineIds: ['hard-cheese'] }),
+  },
+  {
+    candidateId: 'internal-crackers-seed-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-seed',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(190), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(50), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+      { id: 'seeds', name: 'Mixed seeds', ingredientId: 'custom-mixed-seeds', mass: grams(100), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'], inclusionLineIds: ['seeds'] }),
+  },
+  {
+    candidateId: 'internal-crackers-olive-herb-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-olive-herb',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(155), role: 'continuous_phase' },
+      { id: 'olive-oil', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(75), role: 'inclusion' },
+      { id: 'olives', name: 'Chopped olives', ingredientId: 'custom-chopped-olives', mass: grams(75), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(5), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+      { id: 'herbs', name: 'Oregano and thyme', ingredientId: 'custom-herb-blend', mass: grams(7.5), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['olive-oil'], inclusionLineIds: ['olives', 'herbs'] }),
+  },
+  {
+    candidateId: 'internal-crackers-wholegrain-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-wholegrain',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [
+      { id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(300) },
+      { id: 'flour-whole', name: 'Whole wheat flour', ingredientId: 'wheat-flour-whole', mass: grams(200) },
+    ],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(210), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(60), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-rye-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-rye',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [
+      { id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(300) },
+      { id: 'flour-rye', name: 'Rye flour', ingredientId: 'custom-rye-flour', mass: grams(200), composition: {}, allowUnknownComposition: true },
+    ],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(225), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(40), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(1.25), role: 'inclusion' },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'] }),
+  },
+  {
+    candidateId: 'internal-crackers-spiced-v1',
+    sourceId: INTERNAL_CRACKER_SOURCE_ID,
+    preparationKey: 'cracker-spiced',
+    sourceUrl: INTERNAL_CRACKER_SOURCE,
+    flours: [{ id: 'flour-white', name: 'White wheat flour', ingredientId: 'wheat-flour-white', mass: grams(500) }],
+    ingredients: [
+      { id: 'water', name: 'Water', ingredientId: 'water', mass: grams(175), role: 'continuous_phase' },
+      { id: 'fat', name: 'Olive oil', ingredientId: 'olive-oil', mass: grams(60), role: 'inclusion' },
+      { id: 'salt', name: 'Salt', ingredientId: 'salt', mass: grams(10), role: 'inclusion' },
+      { id: 'baking-powder', name: 'Baking powder', ingredientId: 'baking-powder', mass: grams(5), role: 'inclusion' },
+      { id: 'paprika', name: 'Paprika', ingredientId: 'custom-paprika', mass: grams(7.5), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+      { id: 'black-pepper', name: 'Black pepper', ingredientId: 'custom-black-pepper', mass: grams(2.5), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+      { id: 'oregano', name: 'Oregano', ingredientId: 'custom-oregano', mass: grams(3.75), role: 'inclusion', composition: {}, allowUnknownComposition: true },
+    ],
+    process: processForCracker({}),
+    processSteps: crackerSteps({ fatLineIds: ['fat'], inclusionLineIds: ['paprika', 'black-pepper', 'oregano'] }),
+  },
 ];
 
 function sourceFact(
@@ -364,6 +641,7 @@ function capturedFlour(definition: PilotCandidateDefinition, input: FlourInput):
     ingredientId: input.ingredientId,
     mass: capturedMass(definition, `${pathPrefix}.mass`, input.mass),
     flourBearing: true,
+    ...(input.allowUnknownComposition ? { allowUnknownComposition: true } : {}),
     ...(input.composition === undefined
       ? {}
       : { composition: capturedComposition(definition, `${pathPrefix}.composition`, input.composition) }),
@@ -378,20 +656,30 @@ function capturedIngredient(definition: PilotCandidateDefinition, input: Ingredi
     ingredientId: input.ingredientId,
     mass: capturedMass(definition, `${pathPrefix}.mass`, input.mass),
     role: input.role,
+    ...(input.allowUnknownComposition ? { allowUnknownComposition: true } : {}),
     ...(input.composition === undefined
       ? {}
       : { composition: capturedComposition(definition, `${pathPrefix}.composition`, input.composition) }),
   };
 }
 
-function capturedProcess(definition: PilotCandidateDefinition, fields: ProcessInput[]): CapturedProcess {
+function capturedProcess(definition: PilotCandidateDefinition, fields: ProcessInput[], steps: AdditionStepInput[] = []): CapturedProcess {
   const capturedFields: CapturedProcessField[] = fields.map((field) => ({
     path: field.path,
     value: field.value,
     unit: field.unit,
     fact: sourceFact(definition, `process.${field.path}`, 'process', field.value, field.unit),
   }));
-  return { fields: capturedFields };
+  const capturedSteps: CapturedAdditionStep[] = steps.map((step) => ({
+    ...step,
+    factIds: [createSourceFactId({
+      path: `process.ingredientAddition.steps.${step.id}`,
+      kind: 'process',
+      value: step.action,
+      sourceLocator: `${definition.sourceUrl}#${definition.preparationKey}/process/${step.id}`,
+    })],
+  }));
+  return { fields: capturedFields, ...(capturedSteps.length > 0 ? { steps: capturedSteps } : {}) };
 }
 
 function toCapture(definition: PilotCandidateDefinition): CandidateCapture {
@@ -400,7 +688,7 @@ function toCapture(definition: PilotCandidateDefinition): CandidateCapture {
       flours: definition.flours.map((flour) => capturedFlour(definition, flour)),
       ingredients: definition.ingredients.map((ingredient) => capturedIngredient(definition, ingredient)),
     },
-    ...(definition.process ? { process: capturedProcess(definition, definition.process) } : {}),
+    ...(definition.process ? { process: capturedProcess(definition, definition.process, definition.processSteps) } : {}),
   };
 }
 
@@ -419,10 +707,15 @@ function reviewedCandidate(candidate: CandidateRecord): { candidate: CandidateRe
       unknownHandling: true,
       processEvidence: true,
     },
-    reason: {
-      en: 'This first-party canonical formula draft is traceable to the internal grissini exploration note. It is published as an expert seed, not as a kitchen-validated universal recipe.',
-      el: 'Αυτή η first-party canonical φόρμουλα είναι traceable στο εσωτερικό σημείωμα διερεύνησης κριτσινιών. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
-    },
+    reason: candidate.sourceId === INTERNAL_CRACKER_SOURCE_ID
+      ? {
+          en: 'This first-party canonical cracker formula draft is traceable to the internal cracker exploration note. It is released as an expert seed, not as a kitchen-validated universal recipe.',
+          el: 'Αυτή η first-party canonical φόρμουλα κράκερ είναι traceable στο εσωτερικό σημείωμα διερεύνησης κράκερ. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
+        }
+      : {
+          en: 'This first-party canonical formula draft is traceable to the internal grissini exploration note. It is published as an expert seed, not as a kitchen-validated universal recipe.',
+          el: 'Αυτή η first-party canonical φόρμουλα είναι traceable στο εσωτερικό σημείωμα διερεύνησης κριτσινιών. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
+        },
     releasePlan: {
       roles: ['reference', 'calibration'],
       evaluationPartition: 'calibration',

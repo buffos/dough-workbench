@@ -85,7 +85,7 @@ function capture(overrides: Partial<CandidateCapture> = {}): CandidateCapture {
 
 describe('coverage inventory and source policy', () => {
   it('keeps the approved planning baseline machine-readable', () => {
-    expect(COVERAGE_INVENTORY.entries).toHaveLength(163);
+    expect(COVERAGE_INVENTORY.entries).toHaveLength(174);
     expect(validateCoverageInventory(COVERAGE_INVENTORY)).toEqual([]);
     expect(new Set(COVERAGE_INVENTORY.categories.map((item) => item.id)).size).toBe(11);
     expect(COVERAGE_INVENTORY.entries.every((entry) => entry.candidateStructuralFamilies.length === 1
@@ -93,7 +93,7 @@ describe('coverage inventory and source policy', () => {
   });
 
   it('validates the first-party source registry without reintroducing third-party recipe sources', () => {
-    expect(INTERNAL_RECIPE_SOURCES).toHaveLength(1);
+    expect(INTERNAL_RECIPE_SOURCES).toHaveLength(2);
     expect(validateSourceRegistry(SOURCE_REGISTRY, COVERAGE_INVENTORY)).toEqual([]);
     expect(SOURCE_REGISTRY.sources.every((source) => source.acquisitionStatus === 'manual-only')).toBe(true);
     expect(SOURCE_REGISTRY.sources.every((source) => source.sourceId.startsWith('source.dfi-'))).toBe(true);
@@ -102,7 +102,7 @@ describe('coverage inventory and source policy', () => {
   it('reports an empty pilot as explicit coverage gaps even when source paths are usable', () => {
     const report = preparePilotCoverage(COVERAGE_INVENTORY, SOURCE_REGISTRY, []);
     expect(report.acceptedCandidateIds).toEqual([]);
-    expect(report.missingInventoryEntries).toHaveLength(163);
+    expect(report.missingInventoryEntries).toHaveLength(174);
     expect(report.blockedEntries.length).toBeGreaterThan(0);
     expect(Object.values(report.categoryCounts)).toHaveLength(11);
     expect(report.categoryCounts['yeasted-breads']?.sourcePathAvailable).toBe(true);

@@ -467,6 +467,105 @@ const BREADSTICK_PROCESS_PROFILE: readonly PrototypeProcessProfileSection[] = [
   ]),
 ];
 
+const CRACKER_PROCESS_PROFILE: readonly PrototypeProcessProfileSection[] = [
+  processSection('mixing', 'Mixing and dough development', 'Ανάμειξη και ανάπτυξη ζύμης', [
+    processFact(
+      'method',
+      'Method',
+      'Μέθοδος',
+      'Minimal combine: dry ingredients, fat coating, then water.',
+      'Απλή ανάμειξη: στεγνά υλικά, ενσωμάτωση λίπους και μετά νερό.',
+    ),
+    processFact(
+      'development',
+      'Development target',
+      'Στόχος ανάπτυξης',
+      'Minimal gluten development; combine only until homogeneous.',
+      'Ελάχιστη ανάπτυξη γλουτένης· ανάμειξη μόνο μέχρι να ομογενοποιηθεί.',
+    ),
+    processFact(
+      'rest',
+      'Covered rest',
+      'Σκεπαστή ξεκούραση',
+      'About 20–30 minutes after mixing, for hydration and relaxation rather than fermentation.',
+      'Περίπου 20–30 λεπτά μετά την ανάμειξη, για ενυδάτωση και χαλάρωση, όχι για ζύμωση.',
+    ),
+  ]),
+  processSection('fermentation', 'Fermentation', 'Ζύμωση', [
+    processFact(
+      'agent',
+      'Fermentation agent',
+      'Παράγοντας ζύμωσης',
+      'None; the reference set uses chemical leavening where lift is needed.',
+      'Κανένας· το σύνολο αναφοράς χρησιμοποιεί χημικό διογκωτικό όπου χρειάζεται διόγκωση.',
+    ),
+  ]),
+  processSection('addition', 'Addition order', 'Σειρά προσθήκης', [
+    processFact(
+      'timeline',
+      'Common sequence',
+      'Κοινή σειρά',
+      'Dry mix → distribute fat → add water → minimal combine → covered rest. Inclusions and lamination fat are variant-specific.',
+      'Στεγνή ανάμειξη → κατανομή λίπους → προσθήκη νερού → ελάχιστη ανάμειξη → σκεπαστή ξεκούραση. Οι προσθήκες και το λίπος φυλλοποίησης διαφέρουν ανά παραλλαγή.',
+    ),
+  ]),
+  processSection('lamination', 'Lamination', 'Φυλλοποίηση', [
+    processFact(
+      'optional',
+      'Variant-dependent lamination',
+      'Φυλλοποίηση ανά παραλλαγή',
+      'Absent in the plain set; the flaky variant uses about 10% additional layer fat and folding.',
+      'Απούσα στις απλές παραλλαγές· η flaky παραλλαγή χρησιμοποιεί περίπου 10% επιπλέον λίπος σε στρώση και δίπλωμα.',
+    ),
+  ]),
+  processSection('geometry', 'Geometry and shaping', 'Γεωμετρία και σχηματισμός', [
+    processFact(
+      'shape',
+      'Shape',
+      'Σχήμα',
+      'Thin sheet, generally rolled to about 1–2 mm; the wider source range runs from 0.7 to 3 mm.',
+      'Λεπτό φύλλο, συνήθως ανοιγμένο περίπου στα 1–2 mm· το ευρύτερο εύρος της πηγής είναι 0,7 έως 3 mm.',
+    ),
+    processFact(
+      'docking',
+      'Docking',
+      'Docking / τρύπημα',
+      'Fork or docker docking keeps the sheet flat; puffy variants may use partial docking.',
+      'Τρύπημα με πιρούνι ή docker για επίπεδο φύλλο· οι puffy παραλλαγές μπορεί να έχουν μερικό docking.',
+    ),
+    processFact(
+      'baking-surface',
+      'Baking surface',
+      'Επιφάνεια ψησίματος',
+      'Baking sheet.',
+      'Λαμαρίνα.',
+    ),
+  ]),
+  processSection('thermal', 'Thermal process', 'Θερμική διαδικασία', [
+    processFact(
+      'method',
+      'Method',
+      'Μέθοδος',
+      'Preheated static oven.',
+      'Προθερμασμένος στατικός φούρνος.',
+    ),
+    processFact(
+      'temperature',
+      'Temperature',
+      'Θερμοκρασία',
+      'About 180–190 °C.',
+      'Περίπου 180–190 °C.',
+    ),
+    processFact(
+      'duration',
+      'Baking time',
+      'Χρόνος ψησίματος',
+      'About 10–15 minutes, followed by sufficient drying and cooling for a brittle texture.',
+      'Περίπου 10–15 λεπτά, με επαρκές στέγνωμα και κρύωμα για εύθραυστη υφή.',
+    ),
+  ]),
+];
+
 const DEFINITIONS: readonly PrototypeDefinition[] = [
   ...STRUCTURAL_FAMILY_NODES.map(taxonomyFamilyDefinition),
   definition({
@@ -515,6 +614,34 @@ const DEFINITIONS: readonly PrototypeDefinition[] = [
     noteEn: 'An initial breadstick prototype for thin, dried or crisp gluten doughs. The linked formulas are working reference variants, not a single universal recipe.',
     noteEl: 'Αρχικό prototype για λεπτές, ξηρές ή τραγανές ζύμες γλουτένης. Οι συνδεδεμένες φόρμουλες είναι παραλλαγές αναφοράς και όχι μία καθολική συνταγή.',
     provenanceSourceId: 'exploration/recepies/kritsinia.txt',
+    provenanceSourceVersion: 'first-party-v1',
+  }),
+  definition({
+    id: 'prototype.crackers',
+    kind: 'prototype',
+    en: 'Crackers',
+    el: 'Κράκερ',
+    parentIds: ['family.short-fat-shortened'],
+    familyIds: ['family.short-fat-shortened'],
+    structuralFeatures: [
+      feature('effective_gluten', 'Effective gluten', 'Αποτελεσματική γλουτένη', bandRange('very_low', 'medium'), 'critical'),
+      feature('relative_hydration', 'Relative hydration', 'Σχετική ενυδάτωση', bandRange('low', 'medium'), 'high'),
+      feature('fat_load', 'Fat load', 'Φορτίο λίπους', bandRange('very_low', 'very_high'), 'high'),
+      feature('sugar_load', 'Sugar load', 'Φορτίο ζάχαρης', bandRange('very_low', 'low'), 'medium'),
+      feature('shape_class', 'Sheet geometry', 'Γεωμετρία φύλλου', compatibility('thin_sheet', 'cookie'), 'critical'),
+    ],
+    structuralConstraints: [
+      feature('fermentation', 'Fermentation', 'Ζύμωση', presence('absent'), 'critical'),
+      feature('mixing_method', 'Mixing method', 'Μέθοδος ανάμειξης', compatibility('minimal_combine'), 'high'),
+      feature('mixing_target', 'Dough development target', 'Στόχος ανάπτυξης ζύμης', compatibility('minimal'), 'high'),
+      feature('aeration_method', 'Aeration method', 'Μέθοδος αερισμού', compatibility('none'), 'medium'),
+      feature('thermal_method', 'Thermal method', 'Θερμική μέθοδος', compatibility('static_oven'), 'high'),
+      feature('container_type', 'Baking surface', 'Επιφάνεια ψησίματος', compatibility('baking_sheet'), 'medium'),
+    ],
+    processProfile: CRACKER_PROCESS_PROFILE,
+    noteEn: 'A cracker prototype spanning lean, crisp, flaky, rich, seeded, wholegrain, rye, and savoury-biscuit-border reference variants. The linked formulas are working expert seeds, not a single universal recipe.',
+    noteEl: 'Prototype για κράκερ που καλύπτει άλιπες, τραγανές, φυλλώδεις, πλούσιες, πολύσπορες, ολικής, σίκαλης και savoury-biscuit-border παραλλαγές. Οι συνδεδεμένες φόρμουλες είναι working expert seeds και όχι μία καθολική συνταγή.',
+    provenanceSourceId: 'exploration/recepies/craker.txt',
     provenanceSourceVersion: 'first-party-v1',
   }),
   definition({

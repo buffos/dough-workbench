@@ -48,6 +48,9 @@
 
   const PROCESS_SUMMARY_FIELDS: readonly ProcessSummaryField[] = [
     { path: 'mixing.method', section: 'mixing', field: 'method' },
+    { path: 'mixing.durationSeconds', section: 'mixing', field: 'durationSeconds' },
+    { path: 'mixing.restDurationSeconds', section: 'mixing', field: 'restDurationSeconds' },
+    { path: 'mixing.restType', section: 'mixing', field: 'restType' },
     { path: 'mixing.targetDevelopment', section: 'mixing', field: 'targetDevelopment' },
     { path: 'aeration.method', section: 'aeration', field: 'method' },
     { path: 'fermentation.agent', section: 'fermentation', field: 'agent' },
@@ -55,6 +58,9 @@
     { path: 'fermentation.bulkTemperatureCelsius', section: 'fermentation', field: 'bulkTemperatureCelsius' },
     { path: 'fermentation.coldFermentation', section: 'fermentation', field: 'coldFermentation' },
     { path: 'lamination.enabled', section: 'lamination', field: 'enabled' },
+    { path: 'lamination.layerFatPercentage', section: 'lamination', field: 'layerFatPercentage' },
+    { path: 'lamination.foldSequence', section: 'lamination', field: 'foldSequence' },
+    { path: 'lamination.doughState', section: 'lamination', field: 'doughState' },
     { path: 'thermalProcess.method', section: 'thermalProcess', field: 'method' },
     { path: 'thermalProcess.temperatureCelsius', section: 'thermalProcess', field: 'temperatureCelsius' },
     { path: 'thermalProcess.durationSeconds', section: 'thermalProcess', field: 'durationSeconds' },
@@ -64,6 +70,7 @@
     { path: 'geometry.characteristicThicknessMillimeters', section: 'geometry', field: 'characteristicThicknessMillimeters' },
     { path: 'geometry.surfaceVolumeClass', section: 'geometry', field: 'surfaceVolumeClass' },
     { path: 'geometry.containerType', section: 'geometry', field: 'containerType' },
+    { path: 'geometry.docking', section: 'geometry', field: 'docking' },
   ];
 
   let requestedVersion = PROTOTYPE_CATALOG_VERSION;
@@ -308,6 +315,7 @@
     if (field.path.endsWith('Seconds')) return `${Math.round(state.value / 60)} min`;
     if (field.path.endsWith('Celsius')) return `${state.value} °C`;
     if (field.path.endsWith('Millimeters')) return `${state.value} mm`;
+    if (field.path.endsWith('Percentage')) return `${Math.round(state.value * 100)}%`;
     return String(state.value);
   }
 

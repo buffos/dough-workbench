@@ -175,6 +175,7 @@ describe('high-confidence prototype seed catalog', () => {
     expect(prototypeIds).toEqual(expect.arrayContaining([
       'prototype.lean-bread',
       'prototype.breadsticks',
+      'prototype.crackers',
       'prototype.brioche',
       'prototype.shortbread',
       'prototype.pancake',
@@ -190,6 +191,8 @@ describe('high-confidence prototype seed catalog', () => {
     expect(resolved.snapshot.byId['prototype.croissant'].structuralConstraints.some((item) => item.id === 'lamination')).toBe(true);
     expect(resolved.snapshot.byId['prototype.breadsticks'].structuralFeatures.some((item) => item.id === 'relative_hydration')).toBe(true);
     expect(resolved.snapshot.byId['prototype.breadsticks'].structuralFeatures.some((item) => item.id === 'shape_class')).toBe(true);
+    expect(resolved.snapshot.byId['prototype.crackers'].familyIds).toContain('family.short-fat-shortened');
+    expect(resolved.snapshot.byId['prototype.crackers'].processProfile?.find((section) => section.id === 'geometry')?.facts.some((fact) => fact.id === 'docking')).toBe(true);
     expect(resolved.snapshot.byId['prototype.breadsticks'].structuralConstraints.map((item) => item.id)).toEqual(expect.arrayContaining([
       'fermentation_agent',
       'mixing_method',
@@ -212,15 +215,15 @@ describe('high-confidence prototype seed catalog', () => {
   it('keeps later catalog loading independent from an existing resolved snapshot', () => {
     const loader = createPrototypeCatalogLoader([
       PROTOTYPE_CATALOG_INPUT,
-      { ...PROTOTYPE_CATALOG_INPUT, version: 'prototype-catalog-v4' },
+      { ...PROTOTYPE_CATALOG_INPUT, version: 'prototype-catalog-v5' },
     ]);
     const first = loader(PROTOTYPE_CATALOG_VERSION);
-    const second = loader('prototype-catalog-v4');
+    const second = loader('prototype-catalog-v5');
     expect(first.status).toBe('available');
     expect(second.status).toBe('available');
     if (first.status !== 'available' || second.status !== 'available') return;
     expect(first.snapshot.reference.version).toBe(PROTOTYPE_CATALOG_VERSION);
-    expect(second.snapshot.reference.version).toBe('prototype-catalog-v4');
+    expect(second.snapshot.reference.version).toBe('prototype-catalog-v5');
     expect(first.snapshot.definitions).toEqual(second.snapshot.definitions);
     expect(first.snapshot).not.toBe(second.snapshot);
   });

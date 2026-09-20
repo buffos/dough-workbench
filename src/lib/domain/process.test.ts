@@ -3,6 +3,7 @@ import { knownDraftValue } from './normalization';
 import {
   PROCESS_ADDITION_ACTIONS,
   PROCESS_FIELD_DESCRIPTORS,
+  PROCESS_MODEL_VERSION,
   createInitialProcessDraft,
   getProcessDraftField,
   normalizeProcess,
@@ -88,7 +89,7 @@ describe('process capture and normalization', () => {
 
     const result = normalizeProcess(draft, ['line-butter']);
     expect(result.diagnostics).toEqual([]);
-    expect(result.data?.modelVersion).toBe('process-input-v0.2');
+    expect(result.data?.modelVersion).toBe(PROCESS_MODEL_VERSION);
     expect(result.data?.fermentation.prefermentType).toMatchObject({ state: 'known', value: 'poolish' });
     expect(result.data?.lamination.laminationFat).toMatchObject({ state: 'known', value: 'line-butter' });
   });

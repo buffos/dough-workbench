@@ -78,6 +78,8 @@ export interface CapturedFlour {
   mass: CapturedQuantity;
   flourBearing: boolean;
   composition?: Partial<Record<CompositionField, CapturedPercentage>>;
+  /** The source names the flour but does not supply enough data to resolve its functional composition. */
+  allowUnknownComposition?: boolean;
   absorptionPercentage?: CapturedPercentage;
 }
 
@@ -88,6 +90,8 @@ export interface CapturedIngredient {
   mass: CapturedQuantity;
   role: IngredientRole;
   composition?: Partial<Record<CompositionField, CapturedPercentage>>;
+  /** The source names the ingredient but does not supply enough data to resolve its functional composition. */
+  allowUnknownComposition?: boolean;
 }
 
 export interface CapturedAdditionStep {
@@ -433,7 +437,9 @@ export function normalizeCandidateRecord(input: {
     if ('diagnostic' in mass) diagnostics.push(mass.diagnostic);
     const catalogKnown = flour.ingredientId && (STARTER_FLOUR_CATALOG.some((item) => item.id === flour.ingredientId) || Boolean(STARTER_CATALOG[flour.ingredientId]));
     const compositionKnown = flour.composition && Object.keys(flour.composition).length > 0;
-    if (!catalogKnown && !compositionKnown) diagnostics.push(diagnostic('normalization_invalid', `formula.flourComponents[${index}].composition`, { reason: 'unresolved-required-ingredient', ingredient: flour.name.value }));
+    if (!catalogKnown && !compositionKnown && !flour.allowUnknownComposition) {
+      diagnostics.push(diagnostic('normalization_invalid', `formula.flourComponents[${index}].composition`, { reason: 'unresolved-required-ingredient', ingredient: flour.name.value }));
+    }
     const normalizedMass = 'value' in mass ? mass.value : 0;
     traces.push({ path: `formula.flourComponents[${index}].name`, kind: 'captured', sourceFactId: flour.name.fact.factId, note: 'Flour name was captured from the source.' });
     if ('value' in mass) traces.push(mass.trace);
@@ -458,7 +464,9 @@ export function normalizeCandidateRecord(input: {
     if ('diagnostic' in mass) diagnostics.push(mass.diagnostic);
     const catalogKnown = line.ingredientId && Boolean(STARTER_CATALOG[line.ingredientId]);
     const compositionKnown = line.composition && Object.keys(line.composition).length > 0;
-    if (!catalogKnown && !compositionKnown) diagnostics.push(diagnostic('normalization_invalid', `formula.ingredientLines[${index}].composition`, { reason: 'unresolved-required-ingredient', ingredient: line.name.value }));
+    if (!catalogKnown && !compositionKnown && !line.allowUnknownComposition) {
+      diagnostics.push(diagnostic('normalization_invalid', `formula.ingredientLines[${index}].composition`, { reason: 'unresolved-required-ingredient', ingredient: line.name.value }));
+    }
     const normalizedMass = 'value' in mass ? mass.value : 0;
     traces.push({ path: `formula.ingredientLines[${index}].name`, kind: 'captured', sourceFactId: line.name.fact.factId, note: 'Ingredient name was captured from the source.' });
     if ('value' in mass) traces.push(mass.trace);

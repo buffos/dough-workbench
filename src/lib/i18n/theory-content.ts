@@ -41,6 +41,9 @@ export interface TheoryContent {
   breadsticksLinkKicker: string;
   breadsticksLinkTitle: string;
   breadsticksLinkIntro: string;
+  crackersLinkKicker: string;
+  crackersLinkTitle: string;
+  crackersLinkIntro: string;
   chapters: TheoryChapter[];
 }
 
@@ -57,6 +60,9 @@ export const THEORY_CONTENT: Record<Locale, TheoryContent> = {
     breadsticksLinkKicker: 'Focused guide',
     breadsticksLinkTitle: 'Breadsticks / grissini',
     breadsticksLinkIntro: 'A separate map of hydration, fat, leavening, thickness, and ten starting formulas.',
+    crackersLinkKicker: 'Focused guide',
+    crackersLinkTitle: 'Crackers',
+    crackersLinkIntro: 'A separate map of hydration, fat, leavening, thickness, docking, and twelve starting formulas.',
     chapters: [
       {
         id: 'introduction',
@@ -532,6 +538,9 @@ export const THEORY_CONTENT: Record<Locale, TheoryContent> = {
     breadsticksLinkKicker: 'Ειδικός οδηγός',
     breadsticksLinkTitle: 'Κριτσίνια / grissini',
     breadsticksLinkIntro: 'Ξεχωριστός χάρτης για ενυδάτωση, λίπος, διόγκωση, πάχος και δέκα φόρμουλες εκκίνησης.',
+    crackersLinkKicker: 'Ειδικός οδηγός',
+    crackersLinkTitle: 'Κράκερ',
+    crackersLinkIntro: 'Ξεχωριστός χάρτης για ενυδάτωση, λίπος, διόγκωση, πάχος, docking και δώδεκα φόρμουλες εκκίνησης.',
     chapters: [
       {
         id: 'introduction',

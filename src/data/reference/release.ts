@@ -8,7 +8,7 @@ import { REFERENCE_MODIFIER_ASSIGNMENTS } from './modifiers';
 import { REFERENCE_PROTOTYPE_ASSIGNMENTS } from './prototype-assignments';
 import { SOURCE_REGISTRY } from './sources';
 
-export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-19T00:00:00Z';
+export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-20T00:00:00Z';
 
 /**
  * The browser-safe registry is assembled only from the owner-approved pilot
@@ -24,7 +24,7 @@ function publishApprovedPilot(): DatasetReleaseRegistry {
     prototypeIdsByPreparationKey: REFERENCE_PROTOTYPE_ASSIGNMENTS,
     releaseId: GOLD_DATASET_RELEASE_ID,
     createdAt: GOLD_FORMULAS_RELEASE_CREATED_AT,
-    supersedes: null,
+    supersedes: 'gold-formulas-v2',
   });
   if (publication.outcome !== 'published' || !publication.release) {
     throw new Error(`${GOLD_DATASET_RELEASE_ID} publication failed: ${publication.diagnostic?.code ?? 'unknown'}`);
