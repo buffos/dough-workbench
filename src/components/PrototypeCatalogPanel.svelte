@@ -41,6 +41,7 @@
   };
 
   type ProcessSummaryRow = {
+    path: string;
     label: string;
     value: string;
   };
@@ -314,7 +315,7 @@
     return PROCESS_SUMMARY_FIELDS.flatMap((field) => {
       const value = processValueLabel(field, processState(record, field));
       if (value === null) return [];
-      return [{ label: t(locale, `process.field.${field.field}`), value }];
+      return [{ path: field.path, label: t(locale, `process.field.${field.field}`), value }];
     });
   }
 
@@ -725,7 +726,7 @@
                               <details class="reference-process-details">
                                 <summary>{t(locale, 'catalog.reference.processDetails')}</summary>
                                 <dl>
-                                  {#each processSummary(record) as item (item.label)}
+                                  {#each processSummary(record) as item (item.path)}
                                     <div>
                                       <dt>{item.label}</dt>
                                       <dd>{item.value}</dd>
