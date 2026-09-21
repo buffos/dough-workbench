@@ -112,9 +112,97 @@ describe('prototype catalog boundary', () => {
     if (invalidReference.status === 'invalid') expect(invalidReference.diagnostics.some((item) => item.code === 'INVALID_REFERENCE')).toBe(true);
   });
 
+  it('rejects a feature declared in more than one rule collection', () => {
+    const base = testDefinition('family.base', 'family');
+    const duplicateDeclaration = {
+      ...base,
+      structuralConstraints: [...base.structuralFeatures],
+    };
+    const built = createPrototypeCatalogSnapshot(testInput([duplicateDeclaration]));
+
+    expect(built.status).toBe('invalid');
+    if (built.status === 'invalid') {
+      expect(built.diagnostics.some((item) => item.code === 'DUPLICATE_FEATURE_DECLARATION')).toBe(true);
+    }
+  });
+
+  it('rejects a child rule that has no overlap with its parent rule', () => {
+    const parent = {
+      ...testDefinition('family.parent', 'family'),
+      structuralFeatures: [{
+        id: 'shared.feature',
+        label: { en: 'Shared', el: 'Κοινό' },
+        target: { kind: 'band' as const, value: 'high' as const },
+        importance: 'critical' as const,
+      }],
+    };
+    const child = {
+      ...testDefinition('prototype.child', 'prototype', ['family.parent'], undefined),
+      familyIds: ['family.parent'],
+      structuralFeatures: [{
+        id: 'shared.feature',
+        label: { en: 'Shared', el: 'Κοινό' },
+        target: { kind: 'band' as const, value: 'very_low' as const },
+        importance: 'critical' as const,
+      }],
+    };
+    const built = createPrototypeCatalogSnapshot(testInput([parent, child]));
+
+    expect(built.status).toBe('invalid');
+    if (built.status === 'invalid') {
+      expect(built.diagnostics.some((item) => item.code === 'CHILD_RULE_OUTSIDE_PARENT')).toBe(true);
+    }
+  });
+
+  it('rejects incompatible rules inherited from two parents', () => {
+    const firstParent = {
+      ...testDefinition('family.first', 'family'),
+      structuralFeatures: [{
+        id: 'shared.feature',
+        label: { en: 'Shared', el: 'Κοινό' },
+        target: { kind: 'band' as const, value: 'high' as const },
+        importance: 'critical' as const,
+      }],
+    };
+    const secondParent = {
+      ...testDefinition('family.second', 'family'),
+      structuralFeatures: [{
+        id: 'shared.feature',
+        label: { en: 'Shared', el: 'Κοινό' },
+        target: { kind: 'band' as const, value: 'very_low' as const },
+        importance: 'critical' as const,
+      }],
+    };
+    const child = {
+      ...testDefinition('prototype.child', 'prototype', ['family.first', 'family.second'], undefined),
+      familyIds: ['family.first', 'family.second'],
+    };
+    const built = createPrototypeCatalogSnapshot(testInput([firstParent, secondParent, child]));
+
+    expect(built.status).toBe('invalid');
+    if (built.status === 'invalid') {
+      expect(built.diagnostics.some((item) => item.code === 'CONFLICTING_PARENT_RULE')).toBe(true);
+    }
+  });
+
+  it('rejects a prototype whose declared family does not match its family parent', () => {
+    const parent = testDefinition('family.parent', 'family');
+    const child = testDefinition('prototype.child', 'prototype', ['family.parent'], undefined);
+    const built = createPrototypeCatalogSnapshot(testInput([parent, child]));
+
+    expect(built.status).toBe('invalid');
+    if (built.status === 'invalid') {
+      expect(built.diagnostics.some((item) => item.code === 'INVALID_FAMILY_ASSIGNMENT')).toBe(true);
+    }
+  });
+
   it('resolves family inheritance deterministically and keeps source metadata separate', () => {
     const parent = testDefinition('family.parent', 'family');
-    const child = { ...testDefinition('prototype.child', 'prototype', ['family.parent']), matcherPolicy: undefined };
+    const child = {
+      ...testDefinition('prototype.child', 'prototype', ['family.parent']),
+      familyIds: ['family.parent'],
+      matcherPolicy: undefined,
+    };
     const built = createPrototypeCatalogSnapshot(testInput([parent, child]));
     expect(built.status).toBe('available');
     if (built.status !== 'available') return;
@@ -134,13 +222,9 @@ describe('prototype catalog boundary', () => {
     const first = testDefinition('family.first', 'family', ['family.second']);
     const second = testDefinition('family.second', 'family', ['family.first']);
     const built = createPrototypeCatalogSnapshot(testInput([first, second]));
-    expect(built.status).toBe('available');
-    if (built.status !== 'available') return;
-
-    const resolved = resolvePrototypeCatalog(built.snapshot);
-    expect(resolved.status).toBe('invalid');
-    if (resolved.status === 'invalid') {
-      expect(resolved.diagnostics.some((item) => item.code === 'PROTOTYPE_REFERENCE_CYCLE')).toBe(true);
+    expect(built.status).toBe('invalid');
+    if (built.status === 'invalid') {
+      expect(built.diagnostics.some((item) => item.code === 'PROTOTYPE_REFERENCE_CYCLE')).toBe(true);
     }
   });
 });
@@ -156,6 +240,21 @@ describe('high-confidence prototype seed catalog', () => {
 
     const familyIds = resolved.snapshot.definitions.filter((definition) => definition.kind === 'family').map((definition) => definition.id);
     const prototypeIds = resolved.snapshot.definitions.filter((definition) => definition.kind === 'prototype').map((definition) => definition.id);
+    const batterFamilyIds = familyIds.filter((id) => id === 'family.batters' || id.startsWith('family.batters.'));
+    const batterPrototypeIds = prototypeIds.filter((id) => [
+      'prototype.pancake',
+      'prototype.crepe',
+      'prototype.waffle',
+      'prototype.steam-puffed',
+      'prototype.custard-like',
+      'prototype.coating',
+      'prototype.fritter',
+      'prototype.fermented-batter',
+      'prototype.foam-leavened',
+      'prototype.cake-adjacent',
+    ].includes(id));
+    expect(batterFamilyIds).toHaveLength(11);
+    expect(batterPrototypeIds).toHaveLength(10);
     expect(familyIds).toEqual(expect.arrayContaining([
       'family.fermented-gluten',
       'family.fermented-gluten.lean-bread',
@@ -166,9 +265,17 @@ describe('high-confidence prototype seed catalog', () => {
       'family.chemical-cake',
       'family.foam-cake',
       'family.quick-bread',
-      'family.chemical-pourable',
-      'family.unleavened-pourable',
-      'family.fermented-batter',
+      'family.batters',
+      'family.batters.thin-pan',
+      'family.batters.griddle',
+      'family.batters.waffle',
+      'family.batters.steam-puffed',
+      'family.batters.custard-like',
+      'family.batters.coating',
+      'family.batters.fritter',
+      'family.batters.fermented',
+      'family.batters.foam-leavened',
+      'family.batters.cake-adjacent',
       'family.steam-paste',
       'family.starch-dominant',
     ]));
@@ -180,6 +287,14 @@ describe('high-confidence prototype seed catalog', () => {
       'prototype.shortbread',
       'prototype.pancake',
       'prototype.crepe',
+      'prototype.waffle',
+      'prototype.steam-puffed',
+      'prototype.custard-like',
+      'prototype.coating',
+      'prototype.fritter',
+      'prototype.fermented-batter',
+      'prototype.foam-leavened',
+      'prototype.cake-adjacent',
       'prototype.angel-food',
       'prototype.choux',
       'prototype.croissant',

@@ -158,37 +158,23 @@ export const STRUCTURAL_FAMILY_NODES: readonly StructuralFamilyNode[] = [
   family('family.quick-bread.scone-biscuit', 'family.quick-bread', 'Scone / biscuit doughs', 'Ζύμες τύπου scone / biscuit'),
 
   family(
-    'family.chemical-pourable',
+    'family.batters',
     null,
-    'Chemically leavened pourable batters',
-    'Ρευστά μείγματα με χημική διόγκωση',
-    'High fluidity and chemical leavening define the system.',
-    'Η υψηλή ρευστότητα και η χημική διόγκωση καθορίζουν το σύστημα.',
+    'Batters',
+    'Χυλοί / μείγματα batter',
+    'Pourable and semi-liquid systems classified by composition, aeration, function, and thermal regime.',
+    'Ρευστά και ημίρρευστα συστήματα που ταξινομούνται από τη σύσταση, τον αερισμό, τη λειτουργία και τη θερμική διαδικασία.',
   ),
-  family('family.chemical-pourable.pancake', 'family.chemical-pourable', 'Pancake batters', 'Μείγματα pancake'),
-  family('family.chemical-pourable.waffle', 'family.chemical-pourable', 'Waffle batters', 'Μείγματα waffle'),
-  family('family.chemical-pourable.fritter-coating', 'family.chemical-pourable', 'Fritter / coating batters', 'Μείγματα για τηγανητές παρασκευές / επικάλυψη'),
-
-  family(
-    'family.unleavened-pourable',
-    null,
-    'Unleavened pourable batters',
-    'Ρευστά μείγματα χωρίς ουσιαστική διόγκωση',
-    'High fluidity with egg/starch setting and minimal gas generation.',
-    'Υψηλή ρευστότητα, πήξη από αυγό ή άμυλο και ελάχιστη παραγωγή αερίου.',
-  ),
-  family('family.unleavened-pourable.crepe', 'family.unleavened-pourable', 'Crêpe-type batters', 'Μείγματα τύπου κρέπας'),
-
-  family(
-    'family.fermented-batter',
-    null,
-    'Fermented batters',
-    'Μείγματα με ζύμωση',
-    'Fermentation is important in a pourable or semi-liquid batter.',
-    'Η ζύμωση είναι σημαντική σε ένα ρευστό ή ημίρρευστο μείγμα.',
-  ),
-  family('family.fermented-batter.yeast', 'family.fermented-batter', 'Yeast-fermented batters', 'Μείγματα με ζύμωση από μαγιά'),
-  family('family.fermented-batter.lactic-mixed', 'family.fermented-batter', 'Lactic / mixed-fermented batters', 'Μείγματα με γαλακτική ή μικτή ζύμωση'),
+  family('family.batters.thin-pan', 'family.batters', 'Thin pan batters', 'Λεπτά μείγματα τηγανιού'),
+  family('family.batters.griddle', 'family.batters', 'Griddle batters', 'Μείγματα για πλάκα'),
+  family('family.batters.waffle', 'family.batters', 'Waffle batters', 'Μείγματα waffle'),
+  family('family.batters.steam-puffed', 'family.batters', 'Steam-puffed baked batters', 'Μείγματα φούρνου με διόγκωση ατμού'),
+  family('family.batters.custard-like', 'family.batters', 'Custard-like baked batters', 'Μείγματα φούρνου τύπου custard'),
+  family('family.batters.coating', 'family.batters', 'Coating batters', 'Μείγματα επικάλυψης'),
+  family('family.batters.fritter', 'family.batters', 'Fritter batters', 'Μείγματα για fritter'),
+  family('family.batters.fermented', 'family.batters', 'Fermented batters', 'Μείγματα με ζύμωση'),
+  family('family.batters.foam-leavened', 'family.batters', 'Foam-leavened batters', 'Μείγματα με διόγκωση από αφρό'),
+  family('family.batters.cake-adjacent', 'family.batters', 'Cake-adjacent batters', 'Μείγματα στα όρια προς cake'),
 
   family(
     'family.steam-paste',
@@ -220,6 +206,32 @@ export const STRUCTURAL_PRIMARY_FAMILY_IDS = STRUCTURAL_FAMILY_NODES
 export const STRUCTURAL_FAMILY_BY_ID: Readonly<Record<string, StructuralFamilyNode>> = Object.fromEntries(
   STRUCTURAL_FAMILY_NODES.map((node) => [node.id, node]),
 );
+
+/**
+ * IDs used by the pre-batters catalog. They remain readable for old releases
+ * and bookmarked filters, but are canonicalized before they reach the UI tree.
+ */
+export const STRUCTURAL_FAMILY_ALIASES: Readonly<Record<string, string>> = {
+  'family.chemical-pourable': 'family.batters',
+  'family.chemical-pourable.pancake': 'family.batters.griddle',
+  'family.chemical-pourable.waffle': 'family.batters.waffle',
+  'family.chemical-pourable.fritter-coating': 'family.batters.coating',
+  'family.unleavened-pourable': 'family.batters',
+  'family.unleavened-pourable.crepe': 'family.batters.thin-pan',
+  'family.fermented-batter': 'family.batters.fermented',
+  'family.fermented-batter.yeast': 'family.batters.fermented',
+  'family.fermented-batter.lactic-mixed': 'family.batters.fermented',
+};
+
+export function canonicalStructuralFamilyId(familyId: string): string {
+  let current = familyId;
+  const seen = new Set<string>();
+  while (STRUCTURAL_FAMILY_ALIASES[current] && !seen.has(current)) {
+    seen.add(current);
+    current = STRUCTURAL_FAMILY_ALIASES[current];
+  }
+  return current;
+}
 
 export const STRUCTURAL_MODIFIER_AXES: readonly StructuralModifierAxis[] = [
   {
@@ -300,12 +312,12 @@ export const STRUCTURAL_MODIFIER_AXES: readonly StructuralModifierAxis[] = [
 ];
 
 export function isStructuralFamilyId(value: string): boolean {
-  return Boolean(STRUCTURAL_FAMILY_BY_ID[value]);
+  return Boolean(STRUCTURAL_FAMILY_BY_ID[canonicalStructuralFamilyId(value)]);
 }
 
 export function structuralFamilyAncestry(familyId: string): string[] {
   const ancestry: string[] = [];
-  let current: string | null = familyId;
+  let current: string | null = canonicalStructuralFamilyId(familyId);
   while (current) {
     ancestry.push(current);
     current = STRUCTURAL_FAMILY_BY_ID[current]?.parentId ?? null;
@@ -314,7 +326,7 @@ export function structuralFamilyAncestry(familyId: string): string[] {
 }
 
 export function structuralFamilyMatches(actualFamilyId: string, selectedFamilyId: string): boolean {
-  return structuralFamilyAncestry(actualFamilyId).includes(selectedFamilyId);
+  return structuralFamilyAncestry(actualFamilyId).includes(canonicalStructuralFamilyId(selectedFamilyId));
 }
 
 export function structuralFamilyDepth(familyId: string): number {

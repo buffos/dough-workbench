@@ -10,17 +10,21 @@ import {
   STRUCTURAL_MODIFIER_AXES,
   STRUCTURAL_FAMILY_BY_ID,
   STRUCTURAL_FAMILY_NODES,
+  canonicalStructuralFamilyId,
+  isStructuralFamilyId,
   type StructuralModifierAxisId,
   structuralFamilyAncestry,
   structuralFamilyDepth,
   structuralFamilyMatches,
 } from './structural-taxonomy';
+import { validatePrototypeAssignments } from './prototype-validation';
+import type { PrototypeCatalogSnapshot } from './prototype-catalog';
 
 const STRUCTURAL_MODIFIER_OPTIONS_BY_ID = new Map(
   STRUCTURAL_MODIFIER_AXES.flatMap((axis) => axis.options.map((option) => [option.id, axis.id] as const)),
 );
 
-export const GOLD_DATASET_RELEASE_ID = 'gold-formulas-v3';
+export const GOLD_DATASET_RELEASE_ID = 'gold-formulas-v4';
 export const GOLD_DATASET_KIND = 'gold-formulas';
 export const GOLD_DATASET_MODEL_VERSION = 'classification-seed-v2';
 export const DATASET_CONTRACT_VERSION = 'dataset-release-v2';
@@ -154,7 +158,8 @@ export type DatasetDiagnosticCode =
   | 'unresolved_required_ingredient'
   | 'normalization_trace_missing'
   | 'invalid_structural_family'
-  | 'invalid_structural_modifier';
+  | 'invalid_structural_modifier'
+  | 'prototype_assignment_invalid';
 
 
 export interface DatasetDiagnostic {
@@ -170,7 +175,12 @@ export interface DatasetVerificationReport {
   roleErrors: DatasetDiagnostic[];
   partitionErrors: DatasetDiagnostic[];
   localeErrors: DatasetDiagnostic[];
+  prototypeErrors: DatasetDiagnostic[];
   contentIdentity: string;
+}
+
+export interface DatasetVerificationOptions {
+  prototypeCatalog?: PrototypeCatalogSnapshot;
 }
 
 export interface DatasetReleaseResolution {
@@ -400,7 +410,7 @@ export function isPublicReferenceEligible(record: DatasetRecordSnapshot): boolea
 }
 
 export function summarizeDatasetRecord(record: DatasetRecordSnapshot): DatasetRecordSummary {
-  const familyNode = STRUCTURAL_FAMILY_BY_ID[record.identity.familyId];
+  const familyNode = STRUCTURAL_FAMILY_BY_ID[canonicalStructuralFamilyId(record.identity.familyId)];
   return {
     releaseId: record.releaseId,
     recordId: record.recordId,
@@ -427,11 +437,15 @@ export function summarizeDatasetRecord(record: DatasetRecordSnapshot): DatasetRe
   };
 }
 
-export function verifyDatasetRelease(release: DatasetRelease): DatasetVerificationReport {
+export function verifyDatasetRelease(
+  release: DatasetRelease,
+  options: DatasetVerificationOptions = {},
+): DatasetVerificationReport {
   const recordErrors: DatasetDiagnostic[] = [];
   const roleErrors: DatasetDiagnostic[] = [];
   const partitionErrors: DatasetDiagnostic[] = [];
   const localeErrors: DatasetDiagnostic[] = [];
+  const prototypeErrors: DatasetDiagnostic[] = [];
   const seenRecordIds = new Set<string>();
   const primaryByPreparation = new Map<string, string>();
 
@@ -467,7 +481,7 @@ export function verifyDatasetRelease(release: DatasetRelease): DatasetVerificati
     }
     if (!isNonEmptyString(record.identity?.preparationKey) || !isNonEmptyString(record.identity?.familyId)) {
       recordErrors.push(diagnostic('record_invalid', `${path}.identity`));
-    } else if (!STRUCTURAL_FAMILY_BY_ID[record.identity.familyId]) {
+    } else if (!isStructuralFamilyId(record.identity.familyId)) {
       recordErrors.push(diagnostic('invalid_structural_family', `${path}.identity.familyId`, {
         familyId: record.identity.familyId,
       }));
@@ -521,13 +535,24 @@ export function verifyDatasetRelease(release: DatasetRelease): DatasetVerificati
     }
   });
 
+  if (options.prototypeCatalog) {
+    const prototypeValidation = validatePrototypeAssignments(release.records, options.prototypeCatalog);
+    prototypeValidation.diagnostics.forEach((item) => {
+      prototypeErrors.push(diagnostic('prototype_assignment_invalid', item.path, {
+        ...item.parameters,
+        validatorCode: item.code,
+      }));
+    });
+  }
+
   return {
-    outcome: recordErrors.length + roleErrors.length + partitionErrors.length + localeErrors.length === 0 ? 'pass' : 'fail',
+    outcome: recordErrors.length + roleErrors.length + partitionErrors.length + localeErrors.length + prototypeErrors.length === 0 ? 'pass' : 'fail',
     releaseId: release.descriptor.releaseId,
     recordErrors,
     roleErrors,
     partitionErrors,
     localeErrors,
+    prototypeErrors,
     contentIdentity,
   };
 }
@@ -673,11 +698,14 @@ export function listReferenceFamilyOptions(
 export function listReferencePrototypeOptions(
   registry: DatasetReleaseRegistry,
   releaseId?: string,
+  familyId?: string,
 ): DatasetPrototypeOption[] {
   const { summaries } = eligibleRecordSummaries(registry, releaseId);
   const counts = new Map<string, number>();
   summaries.forEach((summary) => {
-    if (summary.prototypeId) counts.set(summary.prototypeId, (counts.get(summary.prototypeId) ?? 0) + 1);
+    if (summary.prototypeId && (!familyId || structuralFamilyMatches(summary.structuralFamilyId, familyId))) {
+      counts.set(summary.prototypeId, (counts.get(summary.prototypeId) ?? 0) + 1);
+    }
   });
   return [...counts.entries()]
     .map(([id, count]) => ({ id, count }))

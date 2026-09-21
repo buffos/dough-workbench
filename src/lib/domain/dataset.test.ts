@@ -8,6 +8,7 @@ import {
   listReferenceFamilyOptions,
   listReferenceModifierFilterGroups,
   listReferencePreparationOptions,
+  listReferencePrototypeOptions,
   resolveDatasetRelease,
   resolveReferenceFormula,
   verifyDatasetRelease,
@@ -154,6 +155,46 @@ describe('dataset release contract', () => {
     });
     expect(result.totalItems).toBe(1);
     expect(result.items[0].label.en).toBe('Pizza');
+  });
+
+  it('scopes prototype options and results to the selected main family', () => {
+    const release = makeRelease([
+      makeRecord({
+        recordId: 'brioche-primary-01',
+        identity: {
+          preparationKey: 'brioche',
+          label: { en: 'Brioche', el: 'Μπριός' },
+          familyId: 'family.fermented-gluten.rich-enriched',
+          prototypeId: 'brioche',
+        },
+      }),
+      makeRecord({
+        recordId: 'pancake-primary-01',
+        identity: {
+          preparationKey: 'pancake',
+          label: { en: 'Pancake', el: 'Pancake' },
+          familyId: 'family.batters.griddle',
+          prototypeId: 'prototype.pancake',
+        },
+      }),
+    ]);
+    const registry = { currentReleaseId: releaseId, releases: { [releaseId]: release } };
+
+    expect(listReferencePrototypeOptions(registry)).toEqual([
+      { id: 'brioche', count: 1 },
+      { id: 'prototype.pancake', count: 1 },
+    ]);
+    expect(listReferencePrototypeOptions(registry, undefined, 'family.batters')).toEqual([
+      { id: 'prototype.pancake', count: 1 },
+    ]);
+
+    const result = browseReferenceFormulas(registry, {
+      locale: 'en',
+      familyId: 'family.batters',
+      pageSize: 8,
+    });
+    expect(result.totalItems).toBe(1);
+    expect(result.items[0].recordId).toBe('pancake-primary-01');
   });
 
   it('filters reference formulas by structured modifier facets and reports their counts', () => {

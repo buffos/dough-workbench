@@ -10,7 +10,7 @@ import type {
 } from './acquisition';
 
 export const CURATION_POLICY_VERSION = 'candidate-curation-v1';
-export const PILOT_CANDIDATE_SET_VERSION = 'first-party-breadsticks-crackers-v2';
+export const PILOT_CANDIDATE_SET_VERSION = 'first-party-breadsticks-crackers-batters-v3';
 
 export type CurationDecision = 'pending' | 'returned-for-correction' | 'accepted-for-release' | 'rejected';
 

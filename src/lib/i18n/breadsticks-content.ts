@@ -48,7 +48,7 @@ export const BREADSTICKS_CONTENT: Record<Locale, BreadsticksContent> = {
       {
         id: 'canonical-matrix',
         number: 1,
-        eyebrow: '01 / CANONICAL MATRIX',
+        eyebrow: '01 / STARTING FORMULAS',
         title: 'Ten starting formulas',
         intro: 'All percentages use total flour as 100%. The rows are deliberately close enough to compare, but different enough to show how texture moves.',
         table: {
@@ -142,7 +142,7 @@ export const BREADSTICKS_CONTENT: Record<Locale, BreadsticksContent> = {
           columns: ['Batch', 'Water', 'Olive oil', 'What it should show'],
           rows: [
             ['A', '52%', '5%', 'Hard and crisp'],
-            ['B', '56%', '10%', 'Canonical grissino'],
+            ['B', '56%', '10%', 'Torinese-style breadstick'],
             ['C', '52%', '18%', 'Tender and crumbly'],
             ['D', '65%', '6%', 'Airy breadstick'],
           ],
@@ -166,7 +166,7 @@ export const BREADSTICKS_CONTENT: Record<Locale, BreadsticksContent> = {
       {
         id: 'canonical-matrix',
         number: 1,
-        eyebrow: '01 / CANONICAL MATRIX',
+        eyebrow: '01 / ΦΟΡΜΟΥΛΕΣ ΕΚΚΙΝΗΣΗΣ',
         title: 'Δέκα φόρμουλες εκκίνησης',
         intro: 'Όλα τα ποσοστά χρησιμοποιούν το συνολικό αλεύρι ως 100%. Οι γραμμές είναι αρκετά κοντά ώστε να συγκρίνονται, αλλά αρκετά διαφορετικές ώστε να φαίνεται η μετακίνηση της υφής.',
         table: {
@@ -260,7 +260,7 @@ export const BREADSTICKS_CONTENT: Record<Locale, BreadsticksContent> = {
           columns: ['Παρτίδα', 'Νερό', 'Ελαιόλαδο', 'Τι πρέπει να δείξει'],
           rows: [
             ['A', '52%', '5%', 'Σκληρό και τραγανό'],
-            ['B', '56%', '10%', 'Canonical grissino'],
+            ['B', '56%', '10%', 'Κριτσίνι τύπου Torinese'],
             ['C', '52%', '18%', 'Τρυφερό και τριφτό'],
             ['D', '65%', '6%', 'Αέρινο breadstick'],
           ],

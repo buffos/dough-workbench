@@ -116,8 +116,12 @@ export type PrototypeCatalogDiagnosticCode =
   | 'CATALOG_VERSION_UNAVAILABLE'
   | 'MODEL_VERSION_UNAVAILABLE'
   | 'DUPLICATE_ID'
+  | 'DUPLICATE_FEATURE_DECLARATION'
   | 'MALFORMED_METADATA'
   | 'INVALID_REFERENCE'
+  | 'INVALID_FAMILY_ASSIGNMENT'
+  | 'CONFLICTING_PARENT_RULE'
+  | 'CHILD_RULE_OUTSIDE_PARENT'
   | 'PROTOTYPE_REFERENCE_CYCLE'
   | 'MISSING_MATCHER_POLICY';
 
@@ -207,7 +211,9 @@ function validTarget(target: unknown): boolean {
     return typeof target.min === 'string'
       && typeof target.max === 'string'
       && PROTOTYPE_QUALITATIVE_BANDS.includes(target.min as PrototypeQualitativeBand)
-      && PROTOTYPE_QUALITATIVE_BANDS.includes(target.max as PrototypeQualitativeBand);
+      && PROTOTYPE_QUALITATIVE_BANDS.includes(target.max as PrototypeQualitativeBand)
+      && PROTOTYPE_QUALITATIVE_BANDS.indexOf(target.min as PrototypeQualitativeBand)
+        <= PROTOTYPE_QUALITATIVE_BANDS.indexOf(target.max as PrototypeQualitativeBand);
   }
   if (target.kind === 'presence') {
     return typeof target.value === 'string' && PROTOTYPE_PRESENCE_TARGETS.includes(target.value as PrototypePresenceTarget);
@@ -247,6 +253,118 @@ function validateFeatureCollection(
       diagnostics.push(diagnostic('MALFORMED_METADATA', `${featurePath}.importance`, 'catalog.diagnostic.malformedMetadata'));
     }
   });
+}
+
+type PrototypeFeatureCollectionKey = 'structuralFeatures' | 'structuralConstraints' | 'identityModifiers';
+
+const PROTOTYPE_FEATURE_COLLECTION_KEYS: readonly PrototypeFeatureCollectionKey[] = [
+  'structuralFeatures',
+  'structuralConstraints',
+  'identityModifiers',
+];
+
+function validateFeatureDeclarations(
+  definition: PrototypeDefinition,
+  path: string,
+  diagnostics: PrototypeCatalogDiagnostic[],
+): void {
+  const firstCollectionById = new Map<string, PrototypeFeatureCollectionKey>();
+  PROTOTYPE_FEATURE_COLLECTION_KEYS.forEach((collection) => {
+    definition[collection].forEach((feature, index) => {
+      const firstCollection = firstCollectionById.get(feature.id);
+      if (firstCollection && firstCollection !== collection) {
+        diagnostics.push(diagnostic(
+          'DUPLICATE_FEATURE_DECLARATION',
+          `${path}.${collection}[${index}].id`,
+          'catalog.diagnostic.duplicateFeatureDeclaration',
+          { id: feature.id, firstCollection, secondCollection: collection },
+        ));
+      } else if (!firstCollection) {
+        firstCollectionById.set(feature.id, collection);
+      }
+    });
+  });
+}
+
+function targetBandRange(target: PrototypeFeatureTarget): [number, number] | null {
+  if (target.kind === 'band') {
+    const index = PROTOTYPE_QUALITATIVE_BANDS.indexOf(target.value);
+    return index < 0 ? null : [index, index];
+  }
+  if (target.kind === 'band-range') {
+    const min = PROTOTYPE_QUALITATIVE_BANDS.indexOf(target.min);
+    const max = PROTOTYPE_QUALITATIVE_BANDS.indexOf(target.max);
+    return min < 0 || max < 0 ? null : [min, max];
+  }
+  return null;
+}
+
+function targetPresenceSet(target: PrototypeFeatureTarget): ReadonlySet<'present' | 'absent'> | null {
+  if (target.kind !== 'presence') return null;
+  if (target.value === 'optional') return new Set(['present', 'absent']);
+  if (target.value === 'absent' || target.value === 'none_or_low') return new Set(['absent']);
+  return new Set(['present']);
+}
+
+function targetsOverlap(left: PrototypeFeatureTarget, right: PrototypeFeatureTarget): boolean {
+  const leftBands = targetBandRange(left);
+  const rightBands = targetBandRange(right);
+  if (leftBands && rightBands) return leftBands[0] <= rightBands[1] && rightBands[0] <= leftBands[1];
+
+  const leftPresence = targetPresenceSet(left);
+  const rightPresence = targetPresenceSet(right);
+  if (leftPresence && rightPresence) {
+    return [...leftPresence].some((value) => rightPresence.has(value));
+  }
+
+  if (left.kind === 'compatibility' && right.kind === 'compatibility') {
+    return left.values.some((value) => right.values.includes(value));
+  }
+
+  return false;
+}
+
+function familyDescendsFrom(
+  familyId: string,
+  ancestorId: string,
+  definitionsById: ReadonlyMap<string, PrototypeDefinition>,
+): boolean {
+  let current: string | null = familyId;
+  const seen = new Set<string>();
+  while (current && !seen.has(current)) {
+    if (current === ancestorId) return true;
+    seen.add(current);
+    const definition = definitionsById.get(current);
+    if (!definition || definition.kind !== 'family') return false;
+    current = definition.parentIds.find((parentId) => definitionsById.get(parentId)?.kind === 'family') ?? null;
+  }
+  return false;
+}
+
+function validatePrototypeFamilyAssignment(
+  definition: PrototypeDefinition,
+  parents: readonly ResolvedPrototypeDefinition[],
+  definitionsById: ReadonlyMap<string, PrototypeDefinition>,
+  path: string,
+  addDiagnostic: (item: PrototypeCatalogDiagnostic) => void,
+): void {
+  if (definition.kind !== 'prototype') return;
+  const parentFamilyIds = definition.parentIds.flatMap((parentId) => {
+    const parent = definitionsById.get(parentId);
+    return parent?.kind === 'family' ? [parent.id] : (parents.find((candidate) => candidate.id === parentId)?.familyIds ?? []);
+  });
+  if (parentFamilyIds.length === 0) return;
+  const matchesParent = definition.familyIds.some((familyId) => parentFamilyIds.some((parentFamilyId) => (
+    familyDescendsFrom(familyId, parentFamilyId, definitionsById)
+  )));
+  if (!matchesParent) {
+    addDiagnostic(diagnostic(
+      'INVALID_FAMILY_ASSIGNMENT',
+      `${path}.familyIds`,
+      'catalog.diagnostic.invalidFamilyAssignment',
+      { id: definition.id, parent: parentFamilyIds.join(', ') },
+    ));
+  }
 }
 
 function validateMatcherPolicy(policy: PrototypeMatcherPolicy, path: string, diagnostics: PrototypeCatalogDiagnostic[]): void {
@@ -342,6 +460,7 @@ export function validatePrototypeCatalog(input: PrototypeCatalogInput): Prototyp
     validateFeatureCollection(definition.structuralFeatures, `${path}.structuralFeatures`, diagnostics);
     validateFeatureCollection(definition.structuralConstraints, `${path}.structuralConstraints`, diagnostics);
     validateFeatureCollection(definition.identityModifiers, `${path}.identityModifiers`, diagnostics);
+    validateFeatureDeclarations(definition, path, diagnostics);
     validateProcessProfile(definition.processProfile, `${path}.processProfile`, diagnostics);
     if (definition.matcherPolicy) validateMatcherPolicy(definition.matcherPolicy, `${path}.matcherPolicy`, diagnostics);
     if (!PROTOTYPE_CONFIDENCE_TIERS.includes(definition.confidenceTier)
@@ -452,6 +571,8 @@ export function createPrototypeCatalogSnapshot(input: PrototypeCatalogInput): Pr
       status: 'verified',
     },
   };
+  const resolved = resolvePrototypeCatalog(snapshot);
+  if (resolved.status === 'invalid') return { status: 'invalid', diagnostics: resolved.diagnostics };
   return { status: 'available', snapshot: freezeDeep(snapshot) };
 }
 
@@ -604,6 +725,98 @@ export function resolvePrototypeCatalog(snapshot: PrototypeCatalogSnapshot): Pro
       matcherPolicySourceId,
       ancestry: unique([definition.id, ...parents.flatMap((parent) => parent.ancestry)]),
     };
+
+    validatePrototypeFamilyAssignment(
+      definition,
+      parents,
+      definitionsById,
+      `definitions.${id}`,
+      addDiagnostic,
+    );
+
+    const inheritedAcrossCollections = new Map<string, Array<{ feature: ResolvedPrototypeFeature; parentId: string; collection: PrototypeFeatureCollectionKey }>>();
+    parents.forEach((parent) => {
+      PROTOTYPE_FEATURE_COLLECTION_KEYS.forEach((key) => {
+        parent[key].forEach((feature) => {
+          const entries = inheritedAcrossCollections.get(feature.id) ?? [];
+          entries.push({ feature, parentId: parent.id, collection: key });
+          inheritedAcrossCollections.set(feature.id, entries);
+        });
+      });
+    });
+
+    definition.structuralFeatures.concat(definition.structuralConstraints, definition.identityModifiers).forEach((feature) => {
+      (inheritedAcrossCollections.get(feature.id) ?? []).forEach((parentRule) => {
+        if (targetsOverlap(feature.target, parentRule.feature.target)) return;
+        addDiagnostic(diagnostic(
+          'CHILD_RULE_OUTSIDE_PARENT',
+          `definitions.${id}.${parentRule.collection}.${feature.id}`,
+          'catalog.diagnostic.childRuleOutsideParent',
+          { child: id, parent: parentRule.parentId, feature: feature.id },
+        ));
+      });
+    });
+
+    PROTOTYPE_FEATURE_COLLECTION_KEYS.forEach((key) => {
+      const inheritedById = new Map<string, Array<{ feature: ResolvedPrototypeFeature; parentId: string }>>();
+      parents.forEach((parent) => {
+        parent[key].forEach((feature) => {
+          const entries = inheritedById.get(feature.id) ?? [];
+          entries.push({ feature, parentId: parent.id });
+          inheritedById.set(feature.id, entries);
+        });
+      });
+
+      inheritedById.forEach((entries, featureId) => {
+        for (let index = 0; index < entries.length; index += 1) {
+          for (let otherIndex = index + 1; otherIndex < entries.length; otherIndex += 1) {
+            if (targetsOverlap(entries[index].feature.target, entries[otherIndex].feature.target)) continue;
+            addDiagnostic(diagnostic(
+              'CONFLICTING_PARENT_RULE',
+              `definitions.${id}.${key}.${featureId}`,
+              'catalog.diagnostic.conflictingParentRule',
+              {
+                child: id,
+                feature: featureId,
+                firstParent: entries[index].parentId,
+                secondParent: entries[otherIndex].parentId,
+              },
+            ));
+          }
+        }
+      });
+
+      definition[key].forEach((feature) => {
+        const inherited = inheritedById.get(feature.id) ?? [];
+        inherited.forEach((parentRule) => {
+          if (targetsOverlap(feature.target, parentRule.feature.target)) return;
+          addDiagnostic(diagnostic(
+            'CHILD_RULE_OUTSIDE_PARENT',
+            `definitions.${id}.${key}.${feature.id}`,
+            'catalog.diagnostic.childRuleOutsideParent',
+            { child: id, parent: parentRule.parentId, feature: feature.id },
+          ));
+        });
+      });
+    });
+
+    const resolvedFeatureCollections = new Map<string, { collection: PrototypeFeatureCollectionKey; feature: ResolvedPrototypeFeature }>();
+    PROTOTYPE_FEATURE_COLLECTION_KEYS.forEach((key) => {
+      resolvedDefinition[key].forEach((feature) => {
+        const first = resolvedFeatureCollections.get(feature.id);
+        if (first && first.collection !== key && first.feature.origin === 'inherited' && feature.origin === 'inherited') {
+          addDiagnostic(diagnostic(
+            'DUPLICATE_FEATURE_DECLARATION',
+            `definitions.${id}.${key}.${feature.id}`,
+            'catalog.diagnostic.duplicateFeatureDeclaration',
+            { id: feature.id, firstCollection: first.collection, secondCollection: key },
+          ));
+        } else if (!first || first.feature.origin !== 'own') {
+          resolvedFeatureCollections.set(feature.id, { collection: key, feature });
+        }
+      });
+    });
+
     resolved.set(id, resolvedDefinition);
     stack.pop();
     visiting.delete(id);

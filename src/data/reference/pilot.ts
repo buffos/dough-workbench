@@ -30,8 +30,8 @@ import {
 import type { CompositionField, IngredientRole } from '../../lib/domain/types';
 import type { ProcessValuePath } from '../../lib/domain/process';
 
-export const PILOT_CAPTURE_VERSION = 'first-party-breadsticks-crackers-manual-v2';
-export const PILOT_CAPTURED_AT = '2026-09-20T00:00:00Z';
+export const PILOT_CAPTURE_VERSION = 'first-party-breadsticks-crackers-batters-manual-v3';
+export const PILOT_CAPTURED_AT = '2026-09-21T00:00:00Z';
 
 type MassInput = {
   value: number;
@@ -45,7 +45,7 @@ type CompositionInput = Partial<Record<CompositionField, number>>;
 interface FlourInput {
   id: string;
   name: string;
-  ingredientId: string;
+  ingredientId?: string;
   mass: MassInput;
   composition?: CompositionInput;
   allowUnknownComposition?: boolean;
@@ -84,6 +84,8 @@ export interface PilotCandidateDefinition {
   ingredients: IngredientInput[];
   process?: ProcessInput[];
   processSteps?: AdditionStepInput[];
+  /** Source line range used when a captured formula or process fact needs a human-auditable locator. */
+  sourceLineRange?: string;
 }
 
 export interface PilotDataset {
@@ -101,6 +103,8 @@ const INTERNAL_BREADSTICK_SOURCE_ID = 'source.dfi-internal-breadsticks';
 const INTERNAL_BREADSTICK_SOURCE = 'exploration/recepies/kritsinia.txt';
 const INTERNAL_CRACKER_SOURCE_ID = 'source.dfi-internal-crackers';
 const INTERNAL_CRACKER_SOURCE = 'exploration/recepies/craker.txt';
+const INTERNAL_BATTER_SOURCE_ID = 'source.dfi-internal-batters';
+const INTERNAL_BATTER_SOURCE = 'exploration/recepies/batters.txt';
 
 const grams = (value: number): MassInput => ({ value, unit: 'g' });
 
@@ -210,6 +214,192 @@ function processForCracker(options: {
   }
   return fields;
 }
+
+interface BatterFlourSpec {
+  id: string;
+  name: string;
+  mass: number;
+  ingredientId?: string;
+  allowUnknownComposition?: boolean;
+}
+
+interface BatterIngredientSpec {
+  id: string;
+  name: string;
+  mass: number;
+  ingredientId?: string;
+  role: IngredientRole;
+  allowUnknownComposition?: boolean;
+}
+
+interface BatterProcessOptions {
+  mixingMethod?: string;
+  targetDevelopment?: string;
+  aerationMethod?: string;
+  targetFoam?: string;
+  postAerationHandling?: string;
+  fermentationAgent?: string;
+  fatMode?: string;
+  thermalMethod: string;
+  shapeClass: string;
+  doughState: string;
+  containerType: string;
+  surfaceVolumeClass?: string;
+  preheated?: boolean;
+  processSteps?: AdditionStepInput[];
+}
+
+const BATTER_SOURCE_LINE_RANGES: Readonly<Record<string, string>> = {
+  'batter-crepe-canonical': 'L19-L55',
+  'batter-pancake-canonical': 'L57-L89',
+  'batter-waffle-canonical': 'L91-L125',
+  'batter-buttermilk-canonical': 'L127-L156',
+  'batter-dutch-baby-canonical': 'L158-L189',
+  'batter-tempura-canonical': 'L191-L216',
+  'batter-beer-canonical': 'L218-L238',
+  'batter-cake-pour-canonical': 'L240-L263',
+  'batter-crepe-delicate': 'L320-L369',
+  'batter-crepe-elastic': 'L320-L369',
+  'batter-crepe-tender': 'L320-L369',
+  'batter-crepe-savoury': 'L320-L369',
+  'batter-pancake-fluffy': 'L373-L424',
+  'batter-pancake-diner': 'L373-L424',
+  'batter-pancake-tender': 'L373-L424',
+  'batter-pancake-cakey': 'L373-L424',
+  'batter-pancake-chewy': 'L373-L424',
+  'batter-waffle-crisp': 'L452-L491',
+  'batter-waffle-starch-heavy': 'L452-L491',
+  'batter-waffle-softer': 'L452-L491',
+  'batter-waffle-belgian': 'L452-L491',
+  'batter-dutch-baby-more-egg': 'L495-L521',
+  'batter-dutch-baby-more-liquid': 'L495-L521',
+  'batter-tempura-light-brittle': 'L525-L561',
+  'batter-tempura-thick': 'L525-L561',
+  'batter-tempura-extra-crisp': 'L525-L561',
+  'batter-beer-thin': 'L563-L583',
+  'batter-beer-thick': 'L563-L583',
+  'batter-waffle-cheese-herb': 'L585-L675',
+  'batter-pancake-chocolate': 'L585-L687',
+  'batter-pancake-banana': 'L585-L699',
+  'batter-clafoutis-seed': 'L2180-L2214',
+  'batter-vegetable-fritter-seed': 'L2180-L2214',
+  'batter-sourdough-pancake-seed': 'L2180-L2214',
+  'batter-souffle-pancake-seed': 'L2180-L2214',
+};
+
+const batterGrams = (bakersPercentage: number): number => bakersPercentage * 5;
+
+function batterFlour(
+  id: string,
+  name: string,
+  bakersPercentage: number,
+  ingredientId?: string,
+  allowUnknownComposition = false,
+): BatterFlourSpec {
+  return { id, name, mass: batterGrams(bakersPercentage), ingredientId, ...(allowUnknownComposition ? { allowUnknownComposition: true } : {}) };
+}
+
+function batterIngredient(
+  id: string,
+  name: string,
+  bakersPercentage: number,
+  role: IngredientRole,
+  ingredientId?: string,
+  allowUnknownComposition = false,
+): BatterIngredientSpec {
+  return { id, name, mass: batterGrams(bakersPercentage), role, ingredientId, ...(allowUnknownComposition ? { allowUnknownComposition: true } : {}) };
+}
+
+function processForBatter(options: BatterProcessOptions): ProcessInput[] {
+  const fields: ProcessInput[] = [
+    { path: 'mixing.method', value: options.mixingMethod ?? 'whisk' },
+    { path: 'mixing.targetDevelopment', value: options.targetDevelopment ?? 'minimal' },
+    { path: 'aeration.method', value: options.aerationMethod ?? 'none' },
+    { path: 'fermentation.agent', value: options.fermentationAgent ?? 'none' },
+    { path: 'lamination.enabled', value: false },
+    { path: 'lamination.doughState', value: options.doughState },
+    { path: 'thermalProcess.method', value: options.thermalMethod },
+    { path: 'thermalProcess.preheated', value: options.preheated ?? true },
+    { path: 'thermalProcess.surfaceTreatment', value: 'none' },
+    { path: 'geometry.shapeClass', value: options.shapeClass },
+    { path: 'geometry.surfaceVolumeClass', value: options.surfaceVolumeClass ?? 'high' },
+    { path: 'geometry.containerType', value: options.containerType },
+  ];
+  if (options.fatMode) fields.push({ path: 'ingredientAddition.fatIncorporationMode', value: options.fatMode });
+  if (options.targetFoam) fields.push({ path: 'aeration.targetFoam', value: options.targetFoam });
+  if (options.postAerationHandling) fields.push({ path: 'aeration.postAerationHandling', value: options.postAerationHandling });
+  return fields;
+}
+
+function batterDefinition(
+  slug: string,
+  preparationKey: string,
+  flours: BatterFlourSpec[],
+  ingredients: BatterIngredientSpec[],
+  process: ProcessInput[],
+  processSteps?: AdditionStepInput[],
+): PilotCandidateDefinition {
+  return {
+    candidateId: `internal-batters-${slug}-v1`,
+    sourceId: INTERNAL_BATTER_SOURCE_ID,
+    preparationKey,
+    sourceUrl: INTERNAL_BATTER_SOURCE,
+    flours: flours.map((flour) => ({ ...flour, mass: grams(flour.mass) })),
+    ingredients: ingredients.map((ingredient) => ({ ...ingredient, mass: grams(ingredient.mass) })),
+    process,
+    processSteps,
+    sourceLineRange: BATTER_SOURCE_LINE_RANGES[preparationKey],
+  };
+}
+
+const whiteFlour = (percentage = 100): BatterFlourSpec => batterFlour('flour-white', 'White wheat flour', percentage, 'wheat-flour-white');
+const water = (percentage: number): BatterIngredientSpec => batterIngredient('water', 'Water', percentage, 'continuous_phase', 'water');
+const milk = (percentage: number): BatterIngredientSpec => batterIngredient('milk', 'Milk', percentage, 'continuous_phase', 'milk');
+const egg = (percentage: number): BatterIngredientSpec => batterIngredient('egg', 'Whole egg', percentage, 'structural', 'egg');
+const butter = (percentage: number): BatterIngredientSpec => batterIngredient('butter', 'Butter', percentage, 'inclusion', 'butter');
+const oil = (percentage: number): BatterIngredientSpec => batterIngredient('oil', 'Olive oil', percentage, 'inclusion', 'olive-oil');
+const sugar = (percentage: number): BatterIngredientSpec => batterIngredient('sugar', 'Sugar', percentage, 'inclusion', 'sugar');
+const salt = (percentage: number): BatterIngredientSpec => batterIngredient('salt', 'Salt', percentage, 'inclusion', 'salt');
+const bakingPowder = (percentage: number): BatterIngredientSpec => batterIngredient('baking-powder', 'Baking powder', percentage, 'inclusion', 'baking-powder');
+const customIngredient = (id: string, name: string, percentage: number, role: IngredientRole = 'inclusion'): BatterIngredientSpec => batterIngredient(id, name, percentage, role, `custom-${id}`, true);
+
+const BATTER_DEFINITIONS: readonly PilotCandidateDefinition[] = [
+  batterDefinition('crepe-canonical', 'batter-crepe-canonical', [whiteFlour()], [milk(190), egg(100), butter(18), sugar(8), salt(1.5)], processForBatter({ thermalMethod: 'pan', shapeClass: 'crepe', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-canonical', 'batter-pancake-canonical', [whiteFlour()], [milk(110), egg(50), butter(15), sugar(15), bakingPowder(5), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('waffle-canonical', 'batter-waffle-canonical', [whiteFlour()], [milk(110), egg(50), butter(30), sugar(15), bakingPowder(4), salt(1.5)], processForBatter({ thermalMethod: 'waffle_iron', shapeClass: 'waffle', doughState: 'thick_batter', containerType: 'other', fatMode: 'melted' })),
+  batterDefinition('buttermilk-canonical', 'batter-buttermilk-canonical', [whiteFlour()], [customIngredient('buttermilk', 'Buttermilk', 110, 'continuous_phase'), egg(45), butter(18), sugar(12), bakingPowder(3), customIngredient('baking-soda', 'Baking soda', 1.2), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('dutch-baby-canonical', 'batter-dutch-baby-canonical', [whiteFlour()], [milk(190), egg(100), butter(25), salt(1.5)], processForBatter({ thermalMethod: 'static_oven', shapeClass: 'dutch_baby', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('tempura-canonical', 'batter-tempura-canonical', [whiteFlour()], [water(150), egg(40), salt(1)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thin_pourable_batter', containerType: 'other' })),
+  batterDefinition('beer-canonical', 'batter-beer-canonical', [whiteFlour()], [customIngredient('beer', 'Beer', 125, 'continuous_phase'), bakingPowder(2), salt(1.5)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thick_batter', containerType: 'other' })),
+  batterDefinition('cake-pour-canonical', 'batter-cake-pour-canonical', [whiteFlour()], [milk(75), egg(75), sugar(90), butter(70), bakingPowder(4)], processForBatter({ mixingMethod: 'whisk', thermalMethod: 'static_oven', shapeClass: 'cake', doughState: 'thick_batter', containerType: 'cake_pan', fatMode: 'creamed' })),
+  batterDefinition('crepe-delicate', 'batter-crepe-delicate', [whiteFlour()], [milk(220), egg(90), butter(15), sugar(8), salt(1.5)], processForBatter({ thermalMethod: 'pan', shapeClass: 'crepe', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('crepe-elastic', 'batter-crepe-elastic', [whiteFlour()], [milk(170), egg(120), butter(15), sugar(8), salt(1.5)], processForBatter({ thermalMethod: 'pan', shapeClass: 'crepe', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('crepe-tender', 'batter-crepe-tender', [whiteFlour()], [milk(190), egg(100), butter(30), sugar(8), salt(1.5)], processForBatter({ thermalMethod: 'pan', shapeClass: 'crepe', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('crepe-savoury', 'batter-crepe-savoury', [whiteFlour()], [milk(190), egg(100), butter(18), sugar(1), salt(1.5), customIngredient('parmesan', 'Parmesan-style cheese', 15), customIngredient('black-pepper', 'Black pepper', 1), customIngredient('dried-herbs', 'Dried herbs', 1)], processForBatter({ thermalMethod: 'pan', shapeClass: 'crepe', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-fluffy', 'batter-pancake-fluffy', [whiteFlour()], [milk(100), egg(50), butter(15), sugar(15), bakingPowder(6), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-diner', 'batter-pancake-diner', [whiteFlour()], [milk(130), egg(45), butter(10), sugar(10), bakingPowder(4), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-tender', 'batter-pancake-tender', [whiteFlour()], [milk(110), egg(50), butter(25), sugar(15), bakingPowder(5), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-cakey', 'batter-pancake-cakey', [whiteFlour()], [milk(95), egg(60), butter(20), sugar(20), bakingPowder(6), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-chewy', 'batter-pancake-chewy', [whiteFlour()], [milk(115), egg(35), butter(7.5), sugar(7.5), bakingPowder(3), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted', targetDevelopment: 'partial' })),
+  batterDefinition('waffle-crisp', 'batter-waffle-crisp', [whiteFlour()], [milk(100), egg(50), butter(37.5), sugar(10), bakingPowder(4), salt(1.5)], processForBatter({ thermalMethod: 'waffle_iron', shapeClass: 'waffle', doughState: 'thick_batter', containerType: 'other', fatMode: 'melted' })),
+  batterDefinition('waffle-starch-heavy', 'batter-waffle-starch-heavy', [batterFlour('flour-white', 'White wheat flour', 70, 'wheat-flour-white'), batterFlour('cornstarch', 'Cornstarch', 30, undefined, true)], [milk(100), egg(50), butter(37.5), sugar(10), bakingPowder(4), salt(1.5)], processForBatter({ thermalMethod: 'waffle_iron', shapeClass: 'waffle', doughState: 'thick_batter', containerType: 'other', fatMode: 'melted' })),
+  batterDefinition('waffle-softer', 'batter-waffle-softer', [whiteFlour()], [milk(120), egg(55), butter(20), sugar(20), bakingPowder(5), salt(1.5)], processForBatter({ thermalMethod: 'waffle_iron', shapeClass: 'waffle', doughState: 'thick_batter', containerType: 'other', fatMode: 'melted' })),
+  batterDefinition('waffle-belgian', 'batter-waffle-belgian', [whiteFlour()], [milk(100), egg(70), butter(35), sugar(20), salt(1.5)], processForBatter({ thermalMethod: 'waffle_iron', shapeClass: 'waffle', doughState: 'thick_batter', containerType: 'other', fatMode: 'melted', aerationMethod: 'egg_white_whip', targetFoam: 'high', postAerationHandling: 'gentle_fold' })),
+  batterDefinition('dutch-baby-more-egg', 'batter-dutch-baby-more-egg', [whiteFlour()], [milk(170), egg(130), butter(25), salt(1.5)], processForBatter({ thermalMethod: 'static_oven', shapeClass: 'dutch_baby', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('dutch-baby-more-liquid', 'batter-dutch-baby-more-liquid', [whiteFlour()], [milk(220), egg(100), butter(25), salt(1.5)], processForBatter({ thermalMethod: 'static_oven', shapeClass: 'dutch_baby', doughState: 'thin_pourable_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('tempura-light-brittle', 'batter-tempura-light-brittle', [batterFlour('flour-white', 'White wheat flour', 70, 'wheat-flour-white'), batterFlour('starch', 'Starch', 30, undefined, true)], [water(165), egg(25), salt(1)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thin_pourable_batter', containerType: 'other' })),
+  batterDefinition('tempura-thick', 'batter-tempura-thick', [whiteFlour()], [water(120), egg(30), salt(1)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thick_batter', containerType: 'other' })),
+  batterDefinition('tempura-extra-crisp', 'batter-tempura-extra-crisp', [batterFlour('flour-white', 'White wheat flour', 70, 'wheat-flour-white'), batterFlour('rice-starch', 'Rice flour or cornstarch', 30, undefined, true)], [water(160), salt(1)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thin_pourable_batter', containerType: 'other' })),
+  batterDefinition('beer-thin', 'batter-beer-thin', [whiteFlour()], [customIngredient('beer', 'Beer', 150, 'continuous_phase'), bakingPowder(1), salt(1.5)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thin_pourable_batter', containerType: 'other' })),
+  batterDefinition('beer-thick', 'batter-beer-thick', [whiteFlour()], [customIngredient('beer', 'Beer', 110, 'continuous_phase'), bakingPowder(2.5), salt(1.5)], processForBatter({ mixingMethod: 'minimal_combine', thermalMethod: 'deep_fry', shapeClass: 'coating', doughState: 'thick_batter', containerType: 'other' })),
+  batterDefinition('waffle-cheese-herb', 'batter-waffle-cheese-herb', [whiteFlour()], [milk(115), egg(50), butter(20), customIngredient('cheese', 'Cheese', 25, 'structural'), bakingPowder(4), customIngredient('herbs', 'Herbs', 1, 'inclusion'), sugar(1.5), salt(1)], processForBatter({ thermalMethod: 'waffle_iron', shapeClass: 'waffle', doughState: 'thick_batter', containerType: 'other', fatMode: 'melted' })),
+  batterDefinition('pancake-chocolate', 'batter-pancake-chocolate', [batterFlour('flour-white', 'White wheat flour', 90, 'wheat-flour-white'), batterFlour('cocoa', 'Cocoa powder', 10, undefined, true)], [milk(120), egg(50), butter(20), sugar(25), bakingPowder(5), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('pancake-banana', 'batter-pancake-banana', [whiteFlour()], [milk(70), customIngredient('banana', 'Banana purée', 50, 'structural'), egg(50), butter(10), sugar(5), bakingPowder(5), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fatMode: 'melted' })),
+  batterDefinition('clafoutis-seed', 'batter-clafoutis-seed', [whiteFlour()], [milk(155), egg(130), butter(20), sugar(50), customIngredient('fruit', 'Fruit', 50, 'inclusion'), salt(1)], processForBatter({ thermalMethod: 'static_oven', shapeClass: 'custard', doughState: 'thin_pourable_batter', containerType: 'cake_pan', fatMode: 'melted' })),
+  batterDefinition('vegetable-fritter-seed', 'batter-vegetable-fritter-seed', [whiteFlour()], [water(95), egg(45), oil(10), bakingPowder(2), customIngredient('vegetables', 'Vegetables', 80, 'inclusion'), salt(2)], processForBatter({ thermalMethod: 'shallow_fry', shapeClass: 'fritter', doughState: 'thick_batter', containerType: 'other', fatMode: 'direct_mix' })),
+  batterDefinition('sourdough-pancake-seed', 'batter-sourdough-pancake-seed', [whiteFlour()], [milk(120), egg(40), oil(15), sugar(10), customIngredient('sourdough-starter', 'Wheat sourdough starter', 20, 'continuous_phase'), salt(1.5)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'pancake', doughState: 'thick_batter', containerType: 'cast_iron', fermentationAgent: 'sourdough', fatMode: 'direct_mix' })),
+  batterDefinition('souffle-pancake-seed', 'batter-souffle-pancake-seed', [whiteFlour()], [milk(95), egg(90), butter(15), sugar(20), bakingPowder(5), salt(1)], processForBatter({ thermalMethod: 'griddle', shapeClass: 'souffle_pancake', doughState: 'thick_batter', containerType: 'cast_iron', aerationMethod: 'egg_white_whip', targetFoam: 'high', postAerationHandling: 'gentle_fold', fatMode: 'melted' })),
+];
 
 const PILOT_DEFINITIONS: readonly PilotCandidateDefinition[] = [
   {
@@ -583,6 +773,7 @@ const PILOT_DEFINITIONS: readonly PilotCandidateDefinition[] = [
     process: processForCracker({}),
     processSteps: crackerSteps({ fatLineIds: ['fat'], inclusionLineIds: ['paprika', 'black-pepper', 'oregano'] }),
   },
+  ...BATTER_DEFINITIONS,
 ];
 
 function sourceFact(
@@ -592,7 +783,7 @@ function sourceFact(
   value: SourceFact['value'],
   unit?: CapturedUnit,
 ): SourceFact {
-  const sourceLocator = `${definition.sourceUrl}#${definition.preparationKey}/${path}`;
+  const sourceLocator = `${definition.sourceUrl}#${definition.sourceLineRange ?? definition.preparationKey}/${path}`;
   return {
     factId: createSourceFactId({ path, kind, value, unit, sourceLocator }),
     path,
@@ -709,12 +900,17 @@ function reviewedCandidate(candidate: CandidateRecord): { candidate: CandidateRe
     },
     reason: candidate.sourceId === INTERNAL_CRACKER_SOURCE_ID
       ? {
-          en: 'This first-party canonical cracker formula draft is traceable to the internal cracker exploration note. It is released as an expert seed, not as a kitchen-validated universal recipe.',
-          el: 'Αυτή η first-party canonical φόρμουλα κράκερ είναι traceable στο εσωτερικό σημείωμα διερεύνησης κράκερ. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
+          en: 'This first-party cracker formula draft is traceable to the internal cracker exploration note. It is released as an expert seed, not as a kitchen-validated universal recipe.',
+          el: 'Αυτή η first-party φόρμουλα κράκερ είναι traceable στο εσωτερικό σημείωμα διερεύνησης κράκερ. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
         }
-      : {
-          en: 'This first-party canonical formula draft is traceable to the internal grissini exploration note. It is published as an expert seed, not as a kitchen-validated universal recipe.',
-          el: 'Αυτή η first-party canonical φόρμουλα είναι traceable στο εσωτερικό σημείωμα διερεύνησης κριτσινιών. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
+      : candidate.sourceId === INTERNAL_BATTER_SOURCE_ID
+        ? {
+            en: 'This first-party batter formula is traceable to the internal batter exploration note. It is released as an expert seed, not as a kitchen-validated universal recipe.',
+            el: 'Αυτή η first-party φόρμουλα batter είναι traceable στο εσωτερικό σημείωμα διερεύνησης batter. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
+          }
+        : {
+          en: 'This first-party formula draft is traceable to the internal grissini exploration note. It is published as an expert seed, not as a kitchen-validated universal recipe.',
+          el: 'Αυτή η first-party φόρμουλα είναι traceable στο εσωτερικό σημείωμα διερεύνησης κριτσινιών. Δημοσιεύεται ως expert seed και όχι ως καθολική συνταγή επικυρωμένη στην κουζίνα.',
         },
     releasePlan: {
       roles: ['reference', 'calibration'],

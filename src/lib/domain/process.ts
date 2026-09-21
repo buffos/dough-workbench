@@ -1,7 +1,7 @@
 import type { DraftValueState, ReferenceDraftProvenance, ValueState } from './types';
 
 export const PROCESS_NORMALIZATION_POLICY = 'process-normalization-v1';
-export const PROCESS_MODEL_VERSION = 'process-input-v0.3';
+export const PROCESS_MODEL_VERSION = 'process-input-v0.4';
 
 export type ProcessReadiness = 'editing' | 'incomplete' | 'process_ready';
 export type ProcessScalar = string | number | boolean;
@@ -148,8 +148,12 @@ const REST_TYPES = ['autolyse', 'fermentolyse', 'bench_rest', 'intermediate_rest
 const FAT_MODES = ['early_coating', 'creamed', 'melted', 'late_incorporation', 'cold_chunks', 'laminated', 'emulsified', 'direct_mix', 'other'] as const;
 const AERATION_METHODS = ['none', 'creaming', 'whole_egg_whip', 'egg_white_whip', 'whipped_cream', 'mechanical_beat', 'other'] as const;
 const FERMENTATION_AGENTS = ['none', 'commercial_yeast', 'sourdough', 'mixed', 'other'] as const;
-const THERMAL_METHODS = ['static_oven', 'fan_oven', 'steam_oven', 'air_fryer', 'griddle', 'pan', 'deep_fry', 'boil_then_bake', 'other'] as const;
-const SHAPE_CLASSES = ['loaf', 'roll', 'breadstick', 'flatbread', 'thin_sheet', 'cookie', 'cake', 'muffin', 'pancake', 'crepe', 'ring', 'laminated_piece', 'choux_piece', 'other'] as const;
+const THERMAL_METHODS = ['static_oven', 'fan_oven', 'steam_oven', 'air_fryer', 'griddle', 'pan', 'waffle_iron', 'deep_fry', 'shallow_fry', 'boil_then_bake', 'other'] as const;
+const SHAPE_CLASSES = [
+  'loaf', 'roll', 'breadstick', 'flatbread', 'thin_sheet', 'cookie', 'cake', 'muffin',
+  'pancake', 'crepe', 'waffle', 'fritter', 'coating', 'custard', 'popover', 'dutch_baby',
+  'yorkshire_pudding', 'steam_puffed', 'souffle_pancake', 'ring', 'laminated_piece', 'choux_piece', 'other',
+] as const;
 const DEVELOPMENT_TARGETS = ['minimal', 'partial', 'full'] as const;
 const FOAM_TARGETS = ['low', 'medium', 'high'] as const;
 const POST_AERATION_HANDLING = ['gentle_fold', 'moderate_fold', 'vigorous_mix'] as const;

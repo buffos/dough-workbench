@@ -6,6 +6,7 @@
   } from '../lib/application/formula-workspace';
   import {
     listReferenceModifierFilterGroups,
+    listReferenceFamilyOptions,
     listReferencePrototypeOptions,
     type DatasetRecordSnapshot,
   } from '../lib/domain/dataset';
@@ -23,17 +24,25 @@
   type StartMode = 'blank' | 'reference';
   let mode: StartMode = 'blank';
   let query = '';
+  let familyFilter = '';
   let prototypeFilter = '';
   let modifierFilters: Record<string, string> = {};
   let page = 1;
   const pageSize = 8;
 
-  const prototypeOptions = listReferencePrototypeOptions(REFERENCE_DATASET_REGISTRY);
+  const mainFamilyOptions = listReferenceFamilyOptions(REFERENCE_DATASET_REGISTRY)
+    .filter((option) => option.depth === 0 && option.selectable);
   const modifierFilterGroups = listReferenceModifierFilterGroups(REFERENCE_DATASET_REGISTRY);
   $: selectedModifierIds = Object.values(modifierFilters).filter((modifierId) => modifierId.length > 0);
+  $: prototypeOptions = listReferencePrototypeOptions(
+    REFERENCE_DATASET_REGISTRY,
+    undefined,
+    familyFilter || undefined,
+  );
   $: browseResult = browseReferenceFormulaDrafts({
     locale,
     query,
+    familyId: familyFilter || undefined,
     prototypeId: prototypeFilter || undefined,
     modifierIds: selectedModifierIds,
     page,
@@ -61,6 +70,12 @@
     page = 1;
   }
 
+  function updateFamily(value: string): void {
+    familyFilter = value;
+    prototypeFilter = '';
+    page = 1;
+  }
+
   function updatePrototype(value: string): void {
     prototypeFilter = value;
     page = 1;
@@ -76,6 +91,7 @@
 
   function clearFilters(): void {
     query = '';
+    familyFilter = '';
     prototypeFilter = '';
     modifierFilters = {};
     page = 1;
@@ -218,9 +234,18 @@
             />
           </label>
           <label>
-            <span>{t(locale, 'reference.prototype')}</span>
+            <span>{t(locale, 'reference.mainFamily')}</span>
+            <select value={familyFilter} on:change={(event) => updateFamily((event.currentTarget as HTMLSelectElement).value)}>
+              <option value="">{t(locale, 'reference.allMainFamilies')}</option>
+              {#each mainFamilyOptions as option (option.id)}
+                <option value={option.id}>{option.label[locale]} ({option.count ?? 0})</option>
+              {/each}
+            </select>
+          </label>
+          <label>
+            <span>{t(locale, 'reference.subcategory')}</span>
             <select value={prototypeFilter} on:change={(event) => updatePrototype((event.currentTarget as HTMLSelectElement).value)}>
-              <option value="">{t(locale, 'reference.allPrototypes')}</option>
+              <option value="">{t(locale, 'reference.allSubcategories')}</option>
               {#each prototypeOptions as option (option.id)}
                 <option value={option.id}>{prototypeOptionLabel(option)}</option>
               {/each}
@@ -234,7 +259,7 @@
             <button
               type="button"
               class="reference-filter-clear"
-              disabled={!query && !prototypeFilter && selectedModifierIds.length === 0}
+              disabled={!query && !familyFilter && !prototypeFilter && selectedModifierIds.length === 0}
               on:click={clearFilters}
             >
               {t(locale, 'reference.clearFilters')}
@@ -269,8 +294,8 @@
 
         {#if browseResult.items.length === 0}
           <div class="reference-empty" role="status">
-            <strong>{query || prototypeFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResults') : t(locale, 'reference.empty')}</strong>
-            <p>{query || prototypeFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResultsHint') : t(locale, 'reference.recovery')}</p>
+            <strong>{query || familyFilter || prototypeFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResults') : t(locale, 'reference.empty')}</strong>
+            <p>{query || familyFilter || prototypeFilter || selectedModifierIds.length > 0 ? t(locale, 'reference.noResultsHint') : t(locale, 'reference.recovery')}</p>
           </div>
         {:else}
           <div class="reference-result-list">
@@ -335,7 +360,7 @@
   .active-reference-meta { display: flex; flex-direction: column; align-items: end; gap: 0.25rem; text-align: right; }
   .reference-browser { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e1d9cf; }
   .release-pill { padding: 0.45rem 0.6rem; border: 1px solid #d9c1ad; color: #8f503a; }
-  .reference-filters { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 0.65rem; margin: 1rem 0 0.65rem; }
+  .reference-filters { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); gap: 0.65rem; margin: 1rem 0 0.65rem; }
   .reference-filters label { display: flex; flex-direction: column; gap: 0.35rem; }
   .reference-filters label > span, .reference-results-heading span { color: #627067; font-size: 0.66rem; font-weight: 750; letter-spacing: 0.09em; text-transform: uppercase; }
   .reference-filters input, .reference-filters select { min-height: 2.35rem; padding: 0.55rem 0.65rem; border: 1px solid #d5cdc3; background: #fffdfa; color: #2c4a3e; }

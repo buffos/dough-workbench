@@ -324,9 +324,10 @@ function effectiveMetric(metrics: EffectiveAnalysisResult, key: EffectiveMetricR
 function stateFromMetric(
   metric: IntrinsicMetric | EffectiveMetricResult | undefined,
   value: number | undefined = metric?.value,
+  allowPartial = false,
 ): ValueState<number> {
   if (!metric || metric.status === 'not_applicable') return { state: 'none' };
-  if (value === undefined || metric.status === 'unavailable') {
+  if (value === undefined || metric.status === 'unavailable' || (!allowPartial && metric.status === 'partial')) {
     return { state: 'unknown', reasonCode: metric.status === 'unavailable' ? 'metric-unavailable' : 'value-not-supplied' };
   }
   return {
@@ -342,12 +343,12 @@ function metricFeature(
   group: ClassificationFeatureGroup,
   metric: IntrinsicMetric | EffectiveMetricResult | undefined,
   sourcePath: string,
-  options: { value?: number; useRelative?: boolean } = {},
+  options: { value?: number; useRelative?: boolean; allowPartial?: boolean } = {},
 ): ClassificationFeature {
   const value = options.useRelative && metric && 'relativeValue' in metric
     ? metric.relativeValue
     : options.value ?? metric?.value;
-  const state = stateFromMetric(metric, value);
+  const state = stateFromMetric(metric, value, options.allowPartial ?? false);
   const provenance = metric ? uniqueProvenance(metric.provenance) : [DERIVED_PROVENANCE];
   return {
     id,
@@ -503,13 +504,24 @@ function derivedThermalGeometry(process: NormalizedProcess): ClassificationFeatu
   const method = processState(process, 'thermalProcess.method');
   const knownShape = shape.state === 'known' ? String(shape.value) : undefined;
   const knownMethod = method.state === 'known' ? String(method.value) : undefined;
-  const value = knownShape === 'crepe'
+  const value = knownShape === 'crepe' || knownShape === 'thin_sheet'
     ? 'thin_sheet'
-    : knownMethod === 'griddle'
-      ? 'griddle'
-      : knownMethod === 'pan' || knownShape === 'pancake'
-        ? 'pan'
-        : undefined;
+    : knownShape === 'waffle' || knownMethod === 'waffle_iron'
+      ? 'waffle'
+      : knownMethod === 'deep_fry'
+        ? 'deep_fry'
+        : knownMethod === 'shallow_fry'
+          ? 'shallow_fry'
+          : knownMethod === 'static_oven' || knownMethod === 'fan_oven' || knownMethod === 'steam_oven'
+            || knownShape === 'custard' || knownShape === 'popover' || knownShape === 'dutch_baby'
+            || knownShape === 'yorkshire_pudding' || knownShape === 'steam_puffed'
+            || knownShape === 'cake' || knownShape === 'muffin'
+            ? 'oven'
+            : knownMethod === 'griddle'
+              ? 'griddle'
+              : knownMethod === 'pan' || knownShape === 'pancake' || knownShape === 'souffle_pancake'
+                ? 'pan'
+                : undefined;
   const state: ValueState<string> = value
     ? {
         state: 'known',
@@ -544,10 +556,11 @@ function buildFeatures(
   const add = (feature: ClassificationFeature): void => {
     if (!features.some((item) => item.id === feature.id)) features.push(feature);
   };
-  add(metricFeature('effective_gluten', 'effective', effectiveMetric(effective, 'effectiveGluten'), 'effective.effectiveGluten'));
-  add(metricFeature('layer_integrity', 'effective', effectiveMetric(effective, 'laminationIntegrity'), 'effective.laminationIntegrity'));
-  add(metricFeature('setting_capacity', 'effective', effectiveMetric(effective, 'settingTendency'), 'effective.settingTendency'));
-  add(metricFeature('gas_retention', 'effective', effectiveMetric(effective, 'gasRetention'), 'effective.gasRetention'));
+  add(metricFeature('effective_gluten', 'effective', effectiveMetric(effective, 'effectiveGluten'), 'effective.effectiveGluten', { allowPartial: true }));
+  add(metricFeature('layer_integrity', 'effective', effectiveMetric(effective, 'laminationIntegrity'), 'effective.laminationIntegrity', { allowPartial: true }));
+  add(metricFeature('setting_capacity', 'effective', effectiveMetric(effective, 'settingTendency'), 'effective.settingTendency', { allowPartial: true }));
+  add(metricFeature('gas_retention', 'effective', effectiveMetric(effective, 'gasRetention'), 'effective.gasRetention', { allowPartial: true }));
+  add(metricFeature('surface_dehydration', 'effective', effectiveMetric(effective, 'moistureLossTendency'), 'effective.moistureLossTendency', { allowPartial: true }));
   add(metricFeature('relative_hydration', 'intrinsic', intrinsicMetric(intrinsic, 'effectiveHydration'), 'intrinsic.effectiveHydration'));
   add(metricFeature('enrichment', 'intrinsic', intrinsicMetric(intrinsic, 'enrichment'), 'intrinsic.enrichment'));
   add(metricFeature('fluidity', 'intrinsic', intrinsicMetric(intrinsic, 'fluidity'), 'intrinsic.fluidity'));
@@ -586,8 +599,15 @@ function buildFeatures(
   ));
   add(presenceFeature('mechanical_aeration', 'aeration.method', reference.process, (value) => value !== 'none'));
   add(presenceFeature('egg_white_foam', 'aeration.method', reference.process, (value) => value === 'egg_white_whip'));
-  add(presenceFeature('steam_leavening', 'thermalProcess.method', reference.process, (value) => value === 'steam_oven' || value === 'boil_then_bake'));
-  add(presenceFeature('pourable_batter', 'lamination.doughState', reference.process, (value) => value === 'thin_pourable_batter'));
+  add(presenceFromStates(
+    'steam_leavening',
+    ['thermalProcess.method', 'geometry.shapeClass'],
+    [processState(reference.process, 'thermalProcess.method'), processState(reference.process, 'geometry.shapeClass')],
+    (value) => value === 'steam_oven' || value === 'boil_then_bake' || value === 'dutch_baby'
+      || value === 'yorkshire_pudding' || value === 'popover' || value === 'steam_puffed',
+  ));
+  add(processFeature('batter_consistency', 'lamination.doughState', reference.process));
+  add(presenceFeature('pourable_batter', 'lamination.doughState', reference.process, (value) => value === 'thin_pourable_batter' || value === 'thick_batter'));
   add(presenceFeature('strong_gluten_development', 'mixing.targetDevelopment', reference.process, (value) => value === 'full'));
   add(presenceFeature('gluten_structure', 'mixing.targetDevelopment', reference.process, (value) => value === 'partial' || value === 'full'));
   add(presenceFeature('suppressed_gluten', 'mixing.targetDevelopment', reference.process, (value) => value === 'minimal'));
@@ -748,11 +768,33 @@ function featureOrigin(feature: PrototypeFeature): Pick<ClassificationFeatureEva
     : {};
 }
 
+function declaredPrototypeEvidence(
+  definition: ResolvedPrototypeDefinition,
+): Array<{ feature: PrototypeFeature; kind: 'feature' | 'constraint' }> {
+  const byId = new Map<string, { feature: PrototypeFeature; kind: 'feature' | 'constraint' }>();
+  const add = (feature: PrototypeFeature, kind: 'feature' | 'constraint'): void => {
+    const existing = byId.get(feature.id);
+    if (!existing) {
+      byId.set(feature.id, { feature, kind });
+      return;
+    }
+    const existingOwn = featureOrigin(existing.feature).origin === 'own';
+    const candidateOwn = featureOrigin(feature).origin === 'own';
+    if (candidateOwn && !existingOwn) {
+      byId.set(feature.id, { feature, kind });
+      return;
+    }
+    if (candidateOwn === existingOwn && kind === 'constraint' && existing.kind === 'feature') {
+      byId.set(feature.id, { feature, kind });
+    }
+  };
+  definition.structuralFeatures.forEach((feature) => add(feature, 'feature'));
+  definition.structuralConstraints.forEach((feature) => add(feature, 'constraint'));
+  return [...byId.values()];
+}
+
 function evaluateDefinition(set: ClassificationFeatureSet, definition: ResolvedPrototypeDefinition): FamilyMembership {
-  const declared: Array<{ feature: PrototypeFeature; kind: 'feature' | 'constraint' }> = [
-    ...definition.structuralFeatures.map((feature) => ({ feature, kind: 'feature' as const })),
-    ...definition.structuralConstraints.map((feature) => ({ feature, kind: 'constraint' as const })),
-  ];
+  const declared = declaredPrototypeEvidence(definition);
   const evidence = declared.map(({ feature, kind }) => ({
     featureId: feature.id,
     kind,
@@ -828,10 +870,7 @@ function evaluatePrototype(
   set: ClassificationFeatureSet,
   definition: ResolvedPrototypeDefinition,
 ): PrototypeSimilarity {
-  const declared: Array<{ feature: PrototypeFeature; kind: 'feature' | 'constraint' }> = [
-    ...definition.structuralFeatures.map((feature) => ({ feature, kind: 'feature' as const })),
-    ...definition.structuralConstraints.map((feature) => ({ feature, kind: 'constraint' as const })),
-  ];
+  const declared = declaredPrototypeEvidence(definition);
   const evaluatedFeatures = declared.map(({ feature, kind }) => ({
     featureId: feature.id,
     kind,

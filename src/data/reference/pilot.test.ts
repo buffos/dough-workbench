@@ -5,28 +5,31 @@ import { STARTER_CATALOG_VERSION } from '../ingredients/starter-catalog';
 
 describe('reference acquisition pilot', () => {
   it('assembles a deterministic first-party breadstick and cracker set without publishing third-party recipes', () => {
-    expect(PILOT_DATASET.definitions).toHaveLength(22);
-    expect(PILOT_DATASET.captures).toHaveLength(22);
-    expect(PILOT_DATASET.runs).toHaveLength(22);
-    expect(PILOT_DATASET.normalizedCandidates).toHaveLength(22);
-    expect(PILOT_DATASET.reviewedCandidates).toHaveLength(22);
-    expect(PILOT_DATASET.reviews).toHaveLength(22);
+    expect(PILOT_DATASET.definitions).toHaveLength(57);
+    expect(PILOT_DATASET.captures).toHaveLength(57);
+    expect(PILOT_DATASET.runs).toHaveLength(57);
+    expect(PILOT_DATASET.normalizedCandidates).toHaveLength(57);
+    expect(PILOT_DATASET.reviewedCandidates).toHaveLength(57);
+    expect(PILOT_DATASET.reviews).toHaveLength(57);
     expect(PILOT_DATASET.runs.every((run) => run.method === 'manual-capture' && run.toolVersion === PILOT_CAPTURE_VERSION)).toBe(true);
-    expect(PILOT_DATASET.report.acceptedCandidateIds).toHaveLength(22);
+    expect(PILOT_DATASET.report.acceptedCandidateIds).toHaveLength(57);
     expect(PILOT_DATASET.report.unresolvedGaps.length).toBeGreaterThan(0);
     expect(PILOT_DATASET.report.blockedEntries.length).toBeGreaterThan(0);
-    expect(PILOT_DATASET.report.missingInventoryEntries).toHaveLength(COVERAGE_INVENTORY.entries.length - 22);
+    expect(PILOT_DATASET.report.missingInventoryEntries).toHaveLength(COVERAGE_INVENTORY.entries.length - 57);
     expect(Object.values(PILOT_DATASET.report.categoryCounts)).toHaveLength(11);
     expect(PILOT_DATASET.report.categoryCounts['yeasted-breads']?.acceptedCount).toBe(9);
     expect(PILOT_DATASET.report.categoryCounts['pastry-pie-tart-cracker']?.acceptedCount).toBe(13);
+    expect(PILOT_DATASET.report.categoryCounts['pancakes-crepes-waffles']?.acceptedCount).toBe(26);
+    expect(PILOT_DATASET.report.categoryCounts['fried-doughs-batters']?.acceptedCount).toBe(8);
+    expect(PILOT_DATASET.report.categoryCounts['cakes-quick-breads']?.acceptedCount).toBe(1);
     expect(PILOT_DATASET.report.categoryCounts['yeasted-breads']?.targetMet).toBe(true);
     expect(PILOT_DATASET.handoff.immutable).toBe(true);
-    expect(PILOT_DATASET.handoff.candidateIds).toHaveLength(22);
+    expect(PILOT_DATASET.handoff.candidateIds).toHaveLength(57);
   });
 
   it('keeps candidate identities, source facts, traces, and bilingual review evidence aligned', () => {
     const candidateIds = PILOT_DATASET.reviewedCandidates.map((candidate) => candidate.candidateId);
-    expect(new Set(candidateIds).size).toBe(22);
+    expect(new Set(candidateIds).size).toBe(57);
     PILOT_DATASET.reviewedCandidates.forEach((candidate, index) => {
       const run = PILOT_DATASET.runs[index];
       expect(candidate.status).toBe('ready-for-release');
@@ -40,8 +43,14 @@ describe('reference acquisition pilot', () => {
       expect(candidate.acquisitionRunId).toBe(run.runId);
       expect(candidate.inputIdentity).toBe(run.inputIdentity);
       expect(candidate.sourceId).toBe(run.sourceId);
-      expect(['source.dfi-internal-breadsticks', 'source.dfi-internal-crackers']).toContain(candidate.sourceId);
+      expect(['source.dfi-internal-breadsticks', 'source.dfi-internal-crackers', 'source.dfi-internal-batters']).toContain(candidate.sourceId);
     });
+  });
+
+  it('keeps first-party batter names readable on the public formula list', () => {
+    const batterEntries = COVERAGE_INVENTORY.entries.filter((entry) => entry.preparationKey.startsWith('batter-'));
+    expect(batterEntries).toHaveLength(35);
+    expect(batterEntries.every((entry) => !/canonical|expert seed/i.test(`${entry.label.en} ${entry.label.el}`))).toBe(true);
   });
 
   it('keeps unrecorded composition unknown while preserving explicit internal ingredients', () => {
@@ -65,5 +74,16 @@ describe('reference acquisition pilot', () => {
       ?.formula?.ingredientLines.find((line) => line.id === 'fat-lamination');
     expect(crackerUnknownLine?.definitionSource).toBe('custom');
     expect(crackerUnknownLine?.composition.fat.state).toBe('unknown');
+
+    const batterCandidates = PILOT_DATASET.reviewedCandidates.filter((candidate) => candidate.sourceId === 'source.dfi-internal-batters');
+    expect(batterCandidates).toHaveLength(35);
+    expect(batterCandidates.every((candidate) => candidate.processPresent && candidate.process !== null)).toBe(true);
+    expect(batterCandidates.every((candidate) => candidate.sourceFacts.some((fact) => /batters\.txt#L\d+-L\d+/.test(fact.sourceLocator)))).toBe(true);
+    expect(batterCandidates.every((candidate) => candidate.formula?.ingredientLines.every((line) => line.mass.value > 0))).toBe(true);
+
+    const beer = batterCandidates.find((candidate) => candidate.preparationKey === 'batter-beer-canonical');
+    const beerLine = beer?.formula?.ingredientLines.find((line) => line.name === 'Beer');
+    expect(beerLine?.definitionSource).toBe('custom');
+    expect(beerLine?.composition.water.state).toBe('unknown');
   });
 });

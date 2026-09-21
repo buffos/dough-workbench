@@ -8,7 +8,7 @@ import type {
 } from './types';
 import type { NormalizedProcess, NormalizedProcessSection, ProcessScalar } from './process';
 
-export const EFFECTIVE_BEHAVIOR_MODEL_VERSION = 'effective-behavior-seed-v1';
+export const EFFECTIVE_BEHAVIOR_MODEL_VERSION = 'effective-behavior-seed-v2';
 
 export type EffectiveOutcome = 'completed' | 'partial' | 'rejected' | 'conflict';
 export type EffectiveMetricStatus = 'complete' | 'partial' | 'unavailable' | 'not_applicable';
@@ -228,6 +228,20 @@ const DOUGH_STATE_SCORE: Record<string, number> = {
   thin_pourable_batter: 0.36,
 };
 
+/**
+ * A flour's gluten potential is not the same thing as the gluten structure
+ * that a batter can actually develop. Batter states therefore attenuate the
+ * intrinsic baseline before process work is applied. Unknown states retain
+ * the previous baseline so missing process evidence never invents a state.
+ */
+const DOUGH_STATE_GLUTEN_RETENTION: Record<string, number> = {
+  rigid_mass: 0.9,
+  stiff_dough: 0.8,
+  soft_wet_dough: 0.7,
+  thick_batter: 0.5,
+  thin_pourable_batter: 0.4,
+};
+
 const THERMAL_METHOD_SCORE: Record<string, number> = {
   static_oven: 0.72,
   fan_oven: 0.82,
@@ -235,7 +249,9 @@ const THERMAL_METHOD_SCORE: Record<string, number> = {
   air_fryer: 0.86,
   griddle: 0.58,
   pan: 0.52,
+  waffle_iron: 0.9,
   deep_fry: 0.92,
+  shallow_fry: 0.88,
   boil_then_bake: 0.68,
   other: 0.55,
 };
@@ -262,6 +278,15 @@ const SHAPE_SCORE: Record<string, number> = {
   muffin: 0.62,
   pancake: 0.88,
   crepe: 0.95,
+  waffle: 0.9,
+  fritter: 0.82,
+  coating: 0.8,
+  custard: 0.58,
+  popover: 0.72,
+  dutch_baby: 0.7,
+  yorkshire_pudding: 0.7,
+  steam_puffed: 0.7,
+  souffle_pancake: 0.76,
   ring: 0.68,
   laminated_piece: 0.72,
   choux_piece: 0.62,
@@ -319,6 +344,13 @@ function processValue(process: NormalizedProcess, path: string): ValueState<Proc
   const container = process[section as keyof NormalizedProcess];
   if (!container || typeof container !== 'object' || Array.isArray(container)) return undefined;
   return (container as NormalizedProcessSection)[field];
+}
+
+function doughStateGlutenRetention(process: NormalizedProcess): number {
+  const state = processValue(process, 'lamination.doughState');
+  return state?.state === 'known' && typeof state.value === 'string'
+    ? DOUGH_STATE_GLUTEN_RETENTION[state.value] ?? 1
+    : 1;
 }
 
 function evidence(
@@ -679,7 +711,14 @@ export function evaluateEffectiveBehavior(input: EffectiveAnalysisInput): Effect
   if (effectiveGlutenFeatures) {
     const adjustment = (mixing ? (mixing.score - 0.5) * 0.34 : 0)
       + (additionOrder ? (additionOrder.score - 0.5) * -0.12 : 0);
-    metrics.push(metricFromBaseline('effectiveGluten', effectiveGlutenFeatures, gpi, gpi.value === undefined ? undefined : clamp(gpi.value + adjustment), 'score (0–1)'));
+    const retention = doughStateGlutenRetention(process);
+    metrics.push(metricFromBaseline(
+      'effectiveGluten',
+      effectiveGlutenFeatures,
+      gpi,
+      gpi.value === undefined ? undefined : clamp(gpi.value * retention + adjustment),
+      'score (0–1)',
+    ));
   }
 
   const gasFeatures = combine([

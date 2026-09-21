@@ -11,6 +11,7 @@ import {
 } from './dataset';
 import type { PilotHandoff } from './curation';
 import type { SourceRegistry } from './source-registry';
+import type { PrototypeCatalogSnapshot } from './prototype-catalog';
 
 export interface PublicationResult {
   outcome: 'published' | 'rejected';
@@ -35,6 +36,7 @@ export function assembleGoldDatasetRelease(input: {
   createdAt: string;
   supersedes?: string | null;
   defaultModelVersion?: string;
+  prototypeCatalog: PrototypeCatalogSnapshot;
 }): PublicationResult {
   const releaseId = input.releaseId ?? GOLD_DATASET_RELEASE_ID;
   const records: DatasetRecordSnapshot[] = [];
@@ -99,12 +101,17 @@ export function assembleGoldDatasetRelease(input: {
     descriptor: { ...descriptor, contentIdentity: computeReleaseContentIdentity({ descriptor, records }) },
     records,
   };
-  const verification = verifyDatasetRelease(release);
+  const verification = verifyDatasetRelease(release, { prototypeCatalog: input.prototypeCatalog });
   if (verification.outcome !== 'pass') {
     return {
       outcome: 'rejected',
       release: null,
-      diagnostic: verification.recordErrors[0] ?? verification.roleErrors[0] ?? verification.partitionErrors[0] ?? verification.localeErrors[0] ?? diagnostic('release_invalid', 'release'),
+      diagnostic: verification.recordErrors[0]
+        ?? verification.roleErrors[0]
+        ?? verification.partitionErrors[0]
+        ?? verification.localeErrors[0]
+        ?? verification.prototypeErrors[0]
+        ?? diagnostic('release_invalid', 'release'),
     };
   }
   return { outcome: 'published', release, diagnostic: null };
@@ -113,12 +120,26 @@ export function assembleGoldDatasetRelease(input: {
 export function publishIntoRegistry(
   registry: DatasetReleaseRegistry,
   release: DatasetRelease,
+  prototypeCatalog: PrototypeCatalogSnapshot,
 ): { outcome: 'published' | 'rejected'; registry: DatasetReleaseRegistry | null; diagnostic: DatasetDiagnostic | null } {
   if (registry.releases[release.descriptor.releaseId]) {
     return {
       outcome: 'rejected',
       registry: null,
       diagnostic: diagnostic('release_id_conflict', 'release.descriptor.releaseId', { releaseId: release.descriptor.releaseId }),
+    };
+  }
+  const verification = verifyDatasetRelease(release, { prototypeCatalog });
+  if (verification.outcome !== 'pass') {
+    return {
+      outcome: 'rejected',
+      registry: null,
+      diagnostic: verification.recordErrors[0]
+        ?? verification.roleErrors[0]
+        ?? verification.partitionErrors[0]
+        ?? verification.localeErrors[0]
+        ?? verification.prototypeErrors[0]
+        ?? diagnostic('release_invalid', 'release'),
     };
   }
   return {

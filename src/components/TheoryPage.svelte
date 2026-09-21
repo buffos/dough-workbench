@@ -66,6 +66,14 @@
           </span>
           <span aria-hidden="true">→</span>
         </a>
+        <a class="focused-guide-link" href={`${workspaceHref}theory/batters/`}>
+          <span>
+            <small>{content.battersLinkKicker}</small>
+            <strong>{content.battersLinkTitle}</strong>
+            <span>{content.battersLinkIntro}</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
       </div>
     </section>
 

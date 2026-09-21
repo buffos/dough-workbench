@@ -137,6 +137,78 @@ describe('classification feature snapshot', () => {
     });
   });
 
+  it('keeps the canonical waffle reference close to the waffle prototype', () => {
+    const record = GOLD_FORMULAS_RELEASE.records.find((candidate) => candidate.identity.preparationKey === 'batter-waffle-canonical');
+    expect(record).toBeDefined();
+    if (!record) return;
+    const started = createLocalDraftFromReference(record);
+    expect(started.formula).not.toBeNull();
+    expect(started.process).not.toBeNull();
+    if (!started.formula || !started.process) return;
+    const handoff = prepareAnalysisInputDraft(started.formula, started.process);
+    const intrinsic = calculateIntrinsicMetricsDraft(started.formula);
+    expect(handoff.data).not.toBeNull();
+    expect(intrinsic).not.toBeNull();
+    if (!handoff.data || !intrinsic) return;
+    const effective = evaluateEffectiveBehaviorDraft(handoff.data);
+    const catalog = loadPrototypeCatalog();
+    expect(catalog.status).toBe('available');
+    if (catalog.status !== 'available') return;
+    const featureSet = buildClassificationFeatureSet({
+      reference: handoff.data,
+      intrinsic,
+      effective,
+      catalog,
+    });
+    expect(featureSet.status).toBe('ready');
+    if (featureSet.status !== 'ready') return;
+    const candidate = evaluatePrototypeSimilarities(featureSet.data, catalog.snapshot)
+      .find((item) => item.prototypeId === 'prototype.waffle');
+    expect(candidate).toMatchObject({
+      compositionSimilarity: 1,
+      processSimilarity: 1,
+      overallIdentitySimilarity: 1,
+      status: 'supported',
+    });
+  });
+
+  it('keeps every first-party batter and cracker reference close to its assigned prototype', () => {
+    const catalog = loadPrototypeCatalog();
+    expect(catalog.status).toBe('available');
+    if (catalog.status !== 'available') return;
+
+    const batterRecords = GOLD_FORMULAS_RELEASE.records.filter((record) => (
+      record.identity.preparationKey.startsWith('batter-')
+      || record.identity.preparationKey.startsWith('cracker-')
+    ));
+    expect(batterRecords).toHaveLength(47);
+
+    batterRecords.forEach((record) => {
+      const started = createLocalDraftFromReference(record);
+      expect(started.formula, record.identity.preparationKey).not.toBeNull();
+      expect(started.process, record.identity.preparationKey).not.toBeNull();
+      if (!started.formula || !started.process) return;
+      const handoff = prepareAnalysisInputDraft(started.formula, started.process);
+      const intrinsic = calculateIntrinsicMetricsDraft(started.formula);
+      expect(handoff.data, record.identity.preparationKey).not.toBeNull();
+      expect(intrinsic, record.identity.preparationKey).not.toBeNull();
+      if (!handoff.data || !intrinsic) return;
+      const featureSet = buildClassificationFeatureSet({
+        reference: handoff.data,
+        intrinsic,
+        effective: evaluateEffectiveBehaviorDraft(handoff.data),
+        catalog,
+      });
+      expect(featureSet.status, record.identity.preparationKey).toBe('ready');
+      if (featureSet.status !== 'ready') return;
+      const candidate = evaluatePrototypeSimilarities(featureSet.data, catalog.snapshot)
+        .find((item) => item.prototypeId === record.identity.prototypeId);
+      expect(candidate, record.identity.preparationKey).toBeDefined();
+      expect(candidate?.status, record.identity.preparationKey).not.toBe('conflicted');
+      expect(candidate?.overallIdentitySimilarity ?? 0, record.identity.preparationKey).toBeGreaterThanOrEqual(0.75);
+    });
+  });
+
   it('retains multiple family memberships instead of forcing one family', () => {
     const prepared = prepareReference();
     const result = buildClassificationFeatureSet({

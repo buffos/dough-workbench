@@ -64,7 +64,7 @@ describe('effective process behavior analysis', () => {
     const first = analyze(process);
     const second = analyze({ ...process, revision: process.revision + 1, mixing: { ...process.mixing, intensity: knownDraftValue('0.4') } });
 
-    expect(first.result.modelVersion).toBe('effective-behavior-seed-v1');
+    expect(first.result.modelVersion).toBe('effective-behavior-seed-v2');
     expect(metric(first.result, 'effectiveGluten')?.value).toBeDefined();
     expect(metric(first.result, 'gasRetention')?.value).toBeDefined();
     expect(first.result.featureContributions.some((item) => item.featureKey === 'mixingWork')).toBe(true);

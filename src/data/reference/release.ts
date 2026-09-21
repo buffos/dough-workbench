@@ -7,8 +7,9 @@ import { PILOT_DATASET } from './pilot';
 import { REFERENCE_MODIFIER_ASSIGNMENTS } from './modifiers';
 import { REFERENCE_PROTOTYPE_ASSIGNMENTS } from './prototype-assignments';
 import { SOURCE_REGISTRY } from './sources';
+import { loadPrototypeCatalog } from '../prototypes/catalog';
 
-export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-20T00:00:00Z';
+export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-21T00:00:00Z';
 
 /**
  * The browser-safe registry is assembled only from the owner-approved pilot
@@ -17,6 +18,10 @@ export const GOLD_FORMULAS_RELEASE_CREATED_AT = '2026-09-20T00:00:00Z';
  * satisfy the release verifier.
  */
 function publishApprovedPilot(): DatasetReleaseRegistry {
+  const prototypeCatalog = loadPrototypeCatalog();
+  if (prototypeCatalog.status !== 'available') {
+    throw new Error(`Prototype catalog validation failed: ${prototypeCatalog.status}`);
+  }
   const publication = assembleGoldDatasetRelease({
     handoff: PILOT_DATASET.handoff,
     registry: SOURCE_REGISTRY,
@@ -24,7 +29,8 @@ function publishApprovedPilot(): DatasetReleaseRegistry {
     prototypeIdsByPreparationKey: REFERENCE_PROTOTYPE_ASSIGNMENTS,
     releaseId: GOLD_DATASET_RELEASE_ID,
     createdAt: GOLD_FORMULAS_RELEASE_CREATED_AT,
-    supersedes: 'gold-formulas-v2',
+    supersedes: 'gold-formulas-v3',
+    prototypeCatalog: prototypeCatalog.snapshot,
   });
   if (publication.outcome !== 'published' || !publication.release) {
     throw new Error(`${GOLD_DATASET_RELEASE_ID} publication failed: ${publication.diagnostic?.code ?? 'unknown'}`);
@@ -33,6 +39,7 @@ function publishApprovedPilot(): DatasetReleaseRegistry {
   const registered = publishIntoRegistry(
     { currentReleaseId: GOLD_DATASET_RELEASE_ID, releases: {} },
     publication.release,
+    prototypeCatalog.snapshot,
   );
   if (registered.outcome !== 'published' || !registered.registry) {
     throw new Error(`${GOLD_DATASET_RELEASE_ID} registry publication failed: ${registered.diagnostic?.code ?? 'unknown'}`);

@@ -14,6 +14,7 @@ import {
   type CurationReview,
 } from './curation';
 import { assembleGoldDatasetRelease, publishIntoRegistry } from './publication';
+import { loadPrototypeCatalog } from '../../data/prototypes/catalog';
 import { GOLD_DATASET_RELEASE_ID } from './dataset';
 import { SOURCE_REGISTRY_ID, SOURCE_REGISTRY_REVISION, type SourceRegistry } from './source-registry';
 
@@ -159,6 +160,9 @@ describe('candidate curation and pilot reporting', () => {
 
   it('publishes only an accepted handoff with an explicit release plan', () => {
     const reviewed = reviewCandidateRecord(candidate(), acceptedReview, source);
+    const prototypeCatalog = loadPrototypeCatalog();
+    expect(prototypeCatalog.status).toBe('available');
+    if (prototypeCatalog.status !== 'available') return;
     const publication = assembleGoldDatasetRelease({
       handoff: preparePilotHandoff(
         COVERAGE_INVENTORY,
@@ -168,15 +172,16 @@ describe('candidate curation and pilot reporting', () => {
       ).handoff!,
       registry: source,
       createdAt: '2026-09-10T13:00:00Z',
+      prototypeCatalog: prototypeCatalog.snapshot,
     });
     expect(publication.outcome).toBe('published');
     expect(publication.release?.descriptor.releaseId).toBe(GOLD_DATASET_RELEASE_ID);
     expect(publication.release?.records[0].normalization?.length).toBeGreaterThan(0);
 
-    const registered = publishIntoRegistry({ currentReleaseId: 'none', releases: {} }, publication.release!);
+    const registered = publishIntoRegistry({ currentReleaseId: 'none', releases: {} }, publication.release!, prototypeCatalog.snapshot);
     expect(registered.outcome).toBe('published');
     expect(registered.registry?.currentReleaseId).toBe(GOLD_DATASET_RELEASE_ID);
-    const duplicate = publishIntoRegistry(registered.registry!, publication.release!);
+    const duplicate = publishIntoRegistry(registered.registry!, publication.release!, prototypeCatalog.snapshot);
     expect(duplicate.outcome).toBe('rejected');
     expect(duplicate.diagnostic?.code).toBe('release_id_conflict');
   });

@@ -15,6 +15,7 @@
   import { loadPrototypeCatalog } from '../data/prototypes/catalog';
   import { REFERENCE_DATASET_REGISTRY } from '../data/reference/release';
   import { listReferenceRecordsForPrototype, type DatasetRecordSnapshot } from '../lib/domain/dataset';
+  import { canonicalStructuralFamilyId } from '../lib/domain/structural-taxonomy';
   import type { NormalizedProcess, NormalizedProcessSection, ProcessScalar } from '../lib/domain/process';
   import type { ValueState } from '../lib/domain/types';
   import { localeHref, t, type Locale } from '../lib/i18n/messages';
@@ -339,7 +340,7 @@
     const params = new URLSearchParams(window.location.search);
     expandedFamilyIds = rootFamilies.map((family) => family.id);
     query = params.get('q') ?? '';
-    const requestedFamily = params.get('family') ?? '';
+    const requestedFamily = canonicalStructuralFamilyId(params.get('family') ?? '');
     const requestedType = params.get('type') ?? '';
     if (families.some((family) => family.id === requestedFamily)) selectedFamilyId = requestedFamily;
     if (prototypes.some((prototype) => prototype.id === requestedType)) selectedPrototypeId = requestedType;

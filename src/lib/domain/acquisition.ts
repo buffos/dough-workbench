@@ -303,12 +303,12 @@ function compositionDraft(
   pathPrefix: string,
   catalogIngredientId?: string,
 ): CompositionDraft {
-  if (!composition && catalogIngredientId) {
-    const fromCatalog = compositionFromCatalog(
-      STARTER_CATALOG[catalogIngredientId]?.composition ?? STARTER_FLOUR_CATALOG.find((item) => item.id === catalogIngredientId)?.composition ?? {},
-      STARTER_CATALOG_VERSION,
-      catalogIngredientId,
-    );
+  const catalogComposition = catalogIngredientId
+    ? STARTER_CATALOG[catalogIngredientId]?.composition
+      ?? STARTER_FLOUR_CATALOG.find((item) => item.id === catalogIngredientId)?.composition
+    : undefined;
+  if (!composition && catalogIngredientId && catalogComposition) {
+    const fromCatalog = compositionFromCatalog(catalogComposition, STARTER_CATALOG_VERSION, catalogIngredientId);
     COMPOSITION_FIELDS.forEach((field) => traces.push({
       path: `${pathPrefix}.${field}`,
       kind: 'catalog-mapped',

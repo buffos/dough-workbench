@@ -145,11 +145,11 @@ export const CRACKER_CONTENT: Record<Locale, CrackerContent> = {
       {
         id: 'canonical-matrix',
         number: 6,
-        eyebrow: '06 / CANONICAL MATRIX',
+        eyebrow: '06 / STRUCTURAL COMPARISON',
         title: 'The twelve structural zones',
         intro: 'A cracker is multidimensional. The same fat percentage means something different when hydration, leavening, thickness, or lamination changes.',
         table: {
-          caption: 'Canonical cracker matrix',
+          caption: 'Cracker comparison table',
           columns: ['Type', 'Hydration', 'Fat', 'Leavening', 'Technique', 'Final texture'],
           rows: [
             ['1. Lean hard cracker', '30–33%', '3–6%', '0–0.5%', 'Thin roll, docked', 'Hard, dry, strong snap'],
@@ -345,11 +345,11 @@ export const CRACKER_CONTENT: Record<Locale, CrackerContent> = {
       {
         id: 'canonical-matrix',
         number: 6,
-        eyebrow: '06 / CANONICAL MATRIX',
+        eyebrow: '06 / ΣΥΓΚΡΙΣΗ ΔΟΜΗΣ',
         title: 'Οι δώδεκα δομικές ζώνες',
         intro: 'Το cracker είναι πολυδιάστατο. Το ίδιο ποσοστό λίπους σημαίνει κάτι διαφορετικό όταν αλλάζουν η ενυδάτωση, η διόγκωση, το πάχος ή η φυλλοποίηση.',
         table: {
-          caption: 'Canonical matrix για κράκερ',
+          caption: 'Πίνακας σύγκρισης για κράκερ',
           columns: ['Τύπος', 'Ενυδάτωση', 'Λίπος', 'Διόγκωση', 'Τεχνική', 'Τελική υφή'],
           rows: [
             ['1. Lean hard cracker', '30–33%', '3–6%', '0–0,5%', 'Λεπτό άνοιγμα, docking', 'Σκληρό, ξηρό, έντονο snap'],

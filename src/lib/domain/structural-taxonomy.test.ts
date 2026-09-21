@@ -10,11 +10,11 @@ import {
 } from './structural-taxonomy';
 
 describe('canonical structural taxonomy', () => {
-  it('contains the 13 primary families and their 41 child families', () => {
-    expect(STRUCTURAL_PRIMARY_FAMILY_IDS).toHaveLength(13);
-    expect(STRUCTURAL_FAMILY_NODES).toHaveLength(54);
-    expect(STRUCTURAL_FAMILY_NODES.filter((node) => node.parentId !== null)).toHaveLength(41);
-    expect(new Set(STRUCTURAL_FAMILY_NODES.map((node) => node.id)).size).toBe(54);
+  it('contains the 11 primary families and their 45 child families', () => {
+    expect(STRUCTURAL_PRIMARY_FAMILY_IDS).toHaveLength(11);
+    expect(STRUCTURAL_FAMILY_NODES).toHaveLength(56);
+    expect(STRUCTURAL_FAMILY_NODES.filter((node) => node.parentId !== null)).toHaveLength(45);
+    expect(new Set(STRUCTURAL_FAMILY_NODES.map((node) => node.id)).size).toBe(56);
     expect(STRUCTURAL_FAMILY_NODES.every((node) => node.label.en.trim() && node.label.el.trim())).toBe(true);
     expect(STRUCTURAL_FAMILY_NODES
       .filter((node) => node.parentId !== null)
@@ -32,6 +32,15 @@ describe('canonical structural taxonomy', () => {
     expect(structuralFamilyAncestry(brioche)).toEqual([brioche, fermentedGluten]);
     expect(structuralFamilyMatches(brioche, fermentedGluten)).toBe(true);
     expect(structuralFamilyMatches(brioche, laminated)).toBe(false);
+
+    const legacyPancake = 'family.chemical-pourable.pancake';
+    expect(structuralFamilyDepth(legacyPancake)).toBe(1);
+    expect(structuralFamilyAncestry(legacyPancake)).toEqual([
+      'family.batters.griddle',
+      'family.batters',
+    ]);
+    expect(structuralFamilyMatches(legacyPancake, 'family.batters')).toBe(true);
+    expect(structuralFamilyMatches('family.batters.griddle', 'family.chemical-pourable.pancake')).toBe(true);
   });
 
   it('keeps the orthogonal modifier vocabulary separate from family IDs', () => {

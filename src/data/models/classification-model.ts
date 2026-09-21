@@ -33,6 +33,7 @@ export const CLASSIFICATION_FEATURE_DIMENSIONS: Readonly<Record<string, Similari
   steam_potential: 'composition',
   layer_integrity: 'composition',
   gas_retention: 'composition',
+  surface_dehydration: 'process',
   mixing_method: 'process',
   mixing_intensity: 'process',
   mixing_target: 'process',
@@ -52,6 +53,7 @@ export const CLASSIFICATION_FEATURE_DIMENSIONS: Readonly<Record<string, Similari
   egg_white_foam: 'process',
   steam_leavening: 'process',
   pourable_batter: 'process',
+  batter_consistency: 'process',
   strong_gluten_development: 'process',
   gluten_structure: 'process',
   suppressed_gluten: 'process',
@@ -68,8 +70,8 @@ export const CLASSIFICATION_BAND_SCALES: Readonly<Record<string, BandScale>> = {
   relative_hydration: { min: 0, max: 150 },
   fat_load: { min: 0, max: 100 },
   sugar_load: { min: 0, max: 100 },
-  egg_solids: { min: 0, max: 100 },
-  egg_protein: { min: 0, max: 100 },
+  egg_solids: { min: 0, max: 40 },
+  egg_protein: { min: 0, max: 40 },
   water_load: { min: 0, max: 150 },
   available_water: { min: 0, max: 150 },
   enrichment: { min: 0, max: 100 },
@@ -78,6 +80,7 @@ export const CLASSIFICATION_BAND_SCALES: Readonly<Record<string, BandScale>> = {
   steam_potential: { min: 0, max: 1 },
   layer_integrity: { min: 0, max: 1 },
   gas_retention: { min: 0, max: 1 },
+  surface_dehydration: { min: 0, max: 1 },
 };
 
 export function qualitativeBandFor(featureId: string, value: number): PrototypeQualitativeBand | undefined {

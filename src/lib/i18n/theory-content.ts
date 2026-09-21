@@ -44,6 +44,9 @@ export interface TheoryContent {
   crackersLinkKicker: string;
   crackersLinkTitle: string;
   crackersLinkIntro: string;
+  battersLinkKicker: string;
+  battersLinkTitle: string;
+  battersLinkIntro: string;
   chapters: TheoryChapter[];
 }
 
@@ -63,6 +66,9 @@ export const THEORY_CONTENT: Record<Locale, TheoryContent> = {
     crackersLinkKicker: 'Focused guide',
     crackersLinkTitle: 'Crackers',
     crackersLinkIntro: 'A separate map of hydration, fat, leavening, thickness, docking, and twelve starting formulas.',
+    battersLinkKicker: 'Focused guide',
+    battersLinkTitle: 'Batters',
+    battersLinkIntro: 'A structured guide to ten batter families, their composition axes, thermal regimes, and thirty-five starting formulas.',
     chapters: [
       {
         id: 'introduction',
@@ -541,6 +547,9 @@ export const THEORY_CONTENT: Record<Locale, TheoryContent> = {
     crackersLinkKicker: 'Ειδικός οδηγός',
     crackersLinkTitle: 'Κράκερ',
     crackersLinkIntro: 'Ξεχωριστός χάρτης για ενυδάτωση, λίπος, διόγκωση, πάχος, docking και δώδεκα φόρμουλες εκκίνησης.',
+    battersLinkKicker: 'Ειδικός οδηγός',
+    battersLinkTitle: 'Batters / χυλοί',
+    battersLinkIntro: 'Οργανωμένος οδηγός για δέκα οικογένειες batter, τους άξονες σύστασης, τις θερμικές διαδικασίες και τριάντα πέντε φόρμουλες εκκίνησης.',
     chapters: [
       {
         id: 'introduction',
